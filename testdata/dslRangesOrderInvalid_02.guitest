@@ -1,0 +1,7 @@
+start {                            // 10
+    callAndLambda {                // 20
+        functionCall("statement1") // 30
+        functionCall("statement2") // 40
+        functionCall("statement3") // 100
+    }                              // 90
+}                                  // 100

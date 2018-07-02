@@ -1,0 +1,22 @@
+{
+  parserClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParser"
+
+  extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+  psiClassPrefix="Transcript"
+  psiImplClassSuffix="Impl"
+  psiPackage="vladsaif.syncedit.plugin.lang.transcript.psi"
+  psiImplPackage="vladsaif.syncedit.plugin.lang.transcript.psi.impl"
+
+  elementTypeHolderClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptTokenTypes"
+  elementTypeClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptElementType"
+  tokenTypeClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptTokenType"
+}
+
+file ::= line*
+
+id ::= INTEGER_LITERAL
+
+line ::= WORD OPEN_BRACKET timeOffset COMMA timeOffset CLOSE_BRACKET OPEN_BRACKET id CLOSE_BRACKET
+
+timeOffset ::= INTEGER_LITERAL

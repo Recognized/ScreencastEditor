@@ -1,0 +1,4 @@
+audio=audio.mp3
+ transcript =file1.transcript
+transcript= folder/name with spaces/file
+video=video.mp4

@@ -1,0 +1,30 @@
+{
+  parserClass="vladsaif.syncedit.plugin.lang.dsl.parser.DslParser"
+
+  extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+  psiClassPrefix="Dsl"
+  psiImplClassSuffix="Impl"
+  psiPackage="vladsaif.syncedit.plugin.lang.dsl.psi"
+  psiImplPackage="vladsaif.syncedit.plugin.lang.dsl.psi.impl"
+
+  elementTypeHolderClass="vladsaif.syncedit.plugin.lang.dsl.psi.DslTokenTypes"
+  elementTypeClass="vladsaif.syncedit.plugin.lang.dsl.psi.DslElementType"
+  tokenTypeClass="vladsaif.syncedit.plugin.lang.dsl.psi.DslTokenType"
+}
+
+blocks ::= statement*
+
+timeOffset ::= INTEGER_LITERAL
+
+id ::= INTEGER_LITERAL
+
+meta_comment ::= EOL_COMMENT_START timeOffset COMMA OPEN_BRACKET id CLOSE_BRACKET
+
+statement ::= single_statement | block_statement
+
+word ::= (CHAR | STRING)+
+
+single_statement ::= word meta_comment CRLF+
+
+block_statement ::= (word (OPEN_BRACE meta_comment CRLF+ (statement)* CLOSE_BRACE meta_comment CRLF+))

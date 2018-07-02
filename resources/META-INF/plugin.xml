@@ -1,0 +1,44 @@
+<idea-plugin>
+    <id>vladsaif.plugin.syncedit_new</id>
+    <name>GUI test plugin</name>
+    <version>1.0</version>
+    <vendor email="vladsayf@gmail.com" url="vk.com/recog">Me</vendor>
+
+    <description><![CDATA[
+  GUI test synchronous script editing
+    ]]></description>
+
+    <idea-version since-build="181.0"/>
+
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Gui test script (GTS) language -->
+        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.dsl.DslFileTypeFactory"/>
+        <lang.parserDefinition language="GUI test script"
+                               implementationClass="vladsaif.syncedit.plugin.lang.dsl.DslParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="GUI test script"
+                                       implementationClass="vladsaif.syncedit.plugin.lang.dsl.DslSyntaxHighlighterFactory"/>
+        <!-- Transcript language -->
+        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.TranscriptFileTypeFactory"/>
+        <lang.parserDefinition language="Gui test audio transcript"
+                               implementationClass="vladsaif.syncedit.plugin.lang.transcript.TranscriptParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="Gui test audio transcript"
+                                       implementationClass="vladsaif.syncedit.plugin.lang.transcript.TranscriptHighlighterFactory"/>
+        <!-- Declare the application level service -->
+        <applicationService serviceInterface="vladsaif.syncedit.plugin.synchronization.SynchronizationManager"
+                            serviceImplementation="vladsaif.syncedit.plugin.synchronization.impl.SynchronizationManagerImpl"/>
+    </extensions>
+    <project-components>
+        <component>
+            <implementation-class>vladsaif.syncedit.plugin.synchronization.EditorFactoryListenerComponent
+            </implementation-class>
+        </component>
+    </project-components>
+    <actions>
+        <action id="downloadTranscriptAction" class="vladsaif.syncedit.plugin.actions.RecognizeAudioAction"
+                text="Get transcript" description="Get transcript of audio file">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
