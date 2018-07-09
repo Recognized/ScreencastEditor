@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.synchronization;
 
 import org.jetbrains.annotations.NotNull;
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 
 import java.util.Objects;
 

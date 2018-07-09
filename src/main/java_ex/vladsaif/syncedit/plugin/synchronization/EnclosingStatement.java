@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.synchronization;
 
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 
 import java.util.Objects;
 

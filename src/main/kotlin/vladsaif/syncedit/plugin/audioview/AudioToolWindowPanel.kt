@@ -4,6 +4,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import vladsaif.syncedit.plugin.Word
 import java.nio.file.Path
 import javax.swing.Icon
 
@@ -25,6 +26,15 @@ class AudioToolWindowPanel(file: Path) : SimpleToolWindowPanel(false), Disposabl
         }
         setToolbar(ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, false).component)
         add(waveformView)
+        // TODO delete
+        waveformView.wordData = listOf(
+                Word("Some", 0.0, 1000.0),
+                Word("sentence", 2000.0, 3000.0),
+                Word("on", 3000.0, 4000.0),
+                Word("the", 4000.0, 5000.0),
+                Word("audio", 5000.0, 6000.0),
+                Word("track", 6000.0, 7000.0)
+        )
     }
 
     private fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon, action: () -> Unit) {

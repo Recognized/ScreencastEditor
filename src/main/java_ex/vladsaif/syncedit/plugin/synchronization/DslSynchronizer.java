@@ -11,7 +11,7 @@ import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.IntIntHashMap;
 import com.intellij.util.containers.Stack;
 import vladsaif.syncedit.plugin.editor.EventGroup;
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 import vladsaif.syncedit.plugin.editor.Timeline;
 import vladsaif.syncedit.plugin.lang.dsl.psi.DslId;
 import vladsaif.syncedit.plugin.lang.dsl.psi.DslMetaComment;

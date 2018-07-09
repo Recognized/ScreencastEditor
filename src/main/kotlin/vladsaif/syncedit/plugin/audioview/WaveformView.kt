@@ -4,9 +4,13 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollBar
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
+import vladsaif.syncedit.plugin.Alias
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.ClosedLongRange
+import vladsaif.syncedit.plugin.Word
 import java.awt.*
 import java.nio.file.Paths
 import javax.swing.JFrame
@@ -16,12 +20,13 @@ import kotlin.math.min
 
 class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPanel(sampleProvider)) {
     private val panel = viewport.view as UnderlyingPanel
+    var wordData by Alias(panel::wordData)
 
     init {
         background = Color.WHITE
         setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER)
         setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS)
-        horizontalScrollBar.addAdjustmentListener lit@{ _ ->
+        horizontalScrollBar.addAdjustmentListener { _ ->
             panel.extent = this@WaveformView.viewport.width.toLong()
             panel.position = horizontalScrollBar.value.toLong()
             panel.repaint()
@@ -54,6 +59,8 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
             get() = ClosedLongRange(position, chunkEnd)
         private var cachedRange: ClosedLongRange? = null
         private var dataCache: List<AveragedSampleData>? = null
+        private val wordFont
+            get() = JBUI.Fonts.miniFont()
         private val chunkEnd
             get() = position + extent - 1
         private val drawRange
@@ -69,6 +76,7 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
                 field = min(availableChunks - extent, max(value, 0))
             }
         var extent = availableChunks
+        var wordData = listOf<Word>()
 
         init {
             background = Color.WHITE
@@ -95,7 +103,6 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
         override fun getPreferredSize() = Dimension(availableChunks.toInt(), parent.height)
 
         override fun paintComponent(graphics: Graphics?) {
-            println(DecodedMpegAudioInputStream::class)
             super.paintComponent(graphics)
             graphics ?: return
             val graphics2d = graphics as Graphics2D
@@ -116,6 +123,7 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
                     }
                 }
             }
+            graphics2d.drawWords()
         }
 
         private fun Graphics2D.drawHorizontalLine() {
@@ -124,19 +132,55 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
         }
 
         private fun Graphics2D.drawAveragedWaveform(data: AveragedSampleData) {
-            color = Settings.peakColor
-            stroke = BasicStroke(Settings.peakStrokeWidth)
+            color = Settings.currentSettings.peakColor
+            stroke = BasicStroke(Settings.currentSettings.peakStrokeWidth)
             for (i in 0 until data.size) {
                 val yTop = (height - (data.highestPeaks[i] * height).toDouble() / data.maxPeak) / 2
                 val yBottom = (height - (data.lowestPeaks[i] * height).toDouble() / data.maxPeak) / 2
                 drawLine((i + data.skippedChunks).toInt(), yTop.toInt(), (i + data.skippedChunks).toInt(), yBottom.toInt())
             }
-            stroke = BasicStroke(Settings.rootMeanSquareStrokeWidth)
-            color = Settings.rootMeanSquareColor
+            stroke = BasicStroke(Settings.currentSettings.rootMeanSquareStrokeWidth)
+            color = Settings.currentSettings.rootMeanSquareColor
             for (i in 0 until data.size) {
                 val rmsHeight = (data.rootMeanSquare[i] * height).toDouble() / data.maxPeak / 4
                 val yAverage = (height - (data.averagePeaks[i] * height).toDouble() / data.maxPeak) / 2
                 drawLine((i + data.skippedChunks).toInt(), (yAverage - rmsHeight).toInt(), (i + data.skippedChunks).toInt(), (yAverage + rmsHeight).toInt())
+            }
+        }
+
+        private fun Graphics2D.drawWords() {
+            val usedRange = drawRange
+            wordData.forEach {
+                val leftBound = it.timeStart.toXCoordinate()
+                val rightBound = it.timeEnd.toXCoordinate()
+                if (ClosedLongRange(leftBound.toLong(), rightBound.toLong()).intersects(usedRange)) {
+                    drawCenteredWord(it.text, leftBound, rightBound)
+                }
+                color = Settings.currentSettings.wordSeparatorColor
+                stroke = BasicStroke(Settings.currentSettings.wordSeparatorWidth,
+                        BasicStroke.CAP_BUTT,
+                        BasicStroke.JOIN_BEVEL,
+                        0f,
+                        FloatArray(1) { 10.0f },
+                        0f)
+                if (leftBound > usedRange.start) {
+                    drawLine(leftBound, 0, leftBound, height)
+                }
+                if (rightBound < usedRange.end) {
+                    drawLine(rightBound, 0, rightBound, height)
+                }
+            }
+        }
+
+        // x1 <= x2
+        private fun Graphics2D.drawCenteredWord(word: String, x1: Int, x2: Int) {
+            if (x2 < x1) throw IllegalArgumentException()
+            val stringWidth = getFontMetrics(wordFont).stringWidth(word)
+            if (stringWidth < x2 - x1) {
+                val pos = (x2 + x1 - stringWidth) / 2
+                color = Settings.currentSettings.wordColor
+                font = UIUtil.getFont(UIUtil.FontSize.MINI, null)
+                drawString(word, pos, height / 6)
             }
         }
 
@@ -156,6 +200,9 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
             }
             return ret
         }
+
+        private fun TimeMillis.toXCoordinate() =
+                sampleProvider.getChunkOfFrame(availableChunks, (this / sampleProvider.millisecondsPerFrame).toLong())
     }
 
     companion object {
@@ -167,7 +214,7 @@ class WaveformView(sampleProvider: SampleProvider) : JBScrollPane(UnderlyingPane
 
 fun main(args: Array<String>) {
     JFrame("Hello").apply {
-        add(WaveformView(BasicSampleProvider(Paths.get("nocturne.mp3"))).also {
+        add(WaveformView(BasicSampleProvider(Paths.get("untitled2.wav"))).also {
             isVisible = true
         })
         size = Dimension(1000, 400)

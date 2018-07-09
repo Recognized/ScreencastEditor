@@ -10,8 +10,8 @@ import kotlin.math.sqrt
 
 class BasicSampleProvider(file: Path) : SampleProvider {
     private val file = file.toAbsolutePath().toFile()
-    override var timeLength: TimeMillis = 0.0
-    override var sampleLength: TimeMillis = 0.0
+    override var trackDuration: TimeMillis = 0.0
+    override var millisecondsPerFrame: TimeMillis = 0.0
     override var totalFrames: Int = 0
 
     init {
@@ -22,8 +22,8 @@ class BasicSampleProvider(file: Path) : SampleProvider {
                 audio.forEach { sampleCount++ }
                 totalFrames = (sampleCount / it.format.channels).toInt()
                 println(totalFrames)
-                sampleLength = it.format.millisecondsPerFrame()
-                timeLength = totalFrames * 1000L / it.format.frameRate.toDouble()
+                millisecondsPerFrame = it.format.millisecondsPerFrame()
+                trackDuration = totalFrames * 1000L / it.format.frameRate.toDouble()
             }
         }
     }
@@ -44,6 +44,16 @@ class BasicSampleProvider(file: Path) : SampleProvider {
             countStat(audio, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels)
             return ret
         }
+    }
+
+    override fun getChunkOfFrame(maxChunks: Long, frame: Long): Int {
+        var chunks = 0L
+        val framesPerChunk = (totalFrames / maxChunks).toInt()
+        if (frame > (totalFrames % framesPerChunk)) {
+            chunks += (frame - (totalFrames % framesPerChunk)) / framesPerChunk
+        }
+        chunks += min(frame, (totalFrames.toLong() % framesPerChunk)) / (framesPerChunk + 1)
+        return chunks.toInt()
     }
 
     private fun countStat(audio: AudioFrameStream,

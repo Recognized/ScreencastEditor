@@ -8,7 +8,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import vladsaif.syncedit.plugin.editor.EventGroup;
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 import vladsaif.syncedit.plugin.editor.Timeline;
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptId;
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLine;

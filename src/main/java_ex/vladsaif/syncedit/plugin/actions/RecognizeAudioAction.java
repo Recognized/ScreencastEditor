@@ -9,7 +9,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.vfs.VirtualFile;
 import vladsaif.syncedit.plugin.editor.EventGroupManager;
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 import vladsaif.syncedit.plugin.synchronization.Utils;
 import vladsaif.syncedit.plugin.speechrecognition.SpeechRecognizer;
 import vladsaif.syncedit.plugin.speechrecognition.Transcript;

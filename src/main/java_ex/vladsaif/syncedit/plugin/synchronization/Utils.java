@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import org.jetbrains.annotations.NotNull;
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 import vladsaif.syncedit.plugin.lang.dsl.DslFileType;
 import vladsaif.syncedit.plugin.lang.transcript.TranscriptFileType;
 

@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.speechrecognition;
 
 import org.junit.Test;
-import vladsaif.syncedit.plugin.editor.TimeRange;
+import vladsaif.syncedit.plugin.editor.ClosedLongRange;
 import vladsaif.syncedit.plugin.speechrecognition.recognizers.GoogleSpeechKit;
 
 import java.io.InputStream;
