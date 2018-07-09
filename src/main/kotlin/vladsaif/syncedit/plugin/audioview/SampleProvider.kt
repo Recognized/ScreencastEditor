@@ -12,7 +12,7 @@ interface SampleProvider {
 
     fun getAveragedSampleData(maxChunks: Long, chunkRange: ClosedLongRange) : List<AveragedSampleData>
 
-    fun getChunkOfFrame(maxChunks: Long, frame: Long): Int
+    fun getChunkOfFrame(maxChunks: Long, frame: Long): Long
 
     class AveragedSampleData(val size: Int, val skippedChunks: Long, sampleSizeInBits: Int) {
         val maxPeak = 1L shl (sampleSizeInBits - 1)

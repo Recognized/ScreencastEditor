@@ -19,12 +19,20 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
         return start <= other.start && other.end <= end
     }
 
+    operator fun contains(other: Long): Boolean {
+        return other in start..end
+    }
+
     fun shift(delta: Int): ClosedLongRange {
+        if (delta > 0 && end > Long.MAX_VALUE - delta || delta < 0 && start < Long.MIN_VALUE - delta) {
+            throw IllegalArgumentException()
+        }
         return ClosedLongRange(start + delta, end + delta)
     }
 
-    fun stretchRight(delta: Int): ClosedLongRange {
-        return ClosedLongRange(start, end + delta)
+    fun stretchRight(delta: Long): ClosedLongRange {
+        if (delta < 0 || Long.MAX_VALUE - end < delta) throw IllegalArgumentException()
+        return ClosedLongRange(start, end + min(delta, Long.MAX_VALUE - end))
     }
 
     fun intersects(other: ClosedLongRange): Boolean {

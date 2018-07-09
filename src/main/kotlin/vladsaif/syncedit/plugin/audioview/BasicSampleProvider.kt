@@ -46,14 +46,14 @@ class BasicSampleProvider(file: Path) : SampleProvider {
         }
     }
 
-    override fun getChunkOfFrame(maxChunks: Long, frame: Long): Int {
+    override fun getChunkOfFrame(maxChunks: Long, frame: Long): Long {
         var chunks = 0L
         val framesPerChunk = (totalFrames / maxChunks).toInt()
         if (frame > (totalFrames % framesPerChunk)) {
             chunks += (frame - (totalFrames % framesPerChunk)) / framesPerChunk
         }
         chunks += min(frame, (totalFrames.toLong() % framesPerChunk)) / (framesPerChunk + 1)
-        return chunks.toInt()
+        return chunks
     }
 
     private fun countStat(audio: AudioFrameStream,
