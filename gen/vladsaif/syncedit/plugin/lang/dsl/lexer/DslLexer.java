@@ -458,7 +458,7 @@ class DslLexer implements FlexLexer {
 
 
   /**
-   * Returns the trackDuration of the matched text region.
+   * Returns the trackDurationMilliseconds of the matched text region.
    */
   public final int yylength() {
     return zzMarkedPos-zzStartRead;

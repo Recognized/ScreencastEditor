@@ -27,14 +27,7 @@ class AudioToolWindowPanel(file: Path) : SimpleToolWindowPanel(false), Disposabl
         setToolbar(ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, false).component)
         add(waveformView)
         // TODO delete
-        waveformView.wordData = listOf(
-                Word("Some", 0.0, 1000.0),
-                Word("sentence", 2000.0, 3000.0),
-                Word("on", 3000.0, 4000.0),
-                Word("the", 4000.0, 5000.0),
-                Word("audio", 5000.0, 6000.0),
-                Word("track", 6000.0, 7000.0)
-        )
+        waveformView.wordData = (1000..30000 step 1000).map { Word("word" + it.toString(), it.toDouble(), it.toDouble() + 1000) }
     }
 
     private fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon, action: () -> Unit) {

@@ -8,7 +8,7 @@ import com.intellij.ui.content.ContentFactory
 import java.nio.file.Path
 
 object AudioToolWindowManager {
-    private const val toolWindowId = "Screencast EditorAudioToolWindow"
+    private const val toolWindowId = "Screencast Audio Editor"
 
     fun getToolWindow(project: Project): ToolWindow {
         val manager = ToolWindowManager.getInstance(project)
