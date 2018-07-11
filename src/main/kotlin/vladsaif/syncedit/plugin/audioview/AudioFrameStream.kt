@@ -2,10 +2,9 @@ package vladsaif.syncedit.plugin.audioview
 
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import java.io.Closeable
-import java.io.IOException
-import javax.sound.sampled.*
+import javax.sound.sampled.AudioInputStream
+import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.min
-
 
 /**
  * Working only for formats which sampleSizeInBits >= 8
@@ -26,9 +25,7 @@ class AudioFrameStream(private val underlyingStream: AudioInputStream, skippedFr
             throw UnsupportedAudioFileException("Unsupported format, sample size ($sampleSizeInBits bits) less than byte")
         }
         if (underlyingStream is DecodedMpegAudioInputStream) {
-            println("need skip $skippedFrames")
             underlyingStream.skipFrames(skippedFrames)
-            println("skipped")
         } else {
             underlyingStream.skipFrames(skippedFrames)
         }
@@ -43,7 +40,7 @@ class AudioFrameStream(private val underlyingStream: AudioInputStream, skippedFr
             if (pos == endPos) {
                 updateBuffer()
             }
-            if (pos == endPos) break;
+            if (pos == endPos) break
             var bitPos = 0
             for (j in 1..frameSizeBytes * 8 / sampleSizeInBits) {
                 var leftBits = sampleSizeInBits

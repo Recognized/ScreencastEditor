@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview
 
-import com.intellij.openapi.diagnostic.logger
 import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.floorToInt
 import java.nio.file.Path
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
@@ -9,12 +9,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 
-fun Long.floorToInt(): Int {
-    return if (this > 0) min(this, Int.MAX_VALUE.toLong()).toInt()
-    else max(this, Int.MIN_VALUE.toLong()).toInt()
-}
-
-class BasicSampleProvider(file: Path) : StatProvider {
+class BasicStatProvider(file: Path) : StatProvider {
     private val file = file.toAbsolutePath().toFile()
     override var trackDurationMilliseconds = 0.0
     override var millisecondsPerFrame = 0.0

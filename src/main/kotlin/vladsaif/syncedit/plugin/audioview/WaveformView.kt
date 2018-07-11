@@ -5,17 +5,16 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollBar
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.*
 import java.awt.*
 import java.awt.event.MouseEvent
-import java.awt.event.MouseListener
-import java.awt.event.MouseMotionListener
-import java.nio.file.Paths
 import javax.swing.BoundedRangeModel
 import javax.swing.DefaultBoundedRangeModel
-import javax.swing.JFrame
 import javax.swing.ScrollPaneConstants
+import javax.swing.event.MouseInputAdapter
 import kotlin.math.max
 import kotlin.math.min
 
@@ -67,52 +66,84 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
         private val drawRange
             get() = ClosedIntRange(max(value - extent * 2, minimum), min(value + extent * 2, maximum))
         private var cachedRange: ClosedIntRange? = null
-        private var dataCache: List<AveragedSampleData>? = null
+        private var dataCache = listOf(AveragedSampleData())
         private val selectedRanges = ClosedIntRangeUnion()
         private var hoveredRange = ClosedIntRange.EMPTY_RANGE
+        private var tempSelectedRange = ClosedIntRange.EMPTY_RANGE
+        private var mousePressedStartCoordinate = 0
         var wordData = listOf<Word>()
+            set(value) {
+                field = value.sorted()
+            }
 
-        val mouseMotionListener = object : MouseMotionListener {
+        val mouseListener = object : MouseInputAdapter() {
+            private var isControlDown = false
+
             override fun mouseMoved(e: MouseEvent?) {
                 e ?: return
                 val previous = hoveredRange
-                hoveredRange = getEnclosingWordRange(e.x)
+                hoveredRange = if (!UIUtil.isControlKeyDown(e)) {
+                    getEnclosingWordRange(e.x)
+                } else {
+                    ClosedIntRange.EMPTY_RANGE
+                }
                 if (hoveredRange != previous) repaint()
-                logger.info("HoveredRange=$hoveredRange")
             }
 
-            override fun mouseDragged(e: MouseEvent?) = Unit
-        }
-
-        val mouseListener = object : MouseListener {
             override fun mouseReleased(e: MouseEvent?) {
                 e ?: return
+                logger.info("mouse released")
+                if (tempSelectedRange != ClosedIntRange.EMPTY_RANGE) {
+                    selectedRanges.union(tempSelectedRange)
+                    tempSelectedRange = ClosedIntRange.EMPTY_RANGE
+                }
             }
 
-            override fun mouseEntered(e: MouseEvent?) {
+            override fun mousePressed(e: MouseEvent?) {
+                e ?: return
+                logger.info("mouse pressed")
+                hoveredRange = ClosedIntRange.EMPTY_RANGE
+                mousePressedStartCoordinate = e.x
+                if (!e.isShiftDown) {
+                    selectedRanges.clear()
+                    repaint()
+                }
             }
 
             override fun mouseClicked(e: MouseEvent?) {
                 e ?: return
+                if (!JBSwingUtilities.isLeftMouseButton(e)) return
                 val rangeUnderClick = getEnclosingWordRange(e.x)
-                logger.info("Clicked=$rangeUnderClick")
                 if (rangeUnderClick.empty) return
-                if (e.isControlDown) {
+                logger.info("Clicked=$rangeUnderClick")
+                if (e.isShiftDown) {
+                    logger.info("Shift down")
                     if (rangeUnderClick in selectedRanges) {
-                        selectedRanges.union(rangeUnderClick)
-                    } else {
                         selectedRanges.exclude(rangeUnderClick)
+                    } else {
+                        selectedRanges.union(rangeUnderClick)
                     }
+                    logger.info(selectedRanges.toString())
                 } else {
                     selectedRanges.clear()
                     selectedRanges.union(rangeUnderClick)
                 }
             }
 
-            override fun mouseExited(e: MouseEvent?) {
-            }
-
-            override fun mousePressed(e: MouseEvent?) {
+            override fun mouseDragged(e: MouseEvent?) {
+                e ?: return
+                if (isControlDown != UIUtil.isControlKeyDown(e)) mousePressedStartCoordinate = e.x
+                isControlDown = UIUtil.isControlKeyDown(e)
+                val border = ClosedIntRange(
+                        min(mousePressedStartCoordinate, e.x),
+                        max(mousePressedStartCoordinate, e.x)
+                )
+                tempSelectedRange = if (isControlDown) {
+                    border
+                } else {
+                    getCoveredRange(border).also { println(it) }
+                }
+                repaint()
             }
         }
 
@@ -123,10 +154,16 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
             extent = maximum
             background = Color.WHITE
             addMouseListener(mouseListener)
-            addMouseMotionListener(mouseMotionListener)
+            addMouseMotionListener(mouseListener)
             logger.info("Model constraints: min=$minimum, value=$value, extent=$extent, max=$maximum")
         }
 
+        private fun getCoveredRange(extent: ClosedIntRange): ClosedIntRange {
+            val coordinates = wordData.map { it.coordinates }
+            val left = coordinates.find { it.end >= extent.start }?.start ?: return ClosedIntRange.EMPTY_RANGE
+            val right = coordinates.findLast { it.start <= extent.end }?.end ?: return ClosedIntRange.EMPTY_RANGE
+            return ClosedIntRange(left, right)
+        }
 
         override fun setMaximum(newMaximum: Int) {
             model.maximum = minOf(max(newMaximum, (statProvider.totalFrames / maxSamplesPerChunk).floorToInt()),
@@ -137,10 +174,6 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
         private fun getEnclosingWordRange(coordinate: Int): ClosedIntRange {
             val enclosingWord = wordData.find { it.coordinates.contains(coordinate) }
             return enclosingWord?.coordinates ?: ClosedIntRange.EMPTY_RANGE
-        }
-
-        private fun invertSelection(range: ClosedIntRange) {
-
         }
 
         fun zoomOut() {
@@ -157,7 +190,7 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
         }
 
         private fun cleanCache() {
-            dataCache = null
+            dataCache = listOf(AveragedSampleData())
             cachedRange = null
             hoveredRange = ClosedIntRange.EMPTY_RANGE
             selectedRanges.clear()
@@ -173,28 +206,33 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
             graphics2d.drawSelectedRanges()
             graphics2d.drawHorizontalLine()
             synchronized(this) {
-                if (cachedRange?.intersects(visibleRange) == true) {
-                    graphics2d.drawAveragedWaveform(dataCache!![0])
-                } else {
+                if (cachedRange?.intersects(visibleRange) != true) {
                     ApplicationManager.getApplication().executeOnPooledThread {
-                        statProvider.getAveragedSampleData(maximum, drawRange).also {
-                            synchronized(this@UnderlyingPanel) {
-                                dataCache = it
-                                cachedRange = visibleRange
-                            }
-                            ApplicationManager.getApplication().invokeLater { this@UnderlyingPanel.repaint() }
+                        val result = statProvider.getAveragedSampleData(maximum, drawRange)
+                        synchronized(this@UnderlyingPanel) {
+                            dataCache = result
+                            cachedRange = visibleRange
                         }
+                        ApplicationManager.getApplication().invokeLater { this@UnderlyingPanel.repaint() }
                     }
                 }
+                graphics2d.drawAveragedWaveform(dataCache[0])
             }
             graphics2d.drawWords()
         }
 
         private fun Graphics2D.drawSelectedRanges() {
-            val hoveredVisible = drawRange.intersect(hoveredRange)
-            if (!hoveredVisible.empty) {
-                color = Settings.currentSettings.selectionColor
-                fillRect(hoveredVisible.start, 0, hoveredVisible.length, height)
+            val usedRange = drawRange
+            drawSelectedRange(hoveredRange, usedRange)
+            drawSelectedRange(tempSelectedRange, usedRange)
+            selectedRanges.ranges.forEach { drawSelectedRange(it, usedRange) }
+        }
+
+        private fun Graphics2D.drawSelectedRange(selected: ClosedIntRange, border: ClosedIntRange = drawRange) {
+            val selectedVisible = border.intersect(selected)
+            color = Settings.currentSettings.selectionColor
+            if (!selectedVisible.empty) {
+                fillRect(selectedVisible.start, 0, selectedVisible.length, height)
             }
         }
 
@@ -291,17 +329,5 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
     companion object {
         private const val maxSamplesPerChunk = 100000
         private const val minSamplesPerChunk = 20
-    }
-}
-
-
-fun main(args: Array<String>) {
-    JFrame("Hello").apply {
-        add(WaveformView(BasicSampleProvider(Paths.get("untitled2.wav"))).also {
-            isVisible = true
-        })
-        size = Dimension(1000, 400)
-        isVisible = true
-        preferredSize = Dimension(1000, 400)
     }
 }

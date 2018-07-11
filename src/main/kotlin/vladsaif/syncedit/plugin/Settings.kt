@@ -1,9 +1,13 @@
 package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
+import com.intellij.openapi.components.State
+import com.intellij.openapi.components.Storage
 import com.intellij.util.ui.UIUtil
 import java.awt.Color
 
+@State(name = "ScreencastEditorSettings")
 data class Settings(
         private val rootMeanSquareColorBrightTheme: Int = Color(100, 100, 220).rgb,
         private val peakColorBrightTheme: Int = Color(50, 50, 200).rgb,
@@ -20,7 +24,7 @@ data class Settings(
         val wordSeparatorWidth: Float = 2.0f,
         val peakStrokeWidth: Float = 1.2f,
         val rootMeanSquareStrokeWidth: Float = 1.0f
-        ) : PersistentStateComponent<Settings> {
+) : PersistentStateComponent<Settings> {
 
     val rootMeanSquareColor
         get() = if (!UIUtil.isUnderDarcula()) Color(rootMeanSquareColorBrightTheme)

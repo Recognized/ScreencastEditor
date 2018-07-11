@@ -100,6 +100,10 @@ class ClosedIntRangeUnion {
         return "ClosedIntRanges" + myRanges.joinToString(separator = ",", prefix = "(", postfix = ")")
     }
 
+    override fun equals(other: Any?): Boolean {
+        return other is ClosedIntRangeUnion && other.myRanges.equals(myRanges)
+    }
+
     companion object {
         private val INTERSECTS_CMP: Comparator<ClosedIntRange> = Comparator { a, b ->
             return@Comparator if (a.intersects(b)) 0 else a.start - b.start

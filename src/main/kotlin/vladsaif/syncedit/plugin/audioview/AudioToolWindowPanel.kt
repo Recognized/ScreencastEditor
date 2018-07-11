@@ -9,7 +9,7 @@ import java.nio.file.Path
 import javax.swing.Icon
 
 class AudioToolWindowPanel(file: Path) : SimpleToolWindowPanel(false), Disposable {
-    private val waveformView: WaveformView = WaveformView(BasicSampleProvider(file))
+    private val waveformView: WaveformView = WaveformView(BasicStatProvider(file))
 
     init {
         val group = DefaultActionGroup()

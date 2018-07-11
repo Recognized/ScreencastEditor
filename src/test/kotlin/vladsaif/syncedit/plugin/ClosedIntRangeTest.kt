@@ -51,7 +51,7 @@ class ClosedIntRangeTest {
         ranges.add(ClosedIntRange(250, 500))
         val result = ClosedIntRange.mergeAdjacent(ranges)
         assertEquals(1, result.size.toLong())
-        assertEquals(ClosedIntRange(100, 500), result.get(0))
+        assertEquals(ClosedIntRange(100, 500), result[0])
     }
 
     @Test

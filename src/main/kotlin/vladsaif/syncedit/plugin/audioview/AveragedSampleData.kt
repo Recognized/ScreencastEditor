@@ -7,4 +7,6 @@ data class AveragedSampleData(val size: Int, val skippedChunks: Int, val sampleS
     val rootMeanSquare = LongArray(size)
     val maxPeak
         get() = 1L shl (sampleSizeInBits - 1)
+
+    constructor() : this(0, 0, 16)
 }

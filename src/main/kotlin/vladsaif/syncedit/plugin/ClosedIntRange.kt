@@ -53,6 +53,12 @@ data class ClosedIntRange(val start: Int, val end: Int) : Comparable<ClosedIntRa
         return "[$start, $end]"
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (other !is ClosedIntRange) return false
+        if (empty && other.empty) return true
+        return start == other.start && end == other.end
+    }
+
     companion object {
 
         val EMPTY_RANGE = ClosedIntRange(0, -1)
