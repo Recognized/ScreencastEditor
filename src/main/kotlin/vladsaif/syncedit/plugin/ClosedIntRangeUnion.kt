@@ -1,5 +1,8 @@
 package vladsaif.syncedit.plugin
 
+import kotlin.math.max
+import kotlin.math.min
+
 class ClosedIntRangeUnion {
 
     private var lastCalculated: ClosedIntRange? = null
@@ -60,10 +63,19 @@ class ClosedIntRangeUnion {
     fun union(range: ClosedIntRange) {
         if (range.empty) return
         lastCalculated = null
-        myRanges.add(range)
-        val merged = ClosedIntRange.mergeAdjacent(myRanges)
-        myRanges.clear()
-        myRanges.addAll(merged)
+        val startPos = myRanges.binarySearch(ClosedIntRange.from(range.start - 1, 1), INTERSECTS_CMP)
+        val endPos = myRanges.binarySearch(ClosedIntRange.from(range.end + 1, 1), INTERSECTS_CMP)
+        val lastTouched = if (endPos < 0) toInsertPosition(endPos) - 1 else endPos
+        val toEdit = myRanges.subList(toInsertPosition(startPos), lastTouched + 1)
+        if (!toEdit.isEmpty()) {
+            val oldStart = toEdit[0].start
+            val oldEnd = toEdit.last().end
+            // Clear all touched
+            toEdit.clear()
+            toEdit.add(ClosedIntRange(min(oldStart, range.start), max(oldEnd, range.end)))
+        } else {
+            toEdit.add(range)
+        }
     }
 
     fun impose(range: ClosedIntRange): ClosedIntRange {

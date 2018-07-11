@@ -2,6 +2,10 @@ package vladsaif.syncedit.plugin.audioview
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.ui.popup.Balloon
+import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.ui.awt.RelativePoint
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollBar
 import com.intellij.ui.components.JBScrollPane
@@ -19,6 +23,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 private val logger = logger<WaveformView>()
+
 class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(statProvider)) {
     private val panel = viewport.view as UnderlyingPanel
     var wordData by Alias(panel::wordData)
@@ -32,6 +37,7 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
             panel.value = horizontalScrollBar.value
             panel.repaint()
         }
+//        horizontalScrollBar.model = panel
     }
 
     fun zoomOut() {
@@ -68,9 +74,10 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
         private var cachedRange: ClosedIntRange? = null
         private var dataCache = listOf(AveragedSampleData())
         private val selectedRanges = ClosedIntRangeUnion()
-        private var hoveredRange = ClosedIntRange.EMPTY_RANGE
         private var tempSelectedRange = ClosedIntRange.EMPTY_RANGE
         private var mousePressedStartCoordinate = 0
+        private var previousBalloon: Balloon? = null
+        private var previousShownWord: Word? = null
         var wordData = listOf<Word>()
             set(value) {
                 field = value.sorted()
@@ -81,13 +88,15 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
 
             override fun mouseMoved(e: MouseEvent?) {
                 e ?: return
-                val previous = hoveredRange
-                hoveredRange = if (!UIUtil.isControlKeyDown(e)) {
-                    getEnclosingWordRange(e.x)
+                if (UIUtil.isControlKeyDown(e)) {
+                    val enclosingWord = getEnclosingWord(e.x)
+                    if (previousShownWord != enclosingWord || previousBalloon?.wasFadedOut() == true) {
+                        previousShownWord = enclosingWord
+                        showWordLabel(enclosingWord ?: return, e.point)
+                    }
                 } else {
                     ClosedIntRange.EMPTY_RANGE
                 }
-                if (hoveredRange != previous) repaint()
             }
 
             override fun mouseReleased(e: MouseEvent?) {
@@ -102,7 +111,6 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
             override fun mousePressed(e: MouseEvent?) {
                 e ?: return
                 logger.info("mouse pressed")
-                hoveredRange = ClosedIntRange.EMPTY_RANGE
                 mousePressedStartCoordinate = e.x
                 if (!e.isShiftDown) {
                     selectedRanges.clear()
@@ -128,6 +136,7 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
                     selectedRanges.clear()
                     selectedRanges.union(rangeUnderClick)
                 }
+                repaint()
             }
 
             override fun mouseDragged(e: MouseEvent?) {
@@ -158,6 +167,19 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
             logger.info("Model constraints: min=$minimum, value=$value, extent=$extent, max=$maximum")
         }
 
+        private fun showWordLabel(word: Word, point: Point) {
+            if (previousBalloon?.wasFadedOut() == false) {
+                previousBalloon?.hide()
+            }
+            previousBalloon = JBPopupFactory.getInstance().createBalloonBuilder(JBLabel(word.text))
+                    .setFadeoutTime(3000)
+                    .createBalloon()
+                    .apply {
+                        setAnimationEnabled(false)
+                        show(RelativePoint(this@UnderlyingPanel, point), Balloon.Position.above)
+                    }
+        }
+
         private fun getCoveredRange(extent: ClosedIntRange): ClosedIntRange {
             val coordinates = wordData.map { it.coordinates }
             val left = coordinates.find { it.end >= extent.start }?.start ?: return ClosedIntRange.EMPTY_RANGE
@@ -170,6 +192,8 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
                     (statProvider.totalFrames / minSamplesPerChunk).floorToInt(),
                     Int.MAX_VALUE / minSamplesPerChunk)
         }
+
+        private fun getEnclosingWord(coordinate: Int) = wordData.find { it.coordinates.contains(coordinate) }
 
         private fun getEnclosingWordRange(coordinate: Int): ClosedIntRange {
             val enclosingWord = wordData.find { it.coordinates.contains(coordinate) }
@@ -192,8 +216,8 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
         private fun cleanCache() {
             dataCache = listOf(AveragedSampleData())
             cachedRange = null
-            hoveredRange = ClosedIntRange.EMPTY_RANGE
             selectedRanges.clear()
+            tempSelectedRange = ClosedIntRange.EMPTY_RANGE
         }
 
         override fun getPreferredSize() = Dimension(maximum, parent.height)
@@ -223,7 +247,6 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
 
         private fun Graphics2D.drawSelectedRanges() {
             val usedRange = drawRange
-            drawSelectedRange(hoveredRange, usedRange)
             drawSelectedRange(tempSelectedRange, usedRange)
             selectedRanges.ranges.forEach { drawSelectedRange(it, usedRange) }
         }
