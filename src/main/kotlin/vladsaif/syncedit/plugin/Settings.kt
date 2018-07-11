@@ -1,10 +1,7 @@
 package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.State
-import com.intellij.openapi.components.Storage
-import com.intellij.util.ui.UIUtil
 import java.awt.Color
 
 @State(name = "ScreencastEditorSettings")
@@ -19,32 +16,24 @@ data class Settings(
         private val peakColorDarcula: Int = Color(96, 240, 112).rgb,
         private val wordSeparatorColorDarcula: Int = Color(255, 164, 160).rgb,
         private val wordColorDarcula: Int = Color(255, 164, 160).rgb,
-        private val selectedRangeColorDacrula: Int = Color(123, 123, 123).rgb,
+        private val selectedRangeColorDarcula: Int = Color(123, 123, 123).rgb,
 
-        val wordSeparatorWidth: Float = 2.0f,
-        val peakStrokeWidth: Float = 1.2f,
-        val rootMeanSquareStrokeWidth: Float = 1.0f
+        private val wordSeparatorWidthDp: Float = 1.0f,
+        private val peakStrokeWidthDp: Float = 1.2f,
+        private val rootMeanSquareStrokeWidthDp: Float = 1.0f,
+        private val dashWidthDp: Float = 10f
 ) : PersistentStateComponent<Settings> {
 
-    val rootMeanSquareColor
-        get() = if (!UIUtil.isUnderDarcula()) Color(rootMeanSquareColorBrightTheme)
-        else Color(rootMeanSquareColorDarcula)
+    val rootMeanSquareColor by Theme(bright = rootMeanSquareColorBrightTheme, dark = rootMeanSquareColorDarcula)
+    val peakColor by Theme(bright = peakColorBrightTheme, dark = peakColorDarcula)
+    val wordSeparatorColor by Theme(bright = wordSeparatorColorBrightTheme, dark = wordSeparatorColorDarcula)
+    val wordColor by Theme(bright = wordColorBrightTheme, dark = wordColorDarcula)
+    val selectionColor by Theme(bright = selectedRangeColorBrightTheme, dark = selectedRangeColorDarcula)
 
-    val peakColor
-        get() = if (!UIUtil.isUnderDarcula()) Color(peakColorBrightTheme)
-        else Color(peakColorDarcula)
-
-    val wordSeparatorColor
-        get() = if (!UIUtil.isUnderDarcula()) Color(wordSeparatorColorBrightTheme)
-        else Color(wordSeparatorColorDarcula)
-
-    val wordColor
-        get() = if (!UIUtil.isUnderDarcula()) Color(wordColorBrightTheme)
-        else Color(wordColorDarcula)
-
-    val selectionColor
-        get() = if (!UIUtil.isUnderDarcula()) Color(selectedRangeColorBrightTheme)
-        else Color(selectedRangeColorDacrula)
+    val wordSeparatorWidth by DpConverter(this::wordSeparatorWidthDp)
+    val peakStrokeWidth by DpConverter(this::peakStrokeWidthDp)
+    val rootMeanSquareStrokeWidth by DpConverter(this::rootMeanSquareStrokeWidthDp)
+    val dashWidth by DpConverter(this::dashWidthDp)
 
     override fun getState(): Settings? = currentSettings
 

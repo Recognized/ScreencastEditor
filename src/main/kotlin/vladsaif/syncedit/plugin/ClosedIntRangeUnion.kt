@@ -116,6 +116,10 @@ class ClosedIntRangeUnion {
         return other is ClosedIntRangeUnion && other.myRanges.equals(myRanges)
     }
 
+    override fun hashCode(): Int {
+        return myRanges.hashCode()
+    }
+
     companion object {
         private val INTERSECTS_CMP: Comparator<ClosedIntRange> = Comparator { a, b ->
             return@Comparator if (a.intersects(b)) 0 else a.start - b.start

@@ -290,7 +290,7 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
                         BasicStroke.CAP_BUTT,
                         BasicStroke.JOIN_BEVEL,
                         0f,
-                        FloatArray(1) { 10.0f },
+                        FloatArray(1) { Settings.currentSettings.dashWidth },
                         0f)
                 if (leftBound > usedRange.start) {
                     drawLine(leftBound, 0, leftBound, height)
@@ -315,7 +315,7 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
                         BasicStroke.CAP_BUTT,
                         BasicStroke.JOIN_BEVEL,
                         0f,
-                        FloatArray(1) { 10.0f },
+                        FloatArray(1) { Settings.currentSettings.dashWidth },
                         0f)
                 drawLine(x1, height / 6, x2, height / 6)
             }

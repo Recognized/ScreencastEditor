@@ -59,6 +59,10 @@ data class ClosedIntRange(val start: Int, val end: Int) : Comparable<ClosedIntRa
         return start == other.start && end == other.end
     }
 
+    override fun hashCode(): Int {
+        return if (empty) 0 else start + end
+    }
+
     companion object {
 
         infix fun Int.clr(other: Int) = ClosedIntRange(this, other)
