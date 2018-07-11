@@ -77,7 +77,6 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
         private var tempSelectedRange = ClosedIntRange.EMPTY_RANGE
         private var mousePressedStartCoordinate = 0
         private var previousBalloon: Balloon? = null
-        private var previousShownWord: Word? = null
         var wordData = listOf<Word>()
             set(value) {
                 field = value.sorted()
@@ -90,10 +89,7 @@ class WaveformView(statProvider: StatProvider) : JBScrollPane(UnderlyingPanel(st
                 e ?: return
                 if (UIUtil.isControlKeyDown(e)) {
                     val enclosingWord = getEnclosingWord(e.x)
-                    if (previousShownWord != enclosingWord || previousBalloon?.wasFadedOut() == true) {
-                        previousShownWord = enclosingWord
-                        showWordLabel(enclosingWord ?: return, e.point)
-                    }
+                    showWordLabel(enclosingWord ?: return, e.point)
                 } else {
                     ClosedIntRange.EMPTY_RANGE
                 }
