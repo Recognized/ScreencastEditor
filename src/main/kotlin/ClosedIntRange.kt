@@ -65,6 +65,10 @@ data class ClosedIntRange(val start: Int, val end: Int) : Comparable<ClosedIntRa
 
     companion object {
 
+        val INTERSECTS_CMP = Comparator<ClosedIntRange> { a, b ->
+            return@Comparator if (a.intersects(b)) 0 else a.start - b.start
+        }
+
         infix fun Int.clr(other: Int) = ClosedIntRange(this, other)
 
         val EMPTY_RANGE = ClosedIntRange(0, -1)

@@ -40,7 +40,7 @@
                 <!--text="Get transcript" description="Get transcript of audio file">-->
             <!--<add-to-group group-id="ToolsMenu" anchor="last"/>-->
         <!--</action>-->
-        <action id="vladsaif.syncedit.plugin.audioview.OpenAudioAction" class="vladsaif.syncedit.plugin.audioview.OpenAudioAction"
+        <action id="vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction" class="vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction"
                 text="Open audio" description="Opens audio waveform view">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>

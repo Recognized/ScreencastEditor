@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview
 
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
-import java.io.Closeable
+import vladsaif.syncedit.plugin.getLog
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.min
@@ -9,8 +9,11 @@ import kotlin.math.min
 /**
  * Working only for formats which sampleSizeInBits >= 8
  */
-class AudioFrameStream(private val underlyingStream: AudioInputStream, skippedFrames: Long, readFrames: Long)
-    : Closeable by underlyingStream {
+class AudioSampler(
+        val underlyingStream: AudioInputStream,
+        skippedFrames: Long,
+        readFrames: Long
+) : AutoCloseable by underlyingStream {
     val buffer = ByteArray(8192)
     var pos = 0
     var endPos = 0
@@ -35,10 +38,26 @@ class AudioFrameStream(private val underlyingStream: AudioInputStream, skippedFr
         leftBytes = Long.MAX_VALUE
     }
 
-    inline fun forEach(consumer: (Long) -> Unit) {
+    /**
+     * Iterate over each sample in this stream.
+     *
+     * Samples are ordered firstly by frames, then by channels.
+     */
+    inline fun forEachSample(consumer: (Long) -> Unit) {
         while (leftBytes != 0L) {
             if (pos == endPos) {
-                updateBuffer()
+                System.arraycopy(buffer, pos, buffer, 0, endPos - pos)
+                endPos -= pos
+                pos = 0
+                do {
+                    val ret = underlyingStream.read(
+                            buffer,
+                            endPos,
+                            min(min(leftBytes, Int.MAX_VALUE.toLong()).toInt(), buffer.size - endPos)
+                    )
+                    if (ret == -1) break
+                    endPos += ret
+                } while (ret == 0)
             }
             if (pos == endPos) break
             var bitPos = 0
@@ -64,23 +83,16 @@ class AudioFrameStream(private val underlyingStream: AudioInputStream, skippedFr
         }
     }
 
-    fun updateBuffer() {
-        System.arraycopy(buffer, pos, buffer, 0, endPos - pos)
-        endPos -= pos
-        pos = 0
-        do {
-            val ret = underlyingStream.read(buffer, endPos, min(min(leftBytes, Int.MAX_VALUE.toLong()).toInt(), buffer.size - endPos))
-            if (ret == -1) break
-            endPos += ret
-        } while (ret == 0)
-    }
-
     private fun AudioInputStream.skipFrames(count: Long) {
         val bytesToSkip = count * format.frameSize
         var skippedBytes = 0L
         while (bytesToSkip != skippedBytes) {
             skippedBytes += skip(bytesToSkip - skippedBytes)
         }
-        println("Requested skip $count frames, skipped $skippedBytes bytes")
+        logger.info("Requested skip $count frames, skipped $skippedBytes bytes")
+    }
+
+    companion object {
+        private val logger = getLog()
     }
 }
