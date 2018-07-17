@@ -4,8 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.Player
-import vladsaif.syncedit.plugin.modFloor
-import vladsaif.syncedit.plugin.toDecodeFormat
+import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
 import java.nio.file.Path
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
@@ -132,4 +131,8 @@ class PlayerImpl(private val file: Path) : Player {
     override fun play() {
         source.start()
     }
+}
+
+fun Int.modFloor(modulus: Int): Int {
+    return this - this % modulus
 }

@@ -1,11 +1,13 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
+import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import org.picocontainer.Disposable
 import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.ClosedLongRange
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.*
-import vladsaif.syncedit.plugin.showNotification
 import java.awt.Dimension
 import java.io.IOException
 import javax.swing.JScrollPane
@@ -148,4 +150,12 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
         scrollPane.viewport.repaint()
         scrollPane.viewport.view.repaint()
     }
+}
+
+fun showNotification(
+        content: String,
+        title: String = "Error",
+        type: NotificationType = NotificationType.ERROR
+) {
+    Notifications.Bus.notify(Notification("Screencast Editor", title, content, type))
 }

@@ -4,8 +4,8 @@ import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.audioview.AudioSampler
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.audioview.waveform.AveragedSampleData
+import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.floorToInt
-import vladsaif.syncedit.plugin.toDecodeFormat
 import java.nio.file.Path
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.UnsupportedAudioFileException
@@ -17,7 +17,7 @@ import kotlin.math.sqrt
  * @constructor
  * @throws UnsupportedAudioFileException If audio file cannot be recognized by audio system
  * or if it cannot be converted to decode format.
- * @throws IOException If I/O error occurs.
+ * @throws java.io.IOException If I/O error occurs.
  */
 class BasicStatProvider(file: Path) : AudioDataModel {
     private val file = file.toAbsolutePath().toFile()
@@ -70,13 +70,14 @@ class BasicStatProvider(file: Path) : AudioDataModel {
     }
 
     override fun getChunk(maxChunks: Int, frame: Long): Int {
-        var chunks = 0L
+        val bigChunkRange = getBigChunkRange(maxChunks)
         val framesPerChunk = (totalFrames / maxChunks).toInt()
-        if (frame > (totalFrames % framesPerChunk)) {
-            chunks += (frame - (totalFrames % framesPerChunk)) / framesPerChunk
+        val res = if (frame >= bigChunkRange.length * (framesPerChunk + 1)) {
+            (bigChunkRange.length + (frame - bigChunkRange.length * (framesPerChunk + 1)) / framesPerChunk)
+        } else {
+            (frame / (framesPerChunk + 1))
         }
-        chunks += min(frame, (totalFrames % framesPerChunk)) / (framesPerChunk + 1)
-        return chunks.floorToInt()
+        return res.floorToInt()
     }
 
     private fun countStat(audio: AudioSampler,

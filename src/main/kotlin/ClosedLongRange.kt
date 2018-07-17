@@ -114,3 +114,8 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
         }
     }
 }
+
+fun Long.floorToInt(): Int {
+    return if (this > 0) min(this, Int.MAX_VALUE.toLong()).toInt()
+    else max(this, Int.MIN_VALUE.toLong()).toInt()
+}

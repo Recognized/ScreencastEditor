@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import vladsaif.syncedit.plugin.ClosedIntRange
+import javax.sound.sampled.AudioFormat
 
 interface AudioDataModel {
     /**
@@ -35,3 +36,11 @@ interface AudioDataModel {
     fun getStartFrame(maxChunks: Int, chunk: Int): Long
 }
 
+fun AudioFormat.toDecodeFormat() =
+        AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                sampleRate,
+                16,
+                channels,
+                channels * 2,
+                sampleRate,
+                false)

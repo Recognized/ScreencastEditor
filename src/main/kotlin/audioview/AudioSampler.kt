@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview
 
+import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
-import vladsaif.syncedit.plugin.getLog
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.min
@@ -93,6 +93,6 @@ class AudioSampler(
     }
 
     companion object {
-        private val logger = getLog()
+        private val logger = logger<AudioSampler>()
     }
 }
