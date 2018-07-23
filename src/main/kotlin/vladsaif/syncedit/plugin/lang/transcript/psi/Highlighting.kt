@@ -34,7 +34,7 @@ class TranscriptHighlighter : SyntaxHighlighterBase() {
 
 @Suppress("unused")
 object Highlighters {
-    val STRING = createTextAttributesKey("STRING_LITERAL", DefaultLanguageHighlighterColors.GLOBAL_VARIABLE)
+    val STRING = createTextAttributesKey("STRING_LITERAL", DefaultLanguageHighlighterColors.STRING)
     val TIME_OFFSET = createTextAttributesKey("TIME_OFFSET", DefaultLanguageHighlighterColors.METADATA)
     val COMMENT = createTextAttributesKey("SIMPLE_COMMENT", DefaultLanguageHighlighterColors.LINE_COMMENT)
     val BAD_CHARACTER = createTextAttributesKey("SIMPLE_BAD_CHARACTER", HighlighterColors.BAD_CHARACTER)

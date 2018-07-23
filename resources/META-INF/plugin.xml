@@ -15,7 +15,7 @@
     <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.TranscriptFileEditorProvider"/>
+        <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
         <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptViewFileTypeFactory"/>
         <lang.parserDefinition language="TranscriptViewLanguage"
                                implementationClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptParserDefinition"/>
