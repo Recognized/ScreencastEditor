@@ -1,19 +1,28 @@
 package vladsaif.syncedit.plugin
 
 import java.util.*
+import javax.xml.bind.annotation.XmlAccessType
+import javax.xml.bind.annotation.XmlAccessorType
+import javax.xml.bind.annotation.XmlAttribute
 import kotlin.math.max
 import kotlin.math.min
 
 /**
  * Represents time range with included ends
  */
-data class ClosedIntRange(val start: Int, val end: Int) : Comparable<ClosedIntRange> {
+@XmlAccessorType(XmlAccessType.FIELD)
+data class ClosedIntRange(
+        @field:XmlAttribute val start: Int,
+        @field:XmlAttribute val end: Int
+) : Comparable<ClosedIntRange> {
 
     val length: Int
         get() = max(end - start + 1, 0)
 
     val empty: Boolean
         get() = start > end
+
+    private constructor() : this(0, -1)
 
     operator fun contains(other: ClosedIntRange): Boolean {
         return start <= other.start && other.end <= end

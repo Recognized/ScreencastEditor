@@ -21,7 +21,7 @@ import com.intellij.util.ui.update.UiNotifyConnector
 import org.jdom.Element
 import org.jetbrains.annotations.NonNls
 import vladsaif.syncedit.plugin.lang.transcript.TranscriptData
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptViewFileType
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import java.util.*
 
 class TranscriptEditorProvider : FileEditorProvider {
@@ -31,10 +31,18 @@ class TranscriptEditorProvider : FileEditorProvider {
                 file.isValid &&
                 !file.isDirectory &&
                 !file.fileType.isBinary
+        val message = when {
+            !file.isValid -> "File not valid"
+            file.isDirectory -> "Is directory"
+            file.fileType.isBinary -> "Is binary"
+            else -> "OK"
+        }
+        println("$message : $file")
         val ret = accepted && try {
             TranscriptData.createFrom(file.inputStream)
             true
         } catch (ex: Throwable) {
+            println("Not accepted because file is malformed")
             false
         }
         println(ret)
@@ -51,7 +59,7 @@ class TranscriptEditorProvider : FileEditorProvider {
         }
         val psiFile = PsiFileFactory.getInstance(project).createFileFromText(
                 file.nameWithoutExtension,
-                TranscriptViewFileType,
+                TranscriptFileType,
                 text,
                 0,
                 true,

@@ -98,16 +98,14 @@ class TextEditorState : FileEditorState {
                 return false
             }
 
-            val caretState = other as CaretState?
-
-            if (COLUMN != caretState!!.COLUMN) return false
-            if (LINE != caretState.LINE) return false
-            if (LEAN_FORWARD != caretState.LEAN_FORWARD) return false
-            if (VISUAL_COLUMN_ADJUSTMENT != caretState.VISUAL_COLUMN_ADJUSTMENT) return false
-            if (SELECTION_START_LINE != caretState.SELECTION_START_LINE) return false
-            if (SELECTION_START_COLUMN != caretState.SELECTION_START_COLUMN) return false
-            if (SELECTION_END_LINE != caretState.SELECTION_END_LINE) return false
-            return SELECTION_END_COLUMN == caretState.SELECTION_END_COLUMN
+            if (COLUMN != other.COLUMN) return false
+            if (LINE != other.LINE) return false
+            if (LEAN_FORWARD != other.LEAN_FORWARD) return false
+            if (VISUAL_COLUMN_ADJUSTMENT != other.VISUAL_COLUMN_ADJUSTMENT) return false
+            if (SELECTION_START_LINE != other.SELECTION_START_LINE) return false
+            if (SELECTION_START_COLUMN != other.SELECTION_START_COLUMN) return false
+            if (SELECTION_END_LINE != other.SELECTION_END_LINE) return false
+            return SELECTION_END_COLUMN == other.SELECTION_END_COLUMN
 
         }
 

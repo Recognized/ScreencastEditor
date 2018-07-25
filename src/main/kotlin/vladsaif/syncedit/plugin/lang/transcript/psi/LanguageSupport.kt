@@ -12,21 +12,21 @@ import javax.swing.Icon
 object TranscriptViewLanguage : Language("TranscriptViewLanguage")
 
 // Do not create file of this file type manually
-object TranscriptViewFileType : LanguageFileType(TranscriptViewLanguage) {
+object TranscriptFileType : LanguageFileType(TranscriptViewLanguage) {
     private val extension = UUID.randomUUID().toString()
 
     override fun getName() = "Transcript file"
 
     override fun getDescription() = "Transcript PSI Skeleton"
 
-    override fun getDefaultExtension() = "secretext"
+    override fun getDefaultExtension() = extension
 
     override fun getIcon(): Icon? = null
 }
 
-class TranscriptViewFileTypeFactory : FileTypeFactory() {
+class TranscriptFileTypeFactory : FileTypeFactory() {
     override fun createFileTypes(consumer: FileTypeConsumer) {
-        consumer.consume(TranscriptViewFileType)
+        consumer.consume(TranscriptFileType)
     }
 }
 
@@ -38,7 +38,6 @@ object InternalFileType : LanguageFileType(XMLLanguage.INSTANCE) {
     override fun getDefaultExtension() = "transcript"
 
     override fun getDescription() = "Transcript file type"
-
 }
 
 class InternalTranscriptFileTypeFactory : FileTypeFactory() {

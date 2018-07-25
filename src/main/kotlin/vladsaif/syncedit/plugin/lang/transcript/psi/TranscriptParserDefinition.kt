@@ -11,6 +11,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
+import vladsaif.syncedit.plugin.lang.transcript.TranscriptModel
 
 class TranscriptLexerAdapter : FlexAdapter(TranscriptLexer(null))
 
@@ -31,7 +32,7 @@ class TranscriptParserDefinition : ParserDefinition {
 
     override fun createParser(project: Project): PsiParser {
         elementCounter = 0
-        return ManualParser()
+        return TranscriptParser()
     }
 
     override fun getFileNodeType(): IFileElementType {
@@ -39,7 +40,7 @@ class TranscriptParserDefinition : ParserDefinition {
     }
 
     override fun createFile(viewProvider: FileViewProvider): PsiFile {
-        return TranscriptFile(viewProvider)
+        return TranscriptPsiFile(TranscriptModel(), viewProvider)
     }
 
     override fun spaceExistanceTypeBetweenTokens(left: ASTNode, right: ASTNode): ParserDefinition.SpaceRequirements {
@@ -51,7 +52,7 @@ class TranscriptParserDefinition : ParserDefinition {
     }
 
     companion object {
-        val STRINGS = TokenSet.create(ManualParser.WORD)
+        val STRINGS = TokenSet.create(TranscriptParser.WORD)
         val FILE = IFileElementType(TranscriptViewLanguage)
     }
 }

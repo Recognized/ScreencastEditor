@@ -16,23 +16,18 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
-        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptViewFileTypeFactory"/>
+        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
         <lang.parserDefinition language="TranscriptViewLanguage"
                                implementationClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptParserDefinition"/>
-        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
+        <fileTypeFactory
+                implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
         <lang.syntaxHighlighterFactory language="TranscriptViewLanguage"
-                                       implementationClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptHighlighterFactory"/>
-        <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"/>
-        <!--Declare the application level service -->
-        <!--<applicationService serviceInterface="vladsaif.syncedit.plugin.synchronization.SynchronizationManager"-->
-        <!--serviceImplementation="vladsaif.syncedit.plugin.synchronization.impl.SynchronizationManagerImpl"/>-->
+                                       implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
+        <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
+                       order="first"/>
+        <annotator language="TranscriptViewLanguage" id="transcriptAnnotator"
+                   implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
     </extensions>
-    <!--<project-components>-->
-    <!--<component>-->
-    <!--<implementation-class>vladsaif.syncedit.plugin.synchronization.EditorFactoryListenerComponent-->
-    <!--</implementation-class>-->
-    <!--</component>-->
-    <!--</project-components>-->
     <actions>
         <!--<action id="downloadTranscriptAction" class="vladsaif.syncedit.plugin.actions.RecognizeAudioAction"-->
         <!--text="Get transcript" description="Get transcript of audio file">-->

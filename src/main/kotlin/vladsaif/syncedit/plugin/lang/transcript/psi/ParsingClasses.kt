@@ -15,7 +15,7 @@ class TranscriptTokenType(debugName: String) : IElementType(debugName, Transcrip
     }
 }
 
-class ManualParser : PsiParser, LightPsiParser {
+class TranscriptParser : PsiParser, LightPsiParser {
     override fun parse(root: IElementType, builder: PsiBuilder): ASTNode {
         parseLight(root, builder)
         return builder.treeBuilt

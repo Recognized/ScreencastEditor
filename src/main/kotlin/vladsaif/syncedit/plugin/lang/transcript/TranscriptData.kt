@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.lang.transcript
 
+import vladsaif.syncedit.plugin.ClosedIntRange
 import java.io.InputStream
 import java.io.StringReader
 import javax.xml.bind.JAXB
@@ -8,11 +9,12 @@ import javax.xml.bind.Marshaller
 import javax.xml.bind.annotation.*
 
 @XmlRootElement(name = "transcript")
-data class TranscriptData(
-        @field:[XmlElement(name = "word") XmlElementWrapper(name = "words")]
-        val words: List<WordData>) {
+class TranscriptData(
+        @field:[XmlElement(name = "word") XmlElementWrapper(name = "words")] val words: List<WordData>
+) {
     val text
         get() = words.map(WordData::text).joinToString(separator = " ")
+
 
     // JAXB needs to access default constructor via reflection and add elements
     // so we may abuse fact that ArrayList can be assigned to kotlin List
@@ -21,18 +23,17 @@ data class TranscriptData(
 
     @XmlAccessorType(XmlAccessType.FIELD)
     data class WordData(
-            @field:XmlValue
-            val text: String,
-            @field:XmlAttribute
-            val start: Int,
-            @field:XmlAttribute
-            val end: Int,
-            @field:XmlAttribute
-            var visible: Boolean
+            @field:XmlElement val text: String,
+            @field:XmlElement val range: ClosedIntRange,
+            @field:XmlAttribute val visible: Boolean
     ) {
         // JAXB constructor
         @Suppress("unused")
-        private constructor() : this("", 0, 0, false)
+        private constructor() : this("", ClosedIntRange.EMPTY_RANGE, false)
+
+        companion object {
+            val EMPTY_DATA = WordData()
+        }
     }
 
     companion object {
@@ -43,11 +44,14 @@ data class TranscriptData(
         fun createFrom(xml: InputStream): TranscriptData {
             return JAXB.unmarshal(xml, TranscriptData::class.java)
         }
+
+        val EMPTY_DATA = TranscriptData(listOf())
     }
 }
 
 fun main(args: Array<String>) {
-    val data = listOf(TranscriptData.WordData("a", 0, 0, false), TranscriptData.WordData("a", 0, 0, false)).let {
+    val data = listOf(TranscriptData.WordData("a", ClosedIntRange(10, 20), false),
+            TranscriptData.WordData("a", ClosedIntRange(100, 200), false)).let {
         TranscriptData(it)
     }
     val context = JAXBContext.newInstance(TranscriptData::class.java)
@@ -58,8 +62,14 @@ fun main(args: Array<String>) {
     val obj = unmarshaler.unmarshal(StringReader("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <transcript>
     <words>
-        <word start="0" end="0" visible="false">a</word>
-        <word start="0" end="0" visible="false">a</word>
+        <word visible="false">
+            <text>a</text>
+            <range start="10" end="20"/>
+        </word>
+        <word visible="false">
+            <text>a</text>
+            <range start="100" end="200"/>
+        </word>
     </words>
 </transcript>""")) as TranscriptData
     println()

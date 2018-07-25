@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.lang.transcript.psi;
 import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
-import vladsaif.syncedit.plugin.lang.transcript.psi.ManualParser;
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptParser;
 
 %%
 
@@ -22,5 +22,5 @@ WORD_CHAR = [^\ \n\t\f]
 
 <YYINITIAL> {
     {WHITE_SPACE_CHAR}+             { return TokenType.WHITE_SPACE; }
-    {WORD_CHAR}+                    { return ManualParser.Companion.getWORD_TOKEN(); }
+    {WORD_CHAR}+                    { return TranscriptParser.Companion.getWORD_TOKEN(); }
 }

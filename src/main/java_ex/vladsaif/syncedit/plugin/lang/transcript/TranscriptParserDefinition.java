@@ -13,7 +13,7 @@ import com.intellij.psi.tree.TokenSet;
 import org.jetbrains.annotations.NotNull;
 import vladsaif.syncedit.plugin.lang.transcript.lexer.TranscriptLexerAdapter;
 import vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParser;
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFile;
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile;
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptTokenTypes;
 
 public class TranscriptParserDefinition implements ParserDefinition {
