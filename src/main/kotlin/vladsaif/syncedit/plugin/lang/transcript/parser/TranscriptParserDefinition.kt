@@ -1,9 +1,8 @@
-package vladsaif.syncedit.plugin.lang.transcript.psi
+package vladsaif.syncedit.plugin.lang.transcript.parser
 
 import com.intellij.lang.ASTNode
 import com.intellij.lang.ParserDefinition
 import com.intellij.lang.PsiParser
-import com.intellij.lexer.FlexAdapter
 import com.intellij.lexer.Lexer
 import com.intellij.openapi.project.Project
 import com.intellij.psi.FileViewProvider
@@ -12,8 +11,11 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
 import vladsaif.syncedit.plugin.lang.transcript.TranscriptModel
+import vladsaif.syncedit.plugin.lang.transcript.lexer.TranscriptLexerAdapter
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWordImpl
 
-class TranscriptLexerAdapter : FlexAdapter(TranscriptLexer(null))
 
 class TranscriptParserDefinition : ParserDefinition {
 
@@ -51,6 +53,6 @@ class TranscriptParserDefinition : ParserDefinition {
 
     companion object {
         val STRINGS = TokenSet.create(TranscriptParser.WORD)
-        val FILE = IFileElementType(TranscriptViewLanguage)
+        val FILE = IFileElementType(TranscriptLanguage)
     }
 }

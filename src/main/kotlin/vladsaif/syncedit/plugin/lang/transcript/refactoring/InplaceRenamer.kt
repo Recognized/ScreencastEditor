@@ -16,7 +16,7 @@ import com.intellij.refactoring.RefactoringBundle
 import com.intellij.util.containers.Stack
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
-class TranscriptInplaceRenamer(val editor: Editor) {
+class InplaceRenamer(val editor: Editor) {
     private val myHighlighters = mutableListOf<RangeHighlighter>()
 
     fun finish() {
@@ -96,14 +96,14 @@ class TranscriptInplaceRenamer(val editor: Editor) {
 
     companion object {
 
-        private val activeRenamers = Stack<TranscriptInplaceRenamer>()
+        private val activeRenamers = Stack<InplaceRenamer>()
         val GUARDED_BLOCKS: Key<List<RangeMarker>> = Key.create("GUARDER_BLOCKS")
 
         fun rename(editor: Editor, word: TranscriptWord) {
             if (!activeRenamers.isEmpty()) {
                 activeRenamers.peek().finish()
             }
-            val renamer = TranscriptInplaceRenamer(editor)
+            val renamer = InplaceRenamer(editor)
             activeRenamers.push(renamer)
             renamer.rename(word)
         }

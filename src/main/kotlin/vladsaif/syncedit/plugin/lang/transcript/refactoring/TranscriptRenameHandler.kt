@@ -33,10 +33,10 @@ class TranscriptRenameHandler : RenameHandler {
         if (!isRenaming(dataContext)) return let { println("not renaming") }
         val word = getWord(editor, file)
         if (word != null) {
-            TranscriptInplaceRenamer.rename(editor, word)
+            InplaceRenamer.rename(editor, word)
         } else {
             val otherWord = getSelectedWords(editor, file).firstOrNull() ?: return
-            TranscriptInplaceRenamer.rename(editor, otherWord)
+            InplaceRenamer.rename(editor, otherWord)
         }
     }
 

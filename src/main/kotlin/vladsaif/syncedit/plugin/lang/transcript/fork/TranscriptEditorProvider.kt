@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
+import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.*
 import com.intellij.openapi.project.Project
@@ -23,7 +24,7 @@ import org.jdom.Element
 import org.jetbrains.annotations.NonNls
 import vladsaif.syncedit.plugin.lang.transcript.TranscriptData
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
-import vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptInplaceRenamer
+import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
 import java.util.*
 
 class TranscriptEditorProvider : FileEditorProvider {
@@ -73,9 +74,9 @@ class TranscriptEditorProvider : FileEditorProvider {
                 isGreedyToLeft = true
                 isGreedyToRight = true
             }
-            editor.document.putUserData(TranscriptInplaceRenamer.GUARDED_BLOCKS, listOf(marker))
+            editor.document.putUserData(InplaceRenamer.GUARDED_BLOCKS, listOf(marker))
             with(editor.colorsScheme) {
-//                setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
+                setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
             }
             EditorActionManager.getInstance().setReadonlyFragmentModificationHandler(editor.document) { }
         }

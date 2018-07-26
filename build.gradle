@@ -27,7 +27,7 @@ import org.jetbrains.grammarkit.tasks.*
 
 task generateTranscriptLexer(type: GenerateLexer) {
     source = "grammar/Transcript.flex"
-    targetDir = "gen/vladsaif/syncedit/plugin/lang/transcript/psi"
+    targetDir = "gen/vladsaif/syncedit/plugin/lang/transcript/lexer"
     targetClass = "TranscriptLexer"
     purgeOldFiles = true
 }

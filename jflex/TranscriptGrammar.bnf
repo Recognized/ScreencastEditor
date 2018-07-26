@@ -9,8 +9,8 @@
   psiImplPackage="vladsaif.syncedit.plugin.lang.transcript.psi.impl"
 
   elementTypeHolderClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptTokenTypes"
-  elementTypeClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptElementType"
-  tokenTypeClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptTokenType"
+  elementTypeClass="vladsaif.syncedit.plugin.lang.transcript.lexer.TranscriptElementType"
+  tokenTypeClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptTokenType"
 }
 
 file ::= line*

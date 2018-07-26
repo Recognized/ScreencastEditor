@@ -1,9 +1,9 @@
-package vladsaif.syncedit.plugin.lang.transcript.psi;
+package vladsaif.syncedit.plugin.lang.transcript.lexer;
 
 import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptParser;
+import vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParser;
 
 %%
 

@@ -17,15 +17,15 @@
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
         <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
-        <lang.parserDefinition language="TranscriptViewLanguage"
-                               implementationClass="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptParserDefinition"/>
+        <lang.parserDefinition language="TranscriptLanguage"
+                               implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
         <fileTypeFactory
                 implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
-        <lang.syntaxHighlighterFactory language="TranscriptViewLanguage"
+        <lang.syntaxHighlighterFactory language="TranscriptLanguage"
                                        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
         <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
                        order="first"/>
-        <annotator language="TranscriptViewLanguage" id="transcriptAnnotator"
+        <annotator language="TranscriptLanguage" id="transcriptAnnotator"
                    implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
     </extensions>
     <actions>
