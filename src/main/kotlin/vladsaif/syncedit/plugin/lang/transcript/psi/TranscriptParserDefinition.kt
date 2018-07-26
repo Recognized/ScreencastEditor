@@ -16,7 +16,6 @@ import vladsaif.syncedit.plugin.lang.transcript.TranscriptModel
 class TranscriptLexerAdapter : FlexAdapter(TranscriptLexer(null))
 
 class TranscriptParserDefinition : ParserDefinition {
-    private var elementCounter = 0
 
     override fun createLexer(project: Project): Lexer {
         return TranscriptLexerAdapter()
@@ -31,7 +30,6 @@ class TranscriptParserDefinition : ParserDefinition {
     }
 
     override fun createParser(project: Project): PsiParser {
-        elementCounter = 0
         return TranscriptParser()
     }
 
@@ -48,7 +46,7 @@ class TranscriptParserDefinition : ParserDefinition {
     }
 
     override fun createElement(node: ASTNode): PsiElement {
-        return TranscriptWordImpl(node, elementCounter++)
+        return TranscriptWordImpl(node)
     }
 
     companion object {

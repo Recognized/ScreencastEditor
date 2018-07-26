@@ -12,7 +12,7 @@ import com.intellij.refactoring.rename.RenameHandler
 import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
-import kotlin.coroutines.experimental.buildSequence
+import vladsaif.syncedit.plugin.lang.transcript.psi.wordsBetween
 import kotlin.math.max
 
 private val logger = logger<TranscriptRenameHandler>()
@@ -24,7 +24,7 @@ class TranscriptRenameHandler : RenameHandler {
         dataContext ?: return false
         val editor = getEditor(dataContext) ?: return false
         val file = CommonDataKeys.PSI_FILE.getData(dataContext) as? TranscriptPsiFile ?: return false
-        return isSelectionContainsWords(getEffectiveSelection(editor), file)
+        return getWord(editor, file) != null || getSelectedWords(editor, file).any()
     }
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?, dataContext: DataContext?) {
@@ -48,27 +48,6 @@ class TranscriptRenameHandler : RenameHandler {
 
         private fun getEditor(context: DataContext?): Editor? {
             return CommonDataKeys.EDITOR.getData(context ?: return null)
-        }
-
-        private fun isSelectionContainsWords(selectionRange: ClosedIntRange, psiFile: TranscriptPsiFile): Boolean {
-            val bounds = getElementBounds(selectionRange, psiFile)
-            if (bounds != null) {
-                return getWordsBetween(bounds.first, bounds.second).any()
-            }
-            return false
-        }
-
-        private fun getWordsBetween(start: PsiElement, end: PsiElement) = buildSequence<TranscriptWord> {
-            var x: PsiElement? = start
-            while (true) {
-                if (x is TranscriptWord) {
-                    yield(x)
-                }
-                if (x == end || x == null) {
-                    break
-                }
-                x = x.nextSibling
-            }
         }
 
         private fun getElementBounds(textRange: ClosedIntRange, psiFile: TranscriptPsiFile): Pair<PsiElement, PsiElement>? {
@@ -95,13 +74,13 @@ class TranscriptRenameHandler : RenameHandler {
             val end = editor.caretModel.offset
             val range = ClosedIntRange(start, end)
             val elementBounds = getElementBounds(range, psiFile) ?: return null
-            return getWordsBetween(elementBounds.first, elementBounds.second).firstOrNull()
+            return wordsBetween(elementBounds.first, elementBounds.second).firstOrNull()
         }
 
         fun getSelectedWords(editor: Editor, psiFile: TranscriptPsiFile): List<TranscriptWord> {
             val selection = getEffectiveSelection(editor)
             val elementBounds = getElementBounds(selection, psiFile) ?: return listOf()
-            return getWordsBetween(elementBounds.first, elementBounds.second).toList()
+            return wordsBetween(elementBounds.first, elementBounds.second).toList()
         }
     }
 }

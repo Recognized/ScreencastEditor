@@ -13,6 +13,7 @@ class TranscriptPsiFile(val model: TranscriptModel, viewProvider: FileViewProvid
     override fun getFileType() = TranscriptFileType
 
     override fun toString() = "Transcript file"
+
 }
 
 interface TranscriptWord : PsiNameIdentifierOwner {
@@ -20,8 +21,17 @@ interface TranscriptWord : PsiNameIdentifierOwner {
     val hidden: Boolean
 }
 
-internal class TranscriptWordImpl(node: ASTNode, override val number: Int) : ASTWrapperPsiElement(node), TranscriptWord {
-    override val hidden = true
+internal class TranscriptWordImpl(node: ASTNode) : ASTWrapperPsiElement(node), TranscriptWord {
+    override val hidden = false
+    override val number: Int
+        get() {
+            var j = 0
+            for (word in wordsBetween(parent.firstChild, parent.lastChild)) {
+                if (word == this) return j
+                ++j
+            }
+            return -1
+        }
 
     override fun getNameIdentifier() = this
 

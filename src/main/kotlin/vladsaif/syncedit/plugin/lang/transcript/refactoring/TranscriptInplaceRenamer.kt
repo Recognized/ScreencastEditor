@@ -6,9 +6,11 @@ import com.intellij.codeInsight.template.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
 import com.intellij.refactoring.RefactoringBundle
 import com.intellij.util.containers.Stack
@@ -26,6 +28,14 @@ class TranscriptInplaceRenamer(val editor: Editor) {
                 highlightManager.removeSegmentHighlighter(editor, highlighter)
             }
         }
+        with(editor.document) {
+            getUserData(GUARDED_BLOCKS)?.forEach { removeGuardedBlock(it) }
+            val marker = createGuardedBlock(0, textLength).apply {
+                isGreedyToLeft = true
+                isGreedyToRight = true
+            }
+            putUserData(GUARDED_BLOCKS, listOf(marker))
+        }
     }
 
     private fun rename(word: TranscriptWord) {
@@ -33,6 +43,8 @@ class TranscriptInplaceRenamer(val editor: Editor) {
         myHighlighters.clear()
 
         val range = word.textRange
+
+        allowEditions(range)
 
         CommandProcessor.getInstance().executeCommand(editor.project, {
             ApplicationManager.getApplication().runWriteAction {
@@ -62,15 +74,35 @@ class TranscriptInplaceRenamer(val editor: Editor) {
         }, RefactoringBundle.message("rename.title"), null)
     }
 
+    private fun allowEditions(textRange: TextRange) {
+        with(editor.document) {
+            getUserData(GUARDED_BLOCKS)?.forEach { removeGuardedBlock(it) }
+            val newBlocks = mutableListOf<RangeMarker>()
+            if (textRange.startOffset > 0) {
+                newBlocks.add(createGuardedBlock(0, textRange.startOffset).apply {
+                    isGreedyToLeft = false
+                    isGreedyToRight = false
+                })
+            }
+            if (textRange.endOffset < textLength) {
+                newBlocks.add(createGuardedBlock(textRange.endOffset, textLength).apply {
+                    isGreedyToLeft = false
+                    isGreedyToRight = false
+                })
+            }
+            putUserData(GUARDED_BLOCKS, newBlocks.toList())
+        }
+    }
+
     companion object {
 
         private val activeRenamers = Stack<TranscriptInplaceRenamer>()
+        val GUARDED_BLOCKS: Key<List<RangeMarker>> = Key.create("GUARDER_BLOCKS")
 
         fun rename(editor: Editor, word: TranscriptWord) {
             if (!activeRenamers.isEmpty()) {
                 activeRenamers.peek().finish()
             }
-
             val renamer = TranscriptInplaceRenamer(editor)
             activeRenamers.push(renamer)
             renamer.rename(word)
@@ -107,6 +139,5 @@ class TranscriptInplaceRenamer(val editor: Editor) {
 
             return builder.buildInlineTemplate()
         }
-
     }
 }

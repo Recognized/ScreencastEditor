@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.CaretState
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.ScrollType
+import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.*
 import com.intellij.openapi.project.Project
@@ -22,6 +23,7 @@ import org.jdom.Element
 import org.jetbrains.annotations.NonNls
 import vladsaif.syncedit.plugin.lang.transcript.TranscriptData
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
+import vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptInplaceRenamer
 import java.util.*
 
 class TranscriptEditorProvider : FileEditorProvider {
@@ -66,7 +68,17 @@ class TranscriptEditorProvider : FileEditorProvider {
                 false
         )
         psiFile.name = file.nameWithoutExtension
-        return TranscriptTextEditorImpl(project, psiFile.viewProvider.virtualFile, this)
+        return TranscriptTextEditorImpl(project, psiFile.viewProvider.virtualFile, this).apply {
+            val marker = editor.document.createGuardedBlock(0, editor.document.textLength).apply {
+                isGreedyToLeft = true
+                isGreedyToRight = true
+            }
+            editor.document.putUserData(TranscriptInplaceRenamer.GUARDED_BLOCKS, listOf(marker))
+            with(editor.colorsScheme) {
+//                setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
+            }
+            EditorActionManager.getInstance().setReadonlyFragmentModificationHandler(editor.document) { }
+        }
     }
 
     override fun getEditorTypeId() = TYPE_ID
