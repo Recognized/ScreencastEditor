@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.lang.transcript
 
+import com.intellij.openapi.util.Key
 import vladsaif.syncedit.plugin.ClosedIntRange
 import java.io.InputStream
 import java.io.StringReader
@@ -37,6 +38,8 @@ class TranscriptData(
     }
 
     companion object {
+        val DATA_KEY = Key.create<TranscriptData>("TRANSCRIPT_DATA_KEY")
+
         fun createFrom(xml: CharSequence): TranscriptData {
             return JAXB.unmarshal(StringReader(xml.toString()), TranscriptData::class.java)
         }

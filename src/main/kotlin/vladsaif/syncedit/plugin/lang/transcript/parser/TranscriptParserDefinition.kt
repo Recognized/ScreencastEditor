@@ -10,7 +10,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
-import vladsaif.syncedit.plugin.lang.transcript.TranscriptModel
 import vladsaif.syncedit.plugin.lang.transcript.lexer.TranscriptLexerAdapter
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
@@ -40,7 +39,7 @@ class TranscriptParserDefinition : ParserDefinition {
     }
 
     override fun createFile(viewProvider: FileViewProvider): PsiFile {
-        return TranscriptPsiFile(TranscriptModel(), viewProvider)
+        return TranscriptPsiFile(viewProvider)
     }
 
     override fun spaceExistanceTypeBetweenTokens(left: ASTNode, right: ASTNode): ParserDefinition.SpaceRequirements {

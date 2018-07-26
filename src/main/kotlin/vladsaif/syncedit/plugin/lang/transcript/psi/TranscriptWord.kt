@@ -11,7 +11,8 @@ interface TranscriptWord : PsiNameIdentifierOwner {
 }
 
 internal class TranscriptWordImpl(node: ASTNode) : ASTWrapperPsiElement(node), TranscriptWord {
-    override val hidden = false
+    override val hidden: Boolean
+        get() = (parent as TranscriptPsiFile).model?.data?.words?.get(number)?.visible != true
     override val number: Int
         get() {
             var j = 0

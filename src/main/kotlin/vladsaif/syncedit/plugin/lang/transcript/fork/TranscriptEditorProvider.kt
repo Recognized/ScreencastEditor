@@ -18,12 +18,11 @@ import com.intellij.openapi.util.WriteExternalException
 import com.intellij.openapi.util.text.StringUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFileFactory
 import com.intellij.util.ui.update.UiNotifyConnector
 import org.jdom.Element
 import org.jetbrains.annotations.NonNls
 import vladsaif.syncedit.plugin.lang.transcript.TranscriptData
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
+import vladsaif.syncedit.plugin.lang.transcript.TranscriptModel
 import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
 import java.util.*
 
@@ -40,35 +39,28 @@ class TranscriptEditorProvider : FileEditorProvider {
             file.fileType.isBinary -> "Is binary"
             else -> "OK"
         }
-        println("$message : $file")
-        val ret = accepted && try {
+        LOG.info("$message : $file")
+        return accepted && try {
             TranscriptData.createFrom(file.inputStream)
+            LOG.info("Accepted")
             true
         } catch (ex: Throwable) {
-            println("Not accepted because file is malformed")
+            LOG.info("Not accepted because file is malformed")
             false
         }
-        println(ret)
-        return ret
     }
 
     private fun isTranscriptExtension(ext: String?) = ext == "transcript"
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
-        val text = try {
-            TranscriptData.createFrom(file.inputStream).text
+        val data = try {
+            TranscriptData.createFrom(file.inputStream)
         } catch (ex: Throwable) {
-            "[corrupted xml]"
+            TranscriptData.EMPTY_DATA
         }
-        val psiFile = PsiFileFactory.getInstance(project).createFileFromText(
-                file.nameWithoutExtension,
-                TranscriptFileType,
-                text,
-                0,
-                true,
-                false
-        )
-        psiFile.name = file.nameWithoutExtension
+        val model = TranscriptModel(project, file.name, data, file)
+        val psiFile = model.transcriptPsi!!
+
         return TranscriptTextEditorImpl(project, psiFile.viewProvider.virtualFile, this).apply {
             val marker = editor.document.createGuardedBlock(0, editor.document.textLength).apply {
                 isGreedyToLeft = true
