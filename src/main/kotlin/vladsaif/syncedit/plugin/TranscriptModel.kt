@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.lang.transcript
+package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
@@ -10,35 +10,40 @@ import com.intellij.psi.PsiFileFactory
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 
+/**
+ * @constructor
+ * @throws java.io.IOException If I/O error occurs while reading xml
+ */
 class TranscriptModel(
         val project: Project,
-        transcriptName: String,
-        data: TranscriptData = TranscriptData.EMPTY_DATA,
         private val xmlFile: VirtualFile
 ) : Disposable {
-    private var _data = data
     private val listeners: MutableSet<Listener> = mutableSetOf()
-    private val transcriptFile = PsiFileFactory.getInstance(project).createFileFromText(
-            transcriptName,
-            TranscriptFileType,
-            data.text,
-            0,
-            true,
-            false
-    ).viewProvider.virtualFile
+    private val transcriptFile: VirtualFile
+    var data: TranscriptData
     val transcriptPsi: TranscriptPsiFile?
-    get() {
-        val doc = FileDocumentManager.getInstance().getDocument(transcriptFile) ?: return null
-        return PsiDocumentManager.getInstance(project).getPsiFile(doc) as? TranscriptPsiFile
+        get() {
+            val doc = FileDocumentManager.getInstance().getDocument(transcriptFile) ?: return null
+            return PsiDocumentManager.getInstance(project).getPsiFile(doc) as? TranscriptPsiFile
+        }
+
+    interface Listener {
+        fun onDataChanged()
     }
 
     init {
+        data = TranscriptData.createFrom(xmlFile.inputStream)
+        transcriptFile = PsiFileFactory.getInstance(project).createFileFromText(
+                xmlFile.nameWithoutExtension,
+                TranscriptFileType,
+                data.text,
+                0,
+                true,
+                false
+        ).viewProvider.virtualFile
         fileModelMap[transcriptFile] = this
         fileModelMap[xmlFile] = this
     }
-
-    val data: TranscriptData
-        get() = _data
 
     fun addListener(listener: Listener) {
         listeners += listener
@@ -52,11 +57,7 @@ class TranscriptModel(
         for (x in listeners) x.onDataChanged()
     }
 
-    interface Listener {
-        fun onDataChanged()
-    }
-
-    fun replaceWords(replacements: List<Pair<Int, TranscriptData.WordData>>) {
+    fun replaceWords(replacements: List<Pair<Int, WordData>>) {
         val newWords = data.words.toMutableList()
         for ((index, word) in replacements) {
             newWords[index] = word
@@ -66,7 +67,7 @@ class TranscriptModel(
         println("new words: ${data.words}")
     }
 
-    fun replaceWord(index: Int, word: TranscriptData.WordData) {
+    fun replaceWord(index: Int, word: WordData) {
         replaceWords(listOf(index to word))
     }
 
@@ -87,10 +88,10 @@ class TranscriptModel(
 
     }
 
-    private fun makeChange(newWords: List<TranscriptData.WordData>) {
+    private fun makeChange(newWords: List<WordData>) {
         val newData = TranscriptData(newWords)
-        if (newData != _data) {
-            _data = newData
+        if (newData != data) {
+            data = newData
             fireStateChanged()
         }
     }

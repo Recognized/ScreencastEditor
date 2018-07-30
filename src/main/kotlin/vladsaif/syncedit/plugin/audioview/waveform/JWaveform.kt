@@ -149,10 +149,11 @@ class JWaveform(val file: Path) : JBPanel<JWaveform>(), ChangeListener {
      */
     private fun Graphics2D.drawWords() {
         val usedRange = model.drawRange
-        model.wordData.forEach {
-            val coordinates = model.getCoordinates(it)
+        val words = model.transcriptModel?.data?.words ?: return
+        for(word in words) {
+            val coordinates = model.getCoordinates(word)
             if (coordinates.intersects(usedRange)) {
-                drawCenteredWord(it.text, coordinates)
+                drawCenteredWord(word.text, coordinates)
             }
             val (leftBound, rightBound) = coordinates
             color = Settings.currentSettings.wordSeparatorColor

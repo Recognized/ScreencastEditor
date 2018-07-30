@@ -21,8 +21,8 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.util.ui.update.UiNotifyConnector
 import org.jdom.Element
 import org.jetbrains.annotations.NonNls
-import vladsaif.syncedit.plugin.lang.transcript.TranscriptData
-import vladsaif.syncedit.plugin.lang.transcript.TranscriptModel
+import vladsaif.syncedit.plugin.TranscriptData
+import vladsaif.syncedit.plugin.TranscriptModel
 import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
 import java.util.*
 
@@ -53,12 +53,7 @@ class TranscriptEditorProvider : FileEditorProvider {
     private fun isTranscriptExtension(ext: String?) = ext == "transcript"
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
-        val data = try {
-            TranscriptData.createFrom(file.inputStream)
-        } catch (ex: Throwable) {
-            TranscriptData.EMPTY_DATA
-        }
-        val model = TranscriptModel(project, file.name, data, file)
+        val model = TranscriptModel(project, file)
         val psiFile = model.transcriptPsi!!
 
         return TranscriptTextEditorImpl(project, psiFile.viewProvider.virtualFile, this).apply {

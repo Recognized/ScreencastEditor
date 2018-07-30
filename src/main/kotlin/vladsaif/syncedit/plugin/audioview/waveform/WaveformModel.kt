@@ -2,28 +2,29 @@ package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.openapi.application.ApplicationManager
 import kotlinx.coroutines.experimental.*
-import vladsaif.syncedit.plugin.ClosedIntRange
-import vladsaif.syncedit.plugin.ClosedLongRange
-import vladsaif.syncedit.plugin.Word
+import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.BasicStatProvider
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.floorToInt
 import java.io.IOException
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 import kotlin.math.min
 
-class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier() {
+class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(), TranscriptModel.Listener {
     private val audioDataProvider = BasicStatProvider(file)
     private val visibleRange
         get() = ClosedIntRange(_firstVisibleChunk, _firstVisibleChunk + _visibleChunks - 1)
-    private val coordinates
+    private val coordinates: List<ClosedIntRange>
         get() = if (coordinatesCacheCoherent) coordinatesCache
-        else wordData.map { getCoordinates(it) }.also {
-            coordinatesCache = it
-            coordinatesCacheCoherent = true
+        else {
+            val xx = transcriptModel?.data?.words?.map { getCoordinates(it) }
+            if (xx != null) {
+                coordinatesCacheCoherent = true
+                coordinatesCache = xx
+            }
+            xx ?: listOf()
         }
     @Volatile
     private var _audioData = listOf(AveragedSampleData())
@@ -57,23 +58,28 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier() 
     val drawRange
         get() = ClosedIntRange(max(_firstVisibleChunk - _visibleChunks * 3, 0),
                 min(_firstVisibleChunk + _visibleChunks * 3, _maxChunks - 1))
-    var wordData = listOf<Word>()
+    var transcriptModel: TranscriptModel? = null
         set(value) {
-            field = value.sorted()
+            field?.removeListener(this)
+            field = value
+            field?.addListener(this)
             coordinatesCacheCoherent = false
-            fireStateChanged()
         }
 
+    override fun onDataChanged() {
+        coordinatesCacheCoherent = false
+    }
+
     fun setRangeProperties(
-            maxChunks: Int = this.maxChunks,
-            firstVisibleChunk: Int = this._firstVisibleChunk,
-            visibleChunks: Int = this._visibleChunks
+            maxChunks: Int = _maxChunks,
+            firstVisibleChunk: Int = _firstVisibleChunk,
+            visibleChunks: Int = _visibleChunks
     ) {
-        this._maxChunks = minOf(max(maxChunks, (audioDataProvider.totalFrames / maxSamplesPerChunk).floorToInt()),
+        _maxChunks = minOf(max(maxChunks, (audioDataProvider.totalFrames / maxSamplesPerChunk).floorToInt()),
                 (audioDataProvider.totalFrames / minSamplesPerChunk).floorToInt(),
                 Int.MAX_VALUE / minSamplesPerChunk)
-        this._visibleChunks = max(min(visibleChunks, this._maxChunks), 1)
-        this._firstVisibleChunk = max(min(firstVisibleChunk, this.maxChunks - this._visibleChunks - 1), 0)
+        _visibleChunks = max(min(visibleChunks, _maxChunks), 1)
+        _firstVisibleChunk = max(min(firstVisibleChunk, _maxChunks - _visibleChunks - 1), 0)
     }
 
     fun getChunk(frame: Long) = audioDataProvider.getChunk(_maxChunks, frame)
@@ -88,15 +94,16 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier() 
                 audioDataProvider.getChunk(_maxChunks, frameRange.end))
     }
 
-    fun getCoordinates(word: Word) = ClosedIntRange(getXCoordinate(word.startMillisecond), getXCoordinate(word.endMilliseconds))
+    fun getCoordinates(word: WordData): ClosedIntRange {
+        val left = audioDataProvider.getChunk(_maxChunks, (word.range.start / audioDataProvider.millisecondsPerFrame).toLong())
+        val right = audioDataProvider.getChunk(_maxChunks, (word.range.end / audioDataProvider.millisecondsPerFrame).toLong())
+        return ClosedIntRange(left, right)
+    }
 
-    private fun getXCoordinate(x: Double) =
-            audioDataProvider.getChunk(_maxChunks, (x / audioDataProvider.millisecondsPerFrame).toLong())
-
-    fun getEnclosingWord(coordinate: Int): Word? {
+    fun getEnclosingWord(coordinate: Int): WordData? {
         val index = coordinates.binarySearch(ClosedIntRange(coordinate, coordinate), ClosedIntRange.INTERSECTS_CMP)
         return if (index < 0) null
-        else wordData[index]
+        else transcriptModel?.data?.words?.get(index)
     }
 
     fun updateData() {

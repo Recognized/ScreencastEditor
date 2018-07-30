@@ -1,17 +1,18 @@
-package vladsaif.syncedit.plugin.lang.transcript
+package vladsaif.syncedit.plugin
 
-import com.intellij.openapi.util.Key
-import vladsaif.syncedit.plugin.ClosedIntRange
 import java.io.InputStream
 import java.io.StringReader
 import javax.xml.bind.JAXB
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
-import javax.xml.bind.annotation.*
+import javax.xml.bind.annotation.XmlElement
+import javax.xml.bind.annotation.XmlElementWrapper
+import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "transcript")
 class TranscriptData(
-        @field:[XmlElement(name = "word") XmlElementWrapper(name = "words")] val words: List<WordData>
+        @field:[XmlElement(name = "word") XmlElementWrapper(name = "words")]
+        val words: List<WordData>
 ) {
     val text
         get() = words.map(WordData::text).joinToString(separator = " ")
@@ -22,24 +23,7 @@ class TranscriptData(
     @Suppress("unused")
     private constructor() : this(ArrayList())
 
-    @XmlAccessorType(XmlAccessType.FIELD)
-    data class WordData(
-            @field:XmlElement val text: String,
-            @field:XmlElement val range: ClosedIntRange,
-            @field:XmlAttribute val visible: Boolean
-    ) {
-        // JAXB constructor
-        @Suppress("unused")
-        private constructor() : this("", ClosedIntRange.EMPTY_RANGE, false)
-
-        companion object {
-            val EMPTY_DATA = WordData()
-        }
-    }
-
     companion object {
-        val DATA_KEY = Key.create<TranscriptData>("TRANSCRIPT_DATA_KEY")
-
         fun createFrom(xml: CharSequence): TranscriptData {
             return JAXB.unmarshal(StringReader(xml.toString()), TranscriptData::class.java)
         }
@@ -47,14 +31,12 @@ class TranscriptData(
         fun createFrom(xml: InputStream): TranscriptData {
             return JAXB.unmarshal(xml, TranscriptData::class.java)
         }
-
-        val EMPTY_DATA = TranscriptData(listOf())
     }
 }
 
 fun main(args: Array<String>) {
-    val data = listOf(TranscriptData.WordData("a", ClosedIntRange(10, 20), false),
-            TranscriptData.WordData("a", ClosedIntRange(100, 200), false)).let {
+    val data = listOf(WordData("a", ClosedIntRange(10, 20), false),
+            WordData("a", ClosedIntRange(100, 200), false)).let {
         TranscriptData(it)
     }
     val context = JAXBContext.newInstance(TranscriptData::class.java)
