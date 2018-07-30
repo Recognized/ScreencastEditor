@@ -38,5 +38,11 @@
                 text="Open audio" description="Opens audio waveform view">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
+        <action id="vladsaif.syncedit.plugin.lang.transcript.ConcatenateAction"
+                class="vladsaif.syncedit.plugin.lang.transcript.actions.ConcatenateAction" text="Concatenate words"
+                description="Concatenate selected words">
+            <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
+        </action>
     </actions>
 </idea-plugin>

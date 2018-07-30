@@ -38,8 +38,10 @@ class TranscriptDataSerializationTest {
         </word>
     </words>
 </transcript>""")) as TranscriptData
-        val data = listOf(WordData("first", ClosedIntRange(10, 20), false),
-                WordData("second", ClosedIntRange(100, 200), false)).let {
+        val data = listOf(
+                WordData("first", ClosedIntRange(10, 20), false),
+                WordData("second", ClosedIntRange(100, 200), false)
+        ).let {
             TranscriptData(it)
         }
         assertEquals(data, obj)

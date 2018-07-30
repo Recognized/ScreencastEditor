@@ -7,11 +7,11 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiWhiteSpace
 import com.intellij.refactoring.rename.RenameHandler
 import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
+import vladsaif.syncedit.plugin.lang.transcript.psi.getElementBounds
 import vladsaif.syncedit.plugin.lang.transcript.psi.wordsBetween
 import kotlin.math.max
 
@@ -48,17 +48,6 @@ class TranscriptRenameHandler : RenameHandler {
 
         private fun getEditor(context: DataContext?): Editor? {
             return CommonDataKeys.EDITOR.getData(context ?: return null)
-        }
-
-        private fun getElementBounds(textRange: ClosedIntRange, psiFile: TranscriptPsiFile): Pair<PsiElement, PsiElement>? {
-            val startElement = psiFile.findElementAt(textRange.start).let {
-                it as? PsiWhiteSpace ?: it?.parent
-            }
-            val endElement = psiFile.findElementAt(textRange.end).let {
-                it as? PsiWhiteSpace ?: it?.parent
-            }
-            if (startElement == null || endElement == null) return null
-            return startElement to endElement
         }
 
         private fun getEffectiveSelection(editor: Editor): ClosedIntRange {

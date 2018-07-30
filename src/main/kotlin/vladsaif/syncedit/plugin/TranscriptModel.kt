@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
@@ -76,6 +77,19 @@ class TranscriptModel(
         replaceWord(index, newWord)
     }
 
+    fun concatenateWords(indexRange: ClosedIntRange) {
+        val concat = data.words.subList(indexRange.start, indexRange.end + 1)
+        if (concat.size < 2) return
+        val concatText = concat.joinToString(separator = " ") { it.text }
+        println("\'$concatText\'")
+        val newWord = WordData(concatText, ClosedIntRange(concat.first().range.start, concat.last().range.end), true)
+        val newWords = mutableListOf<WordData>()
+        newWords.addAll(data.words.subList(0, indexRange.start))
+        newWords.add(newWord)
+        newWords.addAll(data.words.subList(indexRange.end + 1, data.words.size))
+        makeChange(newWords)
+    }
+
     fun hideWords(indices: IntArray) {
         replaceWords(indices.map { it to data.words[it].copy(visible = false) })
     }
@@ -93,6 +107,11 @@ class TranscriptModel(
         if (newData != data) {
             data = newData
             fireStateChanged()
+        }
+        FileDocumentManager.getInstance().getDocument(xmlFile)?.let { doc ->
+            ApplicationManager.getApplication().runWriteAction {
+                doc.setText(data.toXml())
+            }
         }
     }
 

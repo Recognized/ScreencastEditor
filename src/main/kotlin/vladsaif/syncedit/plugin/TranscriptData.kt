@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin
 
 import java.io.InputStream
 import java.io.StringReader
+import java.io.StringWriter
 import javax.xml.bind.JAXB
 import javax.xml.bind.annotation.XmlElement
 import javax.xml.bind.annotation.XmlElementWrapper
@@ -15,11 +16,16 @@ data class TranscriptData(
     val text
         get() = words.map(WordData::text).joinToString(separator = " ")
 
-
     // JAXB needs to access default constructor via reflection and add elements
     // so we may abuse fact that ArrayList can be assigned to kotlin List
     @Suppress("unused")
     private constructor() : this(ArrayList())
+
+    fun toXml(): String {
+        val writer = StringWriter()
+        JAXB.marshal(this, writer)
+        return writer.toString()
+    }
 
     companion object {
         fun createFrom(xml: CharSequence): TranscriptData {
