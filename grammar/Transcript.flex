@@ -15,8 +15,8 @@ import vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParser;
 %eof{  return;
 %eof}
 
-WHITE_SPACE_CHAR=[\ \n\t\f]
-WORD_CHAR = [^\ \n\t\f]
+WHITE_SPACE_CHAR=[\u00A0\n\t\f]
+WORD_CHAR = [^\u00A0\n\t\f]
 
 %%
 

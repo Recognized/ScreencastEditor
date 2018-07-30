@@ -64,6 +64,7 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
             field = value
             field?.addListener(this)
             coordinatesCacheCoherent = false
+            fireStateChanged()
         }
 
     override fun onDataChanged() {

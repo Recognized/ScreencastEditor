@@ -80,7 +80,7 @@ class TranscriptModel(
     fun concatenateWords(indexRange: ClosedIntRange) {
         val concat = data.words.subList(indexRange.start, indexRange.end + 1)
         if (concat.size < 2) return
-        val concatText = concat.joinToString(separator = " ") { it.text }
+        val concatText = concat.joinToString(separator = " ")
         println("\'$concatText\'")
         val newWord = WordData(concatText, ClosedIntRange(concat.first().range.start, concat.last().range.end), true)
         val newWords = mutableListOf<WordData>()

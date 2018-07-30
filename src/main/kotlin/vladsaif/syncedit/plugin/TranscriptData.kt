@@ -14,7 +14,7 @@ data class TranscriptData(
         val words: List<WordData>
 ) {
     val text
-        get() = words.map(WordData::text).joinToString(separator = " ")
+        get() = words.joinToString(separator = "\u00A0")
 
     // JAXB needs to access default constructor via reflection and add elements
     // so we may abuse fact that ArrayList can be assigned to kotlin List

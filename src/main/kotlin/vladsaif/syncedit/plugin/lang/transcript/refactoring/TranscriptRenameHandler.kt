@@ -14,6 +14,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import vladsaif.syncedit.plugin.lang.transcript.psi.getElementBounds
 import vladsaif.syncedit.plugin.lang.transcript.psi.wordsBetween
 import kotlin.math.max
+import kotlin.math.min
 
 private val logger = logger<TranscriptRenameHandler>()
 
@@ -53,14 +54,14 @@ class TranscriptRenameHandler : RenameHandler {
         private fun getEffectiveSelection(editor: Editor): ClosedIntRange {
             with(editor.selectionModel) {
                 val start = max(blockSelectionStarts[0] - 1, 0)
-                val end = blockSelectionEnds[0]
+                val end = min(blockSelectionEnds[0], editor.document.textLength - 1)
                 return ClosedIntRange(start, end)
             }
         }
 
         fun getWord(editor: Editor, psiFile: TranscriptPsiFile): TranscriptWord? {
-            val start = editor.caretModel.offset - 1
-            val end = editor.caretModel.offset
+            val start = max(editor.caretModel.offset - 1, 0)
+            val end = min(editor.caretModel.offset, editor.document.textLength - 1)
             val range = ClosedIntRange(start, end)
             val elementBounds = getElementBounds(range, psiFile) ?: return null
             return wordsBetween(elementBounds.first, elementBounds.second).firstOrNull()
