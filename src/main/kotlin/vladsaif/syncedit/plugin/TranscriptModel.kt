@@ -98,6 +98,10 @@ class TranscriptModel(
         hideWords(IntArray(1) { index })
     }
 
+    fun showWords(indices: IntArray) {
+        replaceWords(indices.map { it to data.words[it].copy(visible = true) })
+    }
+
     override fun dispose() {
 
     }

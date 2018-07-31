@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.lang.transcript.actions
+package vladsaif.syncedit.plugin.lang.transcript.refactoring
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
