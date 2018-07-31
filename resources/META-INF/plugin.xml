@@ -27,8 +27,6 @@
                        order="first"/>
         <annotator language="TranscriptLanguage" id="transcriptAnnotator"
                    implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
-        <lang.refactoringSupport language="TranscriptLanguage"
-                implementationClass="vladsaif.syncedit.plugin.lang.transcript.refactoring.TRefactoringSupportProvider"/>
         <!--<applicationConfigurable instance="vladsaif.syncedit.plugin.Settings"/>-->
     </extensions>
     <actions>
