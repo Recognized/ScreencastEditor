@@ -63,9 +63,9 @@ class TranscriptModel(
         for ((index, word) in replacements) {
             newWords[index] = word
         }
-        println("old words: ${data.words}")
+        LOG.debug("old words: ${data.words}")
         makeChange(newWords.toList())
-        println("new words: ${data.words}")
+        LOG.debug("new words: ${data.words}")
     }
 
     fun replaceWord(index: Int, word: WordData) {
@@ -80,7 +80,7 @@ class TranscriptModel(
     fun concatenateWords(indexRange: ClosedIntRange) {
         val concat = data.words.subList(indexRange.start, indexRange.end + 1)
         if (concat.size < 2) return
-        val concatText = concat.joinToString(separator = " ")
+        val concatText = concat.joinToString(separator = " ") { it.filteredText }
         println("\'$concatText\'")
         val newWord = WordData(concatText, ClosedIntRange(concat.first().range.start, concat.last().range.end), true)
         val newWords = mutableListOf<WordData>()

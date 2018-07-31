@@ -92,8 +92,10 @@ dependencies {
     compile group: 'com.googlecode.soundlibs', name: 'tritonus-share', version: '0.3.7.4'
     compile group: 'com.googlecode.soundlibs', name: 'mp3spi', version: '1.9.5.4'
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-reflect"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.23.4"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-swing:0.23.4"
+    compile "org.jetbrains.kotlinx:kotlinx-coroutines-guava:0.23.4"
     compile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
     compile 'com.google.cloud:google-cloud-speech:0.53.0-alpha'
 }

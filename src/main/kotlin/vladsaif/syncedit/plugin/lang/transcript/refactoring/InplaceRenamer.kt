@@ -92,7 +92,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
                         cancel()
                     }
                 }) { _, value ->
-                    value.isEmpty() || value[value.length - 1] != ' '
+                    value.isEmpty() || value[value.length - 1] != '\u00A0'
                 }
 
                 // restore old offset

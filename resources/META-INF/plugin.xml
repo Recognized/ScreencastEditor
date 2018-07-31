@@ -27,12 +27,9 @@
                        order="first"/>
         <annotator language="TranscriptLanguage" id="transcriptAnnotator"
                    implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
+        <!--<applicationConfigurable instance="vladsaif.syncedit.plugin.Settings"/>-->
     </extensions>
     <actions>
-        <!--<action id="downloadTranscriptAction" class="vladsaif.syncedit.plugin.actions.RecognizeAudioAction"-->
-        <!--text="Get transcript" description="Get transcript of audio file">-->
-        <!--<add-to-group group-id="ToolsMenu" anchor="last"/>-->
-        <!--</action>-->
         <action id="vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction"
                 class="vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction"
                 text="Open audio" description="Opens audio waveform view">
@@ -43,6 +40,16 @@
                 description="Concatenate selected words">
             <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
+        </action>
+        <action id="vladsaif.syncedit.plugin.recognition.RecognizeAudioAction"
+                class="vladsaif.syncedit.plugin.recognition.RecognizeAudioAction" text="Open and recognize audio"
+                description="Get transcript of audio and open it">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        <action id="vladsaif.syncedit.plugin.recognition.SetCredentialsAction"
+                class="vladsaif.syncedit.plugin.recognition.SetCredentialsAction"
+                text="Set cloud recognition credentials " description="Set credentials used in cloud recognition">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>

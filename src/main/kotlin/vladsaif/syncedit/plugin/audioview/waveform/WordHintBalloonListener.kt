@@ -39,7 +39,7 @@ class WordHintBalloonListener(parent: Component, private val locator: WaveformMo
     override fun mouseMoved(e: MouseEvent?) {
         e ?: return
         if (UIUtil.isControlKeyDown(e)) {
-            balloonLabel.text = locator.getEnclosingWord(e.x)?.toString() ?: return
+            balloonLabel.text = locator.getEnclosingWord(e.x)?.filteredText ?: return
             balloonPoint = e.point
             balloon.show(balloonPositionTracker, Balloon.Position.above)
             balloon.revalidate()

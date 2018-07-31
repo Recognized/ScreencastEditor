@@ -5,6 +5,7 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.ContentFactory
+import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import java.nio.file.Path
 
 object AudioToolWindowManager {
@@ -16,12 +17,13 @@ object AudioToolWindowManager {
                 ?: manager.registerToolWindow(toolWindowId, false, ToolWindowAnchor.BOTTOM)
     }
 
-    fun openAudioFile(project: Project, file: Path) {
+    fun openAudioFile(project: Project, file: Path) : WaveformModel {
         val toolWindow = getToolWindow(project)
         toolWindow.contentManager.removeAllContents(true)
         val audioPanel = AudioToolWindowPanel(file)
         val content = ContentFactory.SERVICE.getInstance().createContent(audioPanel, "", false)
         content.disposer = audioPanel
         toolWindow.contentManager.addContent(content)
+        return audioPanel.wave.waveform.model
     }
 }

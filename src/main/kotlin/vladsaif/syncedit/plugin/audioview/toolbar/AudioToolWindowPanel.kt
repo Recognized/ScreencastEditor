@@ -9,7 +9,7 @@ import java.nio.file.Path
 import javax.swing.Icon
 
 class AudioToolWindowPanel(file: Path) : SimpleToolWindowPanel(false), Disposable {
-    private val wave = JScrollableWaveform(file)
+    val wave = JScrollableWaveform(file)
 
     init {
         add(wave)

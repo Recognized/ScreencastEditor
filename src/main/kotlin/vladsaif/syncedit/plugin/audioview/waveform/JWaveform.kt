@@ -153,7 +153,7 @@ class JWaveform(val file: Path) : JBPanel<JWaveform>(), ChangeListener {
         for(word in words) {
             val coordinates = model.getCoordinates(word)
             if (coordinates.intersects(usedRange)) {
-                drawCenteredWord(word.toString(), coordinates)
+                drawCenteredWord(word.filteredText, coordinates)
             }
             val (leftBound, rightBound) = coordinates
             color = Settings.currentSettings.wordSeparatorColor
