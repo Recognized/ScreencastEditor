@@ -1,5 +1,7 @@
 package vladsaif.syncedit.plugin.recognition
 
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileChooser.FileChooser
@@ -19,8 +21,18 @@ class SetCredentialsAction : AnAction() {
         FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
             try {
                 CredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
+                Notification(
+                        "Screencast Editor",
+                        "Credentials",
+                        "Credentials are successfully installed: \"${file.path}\"",
+                        NotificationType.INFORMATION
+                ).notify(e.project)
             } catch (ex: IOException) {
-                Messages.showErrorDialog(e.project, ex.message, "I/O error occurred")
+                Messages.showErrorDialog(
+                        e.project,
+                        "Not valid credentials file: \"${file.path}\"",
+                        "Corrupted credentials"
+                )
             }
         }
     }
