@@ -23,8 +23,13 @@ import kotlin.math.sqrt
 class BasicStatProvider(file: Path) : AudioDataModel {
     private val file = file.toAbsolutePath().toFile()
     override var trackDurationMilliseconds = 0.0
+        private set
     override var millisecondsPerFrame = 0.0
+        private set
     override var totalFrames = 0L
+        private set
+    override var framesPerMillisecond = 0.0
+        private set
 
     init {
         AudioSystem.getAudioInputStream(this.file).use {
@@ -37,6 +42,7 @@ class BasicStatProvider(file: Path) : AudioDataModel {
                 audio.forEachSample { sampleCount++ }
                 totalFrames = sampleCount / it.format.channels
                 millisecondsPerFrame = 1000.0 / it.format.frameRate
+                framesPerMillisecond = it.format.frameRate / 1000.0
                 trackDurationMilliseconds = totalFrames * 1000L / it.format.frameRate.toDouble()
             }
         }

@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.audioview.waveform
 import com.intellij.openapi.application.ApplicationManager
 import kotlinx.coroutines.experimental.*
 import vladsaif.syncedit.plugin.*
+import vladsaif.syncedit.plugin.WordData.State.*
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.BasicStatProvider
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
@@ -16,8 +17,15 @@ import kotlin.math.min
 
 class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(), TranscriptModel.Listener {
     private val audioDataProvider = BasicStatProvider(file)
+    /**
+     * Waveform presented using sliding window and this is the visible part of it.
+     */
     private val visibleRange
         get() = ClosedIntRange(_firstVisibleChunk, _firstVisibleChunk + _visibleChunks - 1)
+    /**
+     * Coordinates are expected to be called very frequently and most of the time they do not change.
+     * So it worth to cache it, because it requires some possibly heavy calculations.
+     */
     private val coordinates: List<ClosedIntRange>
         get() = if (coordinatesCacheCoherent) coordinatesCache
         else {
@@ -89,9 +97,16 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
     }
 
     private fun EditionModel.EditionType.toWordDataState() = when (this) {
-        CUT -> WordData.State.EXCLUDED
-        MUTE -> WordData.State.MUTED
-        NO_CHANGES -> WordData.State.PRESENTED
+        CUT -> EXCLUDED
+        MUTE -> MUTED
+        NO_CHANGES -> PRESENTED
+    }
+
+    private fun msRangeToFrameRange(range: ClosedIntRange): ClosedLongRange {
+        return ClosedLongRange(
+                (audioDataProvider.framesPerMillisecond * range.start).toLong(),
+                (audioDataProvider.framesPerMillisecond * range.end).toLong()
+        )
     }
 
     private fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange {
@@ -101,8 +116,23 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
         )
     }
 
+    /**
+     * Synchronize edition model with transcript data if it was changed in editor.
+     * Also do not forger to reset coordinates cache.
+     */
     override fun onDataChanged() {
         coordinatesCacheCoherent = false
+        val model = transcriptModel ?: return
+        editionModel.isNotificationSuppressed = true
+        for (word in model.data.words) {
+            when (word.state) {
+                EXCLUDED -> editionModel.cut(msRangeToFrameRange(word.range))
+                MUTED -> editionModel.mute(msRangeToFrameRange(word.range))
+                PRESENTED -> editionModel.undo(msRangeToFrameRange(word.range))
+            }
+        }
+        editionModel.isNotificationSuppressed = false
+        editionModel.fireStateChanged()
         fireStateChanged()
     }
 
@@ -142,6 +172,9 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
         else transcriptModel?.data?.words?.get(index)
     }
 
+    /**
+     * Start loading data in background for current position of sliding window.
+     */
     fun updateData() {
         if (lastLoadedVisibleRange?.intersects(visibleRange) != true || visibleRange.length != lastLoadedVisibleRange?.length) {
             lastLoadedVisibleRange = visibleRange

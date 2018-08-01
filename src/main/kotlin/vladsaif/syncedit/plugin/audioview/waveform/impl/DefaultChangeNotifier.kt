@@ -6,10 +6,18 @@ import javax.swing.event.ChangeListener
 
 class DefaultChangeNotifier : ChangeNotifier {
     private val listeners = mutableListOf<ChangeListener>()
+    private var notificationsDisabled = false
+    override var isNotificationSuppressed: Boolean
+        get() = notificationsDisabled
+        set(value) {
+            notificationsDisabled = value
+        }
 
     override fun fireStateChanged() {
-        val event = ChangeEvent(this)
-        listeners.forEach { it.stateChanged(event) }
+        if (!notificationsDisabled) {
+            val event = ChangeEvent(this)
+            listeners.forEach { it.stateChanged(event) }
+        }
     }
 
     override fun removeChangeListener(listener: ChangeListener) {

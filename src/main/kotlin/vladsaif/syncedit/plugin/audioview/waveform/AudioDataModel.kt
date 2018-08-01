@@ -17,6 +17,10 @@ interface AudioDataModel {
      * @return Total number of frames in this audio file.
      */
     val totalFrames: Long
+    /**
+     * @return Number of frames in one millisecond
+     */
+    val framesPerMillisecond: Double
 
     /**
      * @throws java.io.IOException If I/O error occurs.

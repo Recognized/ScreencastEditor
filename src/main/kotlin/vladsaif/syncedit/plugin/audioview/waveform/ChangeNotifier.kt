@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.audioview.waveform
 import javax.swing.event.ChangeListener
 
 interface ChangeNotifier {
+    var isNotificationSuppressed: Boolean
 
     fun fireStateChanged()
 
