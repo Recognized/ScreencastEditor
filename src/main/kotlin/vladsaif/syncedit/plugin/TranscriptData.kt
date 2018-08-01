@@ -36,6 +36,52 @@ class TranscriptData(words: List<WordData>) {
     @Suppress("unused")
     private constructor() : this(ArrayList())
 
+    private fun replaceWords(replacements: List<Pair<Int, WordData>>): TranscriptData {
+        val newWords = words.toMutableList()
+        for ((index, word) in replacements) {
+            newWords[index] = word
+        }
+        return TranscriptData(newWords.toList())
+    }
+
+    private fun replaceWord(index: Int, word: WordData): TranscriptData {
+        return replaceWords(listOf(index to word))
+    }
+
+    fun renameWord(index: Int, text: String): TranscriptData {
+        val newWord = words[index].copy(text = text)
+        return replaceWord(index, newWord)
+    }
+
+    fun concatenateWords(indexRange: ClosedIntRange): TranscriptData {
+        val concat = words.subList(indexRange.start, indexRange.end + 1)
+        if (concat.size < 2) return this
+        val concatText = concat.joinToString(separator = " ") { it.filteredText }
+        println("\'$concatText\'")
+        val newWord = WordData(concatText, ClosedIntRange(concat.first().range.start, concat.last().range.end), WordData.State.PRESENTED)
+        val newWords = mutableListOf<WordData>()
+        newWords.addAll(words.subList(0, indexRange.start))
+        newWords.add(newWord)
+        newWords.addAll(words.subList(indexRange.end + 1, words.size))
+        return TranscriptData(newWords)
+    }
+
+    fun excludeWords(indices: IntArray): TranscriptData {
+        return replaceWords(indices.map { it to words[it].copy(state = WordData.State.EXCLUDED) })
+    }
+
+    fun excludeWord(index: Int): TranscriptData {
+        return excludeWords(IntArray(1) { index })
+    }
+
+    fun showWords(indices: IntArray): TranscriptData {
+        return replaceWords(indices.map { it to words[it].copy(state = WordData.State.PRESENTED) })
+    }
+
+    fun muteWords(indices: IntArray): TranscriptData {
+        return replaceWords(indices.map { it to words[it].copy(state = WordData.State.MUTED) })
+    }
+
     fun toXml(): String {
         val writer = StringWriter()
         JAXB.marshal(this, writer)

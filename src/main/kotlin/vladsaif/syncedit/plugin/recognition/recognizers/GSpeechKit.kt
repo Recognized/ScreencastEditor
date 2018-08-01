@@ -36,7 +36,7 @@ private constructor(settings: SpeechSettings) : SpeechClient(settings), SpeechRe
         val wordData = response.getResults(0)
                 .getAlternatives(0)
                 .wordsList
-                .map { info -> WordData(info.word, getMsRange(info), true) }
+                .map { info -> WordData(info.word, getMsRange(info), WordData.State.PRESENTED) }
         return TranscriptData(wordData)
     }
 

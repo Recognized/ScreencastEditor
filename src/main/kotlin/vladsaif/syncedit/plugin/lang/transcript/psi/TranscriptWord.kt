@@ -4,15 +4,16 @@ import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNameIdentifierOwner
+import vladsaif.syncedit.plugin.WordData
 
 interface TranscriptWord : PsiNameIdentifierOwner {
     val number: Int
-    val hidden: Boolean
+    val data: WordData?
 }
 
 internal class TranscriptWordImpl(node: ASTNode) : ASTWrapperPsiElement(node), TranscriptWord {
-    override val hidden: Boolean
-        get() = (parent as TranscriptPsiFile).model?.data?.words?.get(number)?.visible != true
+    override val data
+        get() = (parent as TranscriptPsiFile).model?.data?.words?.get(number)
     override val number: Int
         get() {
             var j = 0

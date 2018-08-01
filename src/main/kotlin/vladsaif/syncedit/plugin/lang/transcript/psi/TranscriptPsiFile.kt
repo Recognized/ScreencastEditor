@@ -14,6 +14,6 @@ class TranscriptPsiFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvid
     override fun toString() = "Transcript file"
 
     override fun delete() {
-        model.takeIf { it != null }?.let { Disposer.dispose(it) }
+        model?.let { Disposer.dispose(it) }
     }
 }

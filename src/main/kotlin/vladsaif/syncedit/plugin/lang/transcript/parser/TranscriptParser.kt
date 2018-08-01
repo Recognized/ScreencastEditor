@@ -4,7 +4,6 @@ import com.intellij.lang.ASTNode
 import com.intellij.lang.LightPsiParser
 import com.intellij.lang.PsiBuilder
 import com.intellij.lang.PsiParser
-import com.intellij.openapi.util.Key
 import com.intellij.psi.tree.IElementType
 import vladsaif.syncedit.plugin.lang.transcript.lexer.TranscriptElementType
 
@@ -29,6 +28,5 @@ class TranscriptParser : PsiParser, LightPsiParser {
     companion object {
         val WORD: IElementType = TranscriptElementType("WORD")
         val WORD_TOKEN: IElementType = TranscriptTokenType("WORD_TOKEN")
-        val NUMBER_KEY: Key<Int> = Key("number_among_children_of_parent")
     }
 }

@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.lang.transcript.annotators
 
+import com.intellij.codeInsight.daemon.impl.HighlightInfoType
 import com.intellij.lexer.Lexer
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.HighlighterColors
@@ -41,7 +42,8 @@ object Highlighters {
     val TIME_OFFSET = createTextAttributesKey("TIME_OFFSET", DefaultLanguageHighlighterColors.METADATA)
     val COMMENT = DefaultLanguageHighlighterColors.LINE_COMMENT
     val BAD_CHARACTER = HighlighterColors.BAD_CHARACTER
-    val HIDDEN_WORD = EditorColors.DELETED_TEXT_ATTRIBUTES
+    val EXCLUDED_WORD = EditorColors.DELETED_TEXT_ATTRIBUTES
+    val MUTED_WORD = HighlightInfoType.UNUSED_SYMBOL.attributesKey
 
     val STRING_KEYS = arrayOf(STRING)
     val COMMENT_KEYS = arrayOf(COMMENT)

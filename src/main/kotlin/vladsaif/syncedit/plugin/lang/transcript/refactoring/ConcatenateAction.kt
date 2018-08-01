@@ -13,6 +13,10 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.getElementBounds
 import vladsaif.syncedit.plugin.lang.transcript.psi.wordsBetween
 
+/**
+ * Concatenates selected words into one big word.
+ * Activated only if editor has selection.
+ */
 class ConcatenateAction : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {

@@ -63,5 +63,11 @@
             <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
             <keyboard-shortcut keymap="$default" first-keystroke="alt EQUALS"/>
         </action>
+        <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
+                class="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction" text="Mute word"
+                description="Mute word">
+            <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt M"/>
+        </action>
     </actions>
 </idea-plugin>

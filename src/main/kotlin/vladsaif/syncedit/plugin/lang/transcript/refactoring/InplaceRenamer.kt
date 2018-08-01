@@ -5,6 +5,7 @@ import com.intellij.codeInsight.highlighting.HighlightManager
 import com.intellij.codeInsight.template.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RangeMarker
@@ -16,6 +17,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.refactoring.RefactoringBundle
 import com.intellij.util.containers.Stack
+import vladsaif.syncedit.plugin.TranscriptModelUndoableAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
@@ -49,6 +51,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
     }
 
     fun cancel() {
+        // Revert how it was before renaming if it was cancelled
         val highlighter = myHighlighters[0]
         ApplicationManager.getApplication().runWriteAction {
             editor.document.replaceString(highlighter.startOffset, highlighter.endOffset, originalWord)
@@ -58,15 +61,36 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
 
     fun acceptTemplate() {
         val highlighter = myHighlighters[0]
+        val project = editor.project
+        val model = psiFile?.model
+        val manager = if (project == null)
+            UndoManager.getGlobalInstance()
+        else
+            UndoManager.getInstance(project)
         if (highlighter.startOffset == highlighter.endOffset) {
-            psiFile?.model?.hideWord(originalIndex)
+            // If word was deleted, lets exclude it
+            if (model != null) {
+                println(CommandProcessor.getInstance().currentCommandName)
+                val currentData = model.data
+                val newData = model.data.excludeWord(originalIndex)
+                val undo = TranscriptModelUndoableAction(model, currentData, newData)
+                manager.undoableActionPerformed(undo)
+                // Now apply changes to model, because manager do not invoke redo() method
+                model.excludeWord(originalIndex)
+            }
             cancel()
         } else {
             val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
-            psiFile?.model?.renameWord(originalIndex, editor.document.getText(textRange))
+            if (model != null) {
+                val currentData = model.data
+                val newData = model.data.renameWord(originalIndex, editor.document.getText(textRange))
+                manager.undoableActionPerformed(TranscriptModelUndoableAction(model, currentData, newData))
+                model.renameWord(originalIndex, editor.document.getText(textRange))
+            }
             finishEditing()
         }
     }
+
 
     fun rename() {
         val project = editor.project ?: return
