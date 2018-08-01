@@ -2,7 +2,7 @@ package vladsaif.syncedit.plugin.audioview.waveform
 
 import vladsaif.syncedit.plugin.ClosedLongRange
 
-interface EditionModel {
+interface EditionModel : ChangeNotifier {
     enum class EditionType {
         CUT, MUTE, NO_CHANGES
     }

@@ -12,12 +12,10 @@ class TranscriptModelUndoableAction(
     private val affectedDocuments = mutableSetOf<DocumentReference>()
 
     override fun redo() {
-        println("redo performed")
         model.data = newData
     }
 
     override fun undo() {
-        println("undo performed")
         model.data = currentData
     }
 

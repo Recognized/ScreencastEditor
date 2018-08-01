@@ -55,12 +55,18 @@ class TranscriptEditorProvider : FileEditorProvider {
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
         val model = TranscriptModel(project, file)
         val psiFile = model.transcriptPsi!!
-
         return TranscriptTextEditorImpl(project, psiFile.viewProvider.virtualFile, this).apply {
             val marker = editor.document.createGuardedBlock(0, editor.document.textLength).apply {
                 isGreedyToLeft = true
                 isGreedyToRight = true
             }
+            val listener = object : TranscriptModel.Listener {
+                override fun onDataChanged() {
+                    val psi = model.transcriptPsi ?: return model.removeListener(this)
+                    PsiDocumentManager.getInstance(project).reparseFiles(listOf(psi.virtualFile), true)
+                }
+            }
+            model.addListener(listener)
             editor.document.putUserData(InplaceRenamer.GUARDED_BLOCKS, listOf(marker))
             with(editor.colorsScheme) {
                 setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)

@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -82,10 +83,11 @@ class RecognizeAudioAction : AnAction() {
                                 0L,
                                 true
                         )
-                        val model = TranscriptModel(project, xml.virtualFile)
+                        indicator.stop()
+                        FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
+                        val model = TranscriptModel.fileModelMap[xml.virtualFile]!!
                         model.data = data
                         waveformModel.transcriptModel = model
-                        indicator.stop()
                     }
                 }
             }

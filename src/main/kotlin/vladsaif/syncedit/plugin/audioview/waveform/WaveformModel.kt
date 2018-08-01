@@ -3,12 +3,14 @@ package vladsaif.syncedit.plugin.audioview.waveform
 import com.intellij.openapi.application.ApplicationManager
 import kotlinx.coroutines.experimental.*
 import vladsaif.syncedit.plugin.*
+import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.BasicStatProvider
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import java.io.IOException
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
 
@@ -67,8 +69,41 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
             fireStateChanged()
         }
 
+    init {
+        editionModel.addChangeListener(ChangeListener { onEditionModelChanged() })
+    }
+
+    private fun onEditionModelChanged() {
+        val model = transcriptModel ?: return
+        val editions = editionModel.editions.map { frameRangeToMsRange(it.first) to it.second.toWordDataState() }
+        val preparedEditions = mutableListOf<Pair<Int, WordData>>()
+        for (edition in editions) {
+            for ((i, word) in model.data.words.withIndex()) {
+                if (word.range in edition.first && word.state != edition.second) {
+                    preparedEditions.add(i to word.copy(state = edition.second))
+                }
+            }
+        }
+        println(preparedEditions)
+        model.replaceWords(preparedEditions)
+    }
+
+    private fun EditionModel.EditionType.toWordDataState() = when (this) {
+        CUT -> WordData.State.EXCLUDED
+        MUTE -> WordData.State.MUTED
+        NO_CHANGES -> WordData.State.PRESENTED
+    }
+
+    private fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange {
+        return ClosedIntRange(
+                (audioDataProvider.millisecondsPerFrame * range.start).toInt(),
+                (audioDataProvider.millisecondsPerFrame * range.end).toInt()
+        )
+    }
+
     override fun onDataChanged() {
         coordinatesCacheCoherent = false
+        fireStateChanged()
     }
 
     fun setRangeProperties(

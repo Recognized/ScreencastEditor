@@ -74,6 +74,10 @@ class TranscriptModel(
         for (x in listeners) x.onDataChanged()
     }
 
+    fun replaceWords(replacements: List<Pair<Int, WordData>>) {
+        data = data.replaceWords(replacements)
+    }
+
     fun renameWord(index: Int, text: String) {
         data = data.renameWord(index, text)
     }
@@ -99,7 +103,13 @@ class TranscriptModel(
     }
 
     override fun dispose() {
-
+        ApplicationManager.getApplication().invokeLater {
+            FileDocumentManager.getInstance().getDocument(xmlFile)?.let { doc ->
+                ApplicationManager.getApplication().runWriteAction {
+                    doc.setText(data.toXml())
+                }
+            }
+        }
     }
 
     companion object {
