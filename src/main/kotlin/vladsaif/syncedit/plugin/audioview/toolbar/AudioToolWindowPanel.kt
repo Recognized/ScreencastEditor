@@ -4,6 +4,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import icons.ScreencastEditorIcons.*
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
 import java.nio.file.Path
 import javax.swing.Icon
@@ -14,12 +15,12 @@ class AudioToolWindowPanel(file: Path) : SimpleToolWindowPanel(false), Disposabl
     init {
         add(wave)
         val group = DefaultActionGroup()
-        group.addAction("Play", "Play audio", AllIcons.General.Run, wave.controller::play)
-        group.addAction("Pause", "Pause audio", AllIcons.Actions.Pause, wave.controller::pause)
-        group.addAction("Stop", "Stop audio", AllIcons.Actions.Cancel, wave.controller::stop)
+        group.addAction("Play", "Play audio", PLAY_BUTTON_TOOL_WINDOW, wave.controller::play)
+        group.addAction("Pause", "Pause audio", PAUSE_TOOL_WINDOW, wave.controller::pause)
+        group.addAction("Stop", "Stop audio", STOP_TOOL_WINDOW, wave.controller::stop)
         group.addAction("Undo", "Undo changed in selected area", AllIcons.Actions.Undo, wave.controller::undo)
         group.addAction("Clip", "Clip audio", AllIcons.Actions.Menu_cut, wave.controller::cutSelected)
-        group.addAction("Mute", "Mute selected", AllIcons.Actions.Exclude, wave.controller::muteSelected)
+        group.addAction("Mute", "Mute selected", REMOVE_TOOL_WINDOW, wave.controller::muteSelected)
         group.addAction("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, wave.controller::zoomIn)
         group.addAction("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, wave.controller::zoomOut)
         setToolbar(ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, false).component)
