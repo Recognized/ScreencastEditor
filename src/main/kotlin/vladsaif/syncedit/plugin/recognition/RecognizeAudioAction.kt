@@ -16,7 +16,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFileFactory
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.runBlocking
-import vladsaif.syncedit.plugin.TranscriptModel
 import vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
@@ -43,13 +42,13 @@ class RecognizeAudioAction : AnAction() {
         descriptor.title = "Choose audio file"
         descriptor.description = "Choose audio file for cloud recognition"
         FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
-            val model = OpenAudioAction.openAudio(project, File(file.path).toPath()) ?: return@chooseFile
+            val waveform = OpenAudioAction.openAudio(project, file) ?: return@chooseFile
             try {
                 val recognizeTask = RecognizeTask(
                         e.project,
                         "Getting transcript for $file",
                         File(file.path).toPath(),
-                        model
+                        waveform
                 )
                 ProgressManager.getInstance().run(recognizeTask)
             } catch (ex: IOException) {
@@ -83,11 +82,9 @@ class RecognizeAudioAction : AnAction() {
                                 0L,
                                 true
                         )
-                        indicator.stop()
+                        waveformModel.multimediaModel.setAndReadXml(xml.virtualFile)
                         FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
-                        val model = TranscriptModel.fileModelMap[xml.virtualFile]!!
-                        model.data = data
-                        waveformModel.transcriptModel = model
+                        indicator.stop()
                     }
                 }
             }

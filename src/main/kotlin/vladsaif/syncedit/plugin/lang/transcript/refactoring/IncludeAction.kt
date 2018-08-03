@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.lang.transcript.refactoring
 
-import vladsaif.syncedit.plugin.TranscriptModel
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
 /**
@@ -9,7 +9,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
  */
 class IncludeAction : IncludeExcludeActionBase() {
 
-    override fun doAction(model: TranscriptModel, words: List<TranscriptWord>) {
+    override fun doAction(model: MultimediaModel, words: List<TranscriptWord>) {
         model.showWords(words.map { it.number }.toIntArray())
     }
 }

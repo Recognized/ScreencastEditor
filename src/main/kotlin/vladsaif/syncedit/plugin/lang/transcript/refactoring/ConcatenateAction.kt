@@ -8,7 +8,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.ClosedIntRange
-import vladsaif.syncedit.plugin.TranscriptModel
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.getElementBounds
 import vladsaif.syncedit.plugin.lang.transcript.psi.wordsBetween
@@ -27,13 +27,14 @@ class ConcatenateAction : AnAction() {
                 .getPsiFile(editor.document) as TranscriptPsiFile
         val selection = ClosedIntRange(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd - 1)
         val model = psi.model ?: return
+        val data = model.data ?: return
         concatenateWords(model, selection, psi)
         ApplicationManager.getApplication().runWriteAction {
-            editor.document.setText(model.data.text)
+            editor.document.setText(data.text)
         }
     }
 
-    private fun concatenateWords(model: TranscriptModel, selection: ClosedIntRange, psi: TranscriptPsiFile) {
+    private fun concatenateWords(model: MultimediaModel, selection: ClosedIntRange, psi: TranscriptPsiFile) {
         val bounds = getElementBounds(selection, psi) ?: return
         var first = -1
         var last = -1

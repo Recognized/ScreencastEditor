@@ -5,36 +5,45 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import icons.ScreencastEditorIcons.*
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
-import java.nio.file.Path
+import vladsaif.syncedit.plugin.audioview.waveform.Player
+import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.PLAY
 import javax.swing.Icon
 
-class AudioToolWindowPanel(file: Path) : SimpleToolWindowPanel(false), Disposable {
-    val wave = JScrollableWaveform(file)
+class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowPanel(false), Disposable {
+    val wave = JScrollableWaveform(multimediaModel)
 
     init {
         add(wave)
         val group = DefaultActionGroup()
-        group.addAction("Play", "Play audio", PLAY_BUTTON_TOOL_WINDOW, wave.controller::play)
-        group.addAction("Pause", "Pause audio", PAUSE_TOOL_WINDOW, wave.controller::pause)
-        group.addAction("Stop", "Stop audio", STOP_TOOL_WINDOW, wave.controller::stop)
-        group.addAction("Undo", "Undo changed in selected area", AllIcons.Actions.Undo, wave.controller::undo)
-        group.addAction("Clip", "Clip audio", AllIcons.Actions.Menu_cut, wave.controller::cutSelected)
-        group.addAction("Mute", "Mute selected", REMOVE_TOOL_WINDOW, wave.controller::muteSelected)
-        group.addAction("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, wave.controller::zoomIn)
-        group.addAction("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, wave.controller::zoomOut)
+        with(wave.controller) {
+            // Maybe, actions should be placed in two groups
+            group.addAction("Play", "Play audio", PLAY_BUTTON, this::play) { playState != PLAY }
+            group.addAction("Pause", "Pause audio", PAUSE, this::pause) { playState == PLAY }
+            group.addAction("Stop", "Stop audio", STOP, this::stop) { playState != Player.PlayState.STOP }
+            group.addAction("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo) { hasSelection }
+            group.addAction("Clip", "Clip audio", REMOVE, this::cutSelected) { hasSelection }
+            group.addAction("Mute", "Mute selected", MUTE, this::muteSelected) { hasSelection }
+            group.addAction("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, this::zoomIn) { true }
+            group.addAction("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, this::zoomOut) { true }
+        }
         setToolbar(ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, false).component)
     }
 
-    private fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon, action: () -> Unit) {
+    private fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon, action: () -> Unit, checkAvailable: () -> Boolean) {
         this.add(object : AnAction(what, desc, icon) {
             override fun actionPerformed(event: AnActionEvent?) {
                 action()
+            }
+
+            override fun update(e: AnActionEvent?) {
+                e?.presentation?.isEnabled = checkAvailable()
             }
         })
     }
 
     override fun dispose() {
-        wave.controller.dispose()
+        wave.controller.stop()
     }
 }

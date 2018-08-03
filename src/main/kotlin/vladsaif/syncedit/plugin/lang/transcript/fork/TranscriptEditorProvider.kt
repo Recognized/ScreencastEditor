@@ -18,11 +18,13 @@ import com.intellij.openapi.util.WriteExternalException
 import com.intellij.openapi.util.text.StringUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFileFactory
 import com.intellij.util.ui.update.UiNotifyConnector
 import org.jdom.Element
 import org.jetbrains.annotations.NonNls
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.TranscriptData
-import vladsaif.syncedit.plugin.TranscriptModel
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
 import java.util.*
 
@@ -53,20 +55,31 @@ class TranscriptEditorProvider : FileEditorProvider {
     private fun isTranscriptExtension(ext: String?) = ext == "transcript"
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
-        val model = TranscriptModel(project, file)
-        val psiFile = model.transcriptPsi!!
-        return TranscriptTextEditorImpl(project, psiFile.viewProvider.virtualFile, this).apply {
+        val model = MultimediaModel.getOrCreate(project, file)
+        if (model.xmlFile == null) {
+            model.setAndReadXml(file)
+        }
+        val virtualFile = PsiFileFactory.getInstance(project).createFileFromText(
+                file.nameWithoutExtension,
+                TranscriptFileType,
+                model.data!!.text,
+                0,
+                true,
+                false
+        ).viewProvider.virtualFile
+        model.transcriptFile = virtualFile
+        return TranscriptTextEditorImpl(project, virtualFile, this).apply {
             val marker = editor.document.createGuardedBlock(0, editor.document.textLength).apply {
                 isGreedyToLeft = true
                 isGreedyToRight = true
             }
-            val listener = object : TranscriptModel.Listener {
-                override fun onDataChanged() {
-                    val psi = model.transcriptPsi ?: return model.removeListener(this)
+            val listener = object : MultimediaModel.Listener {
+                override fun onTranscriptDataChanged() {
+                    val psi = model.transcriptPsi ?: return model.removeTranscriptDataListener(this)
                     PsiDocumentManager.getInstance(project).reparseFiles(listOf(psi.virtualFile), true)
                 }
             }
-            model.addListener(listener)
+            model.addTranscriptDataListener(listener)
             editor.document.putUserData(InplaceRenamer.GUARDED_BLOCKS, listOf(marker))
             with(editor.colorsScheme) {
                 setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)

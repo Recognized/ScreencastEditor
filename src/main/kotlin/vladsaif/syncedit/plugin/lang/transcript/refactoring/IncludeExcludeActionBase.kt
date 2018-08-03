@@ -7,7 +7,7 @@ import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.psi.PsiDocumentManager
-import vladsaif.syncedit.plugin.TranscriptModel
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.TranscriptModelUndoableAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
@@ -15,7 +15,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
 
 abstract class IncludeExcludeActionBase : AnAction() {
 
-    abstract fun doAction(model: TranscriptModel, words: List<TranscriptWord>)
+    abstract fun doAction(model: MultimediaModel, words: List<TranscriptWord>)
 
     override fun actionPerformed(e: AnActionEvent?) {
         e ?: return
@@ -23,13 +23,15 @@ abstract class IncludeExcludeActionBase : AnAction() {
         val editor = e.getRequiredData(CommonDataKeys.EDITOR)
         val psi = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as TranscriptPsiFile
         val model = psi.model ?: return
+        val data = model.data ?: return
         CommandProcessor.getInstance().executeCommand(project, {
-            val currentData = model.data
             doAction(model, getSelectedWords(editor, psi))
-            val newData = model.data
-            val undo = TranscriptModelUndoableAction(model, currentData, newData)
+            val newData = model.data ?: return@executeCommand
+            val undo = TranscriptModelUndoableAction(model, data, newData)
             undo.addAffectedDocuments(DocumentReferenceManager.getInstance().create(editor.document))
-            undo.addAffectedDocuments(DocumentReferenceManager.getInstance().create(model.xmlFile))
+            model.xmlFile?.let {
+                undo.addAffectedDocuments(DocumentReferenceManager.getInstance().create(it))
+            }
             UndoManager.getInstance(project).undoableActionPerformed(undo)
         }, this.javaClass.simpleName, "ScreencastEditor", editor.document)
     }

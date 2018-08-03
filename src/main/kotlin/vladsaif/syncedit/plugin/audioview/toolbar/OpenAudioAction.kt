@@ -6,10 +6,10 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import java.io.File
 import java.io.IOException
-import java.nio.file.Path
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.UnsupportedAudioFileException
 
@@ -20,15 +20,15 @@ class OpenAudioAction : AnAction() {
         val project = e.project ?: return
         val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
         FileChooser.chooseFile(descriptor, project, project.projectFile) {
-            openAudio(project, File(it.path).toPath())
+            openAudio(project, it)
         }
     }
 
     companion object {
 
-        fun openAudio(project: Project, file: Path): WaveformModel? {
+        fun openAudio(project: Project, file: VirtualFile): WaveformModel? {
             return try {
-                AudioSystem.getAudioFileFormat(file.toFile())
+                AudioSystem.getAudioFileFormat(File(file.path))
                 AudioToolWindowManager.openAudioFile(project, file)
             } catch (ex: UnsupportedAudioFileException) {
                 Messages.showErrorDialog(

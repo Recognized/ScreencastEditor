@@ -1,7 +1,8 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
-import kotlinx.coroutines.experimental.Job
 import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.ClosedLongRange
+import java.util.concurrent.Future
 import javax.sound.sampled.AudioFormat
 
 interface AudioDataModel {
@@ -27,7 +28,7 @@ interface AudioDataModel {
      * @return Averaged audio data for each chunk in [chunkRange].
      * Chunk is a sequence of XX or XX + 1 samples, where XX = [totalFrames] / [maxChunks].
      */
-    suspend fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, job: Job): List<AveragedSampleData>
+    fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, future: Future<*>): List<AveragedSampleData>
 
     /**
      * @return Number of chunk (if all frame were split into [maxChunks] number of chunks)
@@ -39,6 +40,10 @@ interface AudioDataModel {
      * @return First frame of the [chunk] if all frames were split in [maxChunks] number of chunks.
      */
     fun getStartFrame(maxChunks: Int, chunk: Int): Long
+
+    fun msRangeToFrameRange(range: ClosedIntRange): ClosedLongRange
+
+    fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange
 }
 
 fun AudioFormat.toDecodeFormat() =

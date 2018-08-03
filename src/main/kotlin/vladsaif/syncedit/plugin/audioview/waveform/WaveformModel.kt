@@ -1,22 +1,19 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.openapi.application.ApplicationManager
-import kotlinx.coroutines.experimental.*
 import vladsaif.syncedit.plugin.*
-import vladsaif.syncedit.plugin.WordData.State.*
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
-import vladsaif.syncedit.plugin.audioview.waveform.impl.BasicStatProvider
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import java.io.IOException
-import java.nio.file.Path
+import java.util.concurrent.CancellationException
+import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
 
-class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(), TranscriptModel.Listener {
-    private val audioDataProvider = BasicStatProvider(file)
+class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by DefaultChangeNotifier() {
+    private val audioDataProvider
+        get() = multimediaModel.audioDataModel
     /**
      * Waveform presented using sliding window and this is the visible part of it.
      */
@@ -29,7 +26,7 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
     private val coordinates: List<ClosedIntRange>
         get() = if (coordinatesCacheCoherent) coordinatesCache
         else {
-            val xx = transcriptModel?.data?.words?.map { getCoordinates(it) }
+            val xx = multimediaModel.data?.words?.map { getCoordinates(it) }
             if (xx != null) {
                 coordinatesCacheCoherent = true
                 coordinatesCache = xx
@@ -38,8 +35,8 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
         }
     @Volatile
     private var _audioData = listOf(AveragedSampleData())
-    private var currentTask: Job? = null
-    private var coordinatesCacheCoherent = true
+    private var currentTask: Future<*>? = null
+    private var coordinatesCacheCoherent = false
     private var coordinatesCache = listOf<ClosedIntRange>()
     private var _visibleChunks = 4000
     private var _firstVisibleChunk = 0
@@ -47,7 +44,6 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
     private var lastLoadedVisibleRange: ClosedIntRange? = null
     private var _maxChunks = _visibleChunks
     private var broken = AtomicBoolean(false)
-    val editionModel: EditionModel = DefaultEditionModel()
     @Volatile
     var playFramePosition = -1L
     val isBroken
@@ -68,108 +64,59 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
     val drawRange
         get() = ClosedIntRange(max(_firstVisibleChunk - _visibleChunks * 3, 0),
                 min(_firstVisibleChunk + _visibleChunks * 3, _maxChunks - 1))
-    var transcriptModel: TranscriptModel? = null
-        set(value) {
-            field?.removeListener(this)
-            field = value
-            field?.addListener(this)
-            coordinatesCacheCoherent = false
-            fireStateChanged()
-        }
-
-    init {
-        editionModel.addChangeListener(ChangeListener { onEditionModelChanged() })
-    }
-
-    private fun onEditionModelChanged() {
-        val model = transcriptModel ?: return
-        val editions = editionModel.editions.map { frameRangeToMsRange(it.first) to it.second.toWordDataState() }
-        val preparedEditions = mutableListOf<Pair<Int, WordData>>()
-        for (edition in editions) {
-            for ((i, word) in model.data.words.withIndex()) {
-                if (word.range in edition.first && word.state != edition.second) {
-                    preparedEditions.add(i to word.copy(state = edition.second))
-                }
-            }
-        }
-        println(preparedEditions)
-        model.replaceWords(preparedEditions)
-    }
-
-    private fun EditionModel.EditionType.toWordDataState() = when (this) {
-        CUT -> EXCLUDED
-        MUTE -> MUTED
-        NO_CHANGES -> PRESENTED
-    }
-
-    private fun msRangeToFrameRange(range: ClosedIntRange): ClosedLongRange {
-        return ClosedLongRange(
-                (audioDataProvider.framesPerMillisecond * range.start).toLong(),
-                (audioDataProvider.framesPerMillisecond * range.end).toLong()
-        )
-    }
-
-    private fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange {
-        return ClosedIntRange(
-                (audioDataProvider.millisecondsPerFrame * range.start).toInt(),
-                (audioDataProvider.millisecondsPerFrame * range.end).toInt()
-        )
-    }
-
-    /**
-     * Synchronize edition model with transcript data if it was changed in editor.
-     * Also do not forger to reset coordinates cache.
-     */
-    override fun onDataChanged() {
-        coordinatesCacheCoherent = false
-        val model = transcriptModel ?: return
-        editionModel.isNotificationSuppressed = true
-        for (word in model.data.words) {
-            when (word.state) {
-                EXCLUDED -> editionModel.cut(msRangeToFrameRange(word.range))
-                MUTED -> editionModel.mute(msRangeToFrameRange(word.range))
-                PRESENTED -> editionModel.undo(msRangeToFrameRange(word.range))
-            }
-        }
-        editionModel.isNotificationSuppressed = false
-        editionModel.fireStateChanged()
-        fireStateChanged()
-    }
+    val editionModel: EditionModel
+        get() = multimediaModel.editionModel
 
     fun setRangeProperties(
             maxChunks: Int = _maxChunks,
             firstVisibleChunk: Int = _firstVisibleChunk,
             visibleChunks: Int = _visibleChunks
     ) {
-        _maxChunks = minOf(max(maxChunks, (audioDataProvider.totalFrames / maxSamplesPerChunk).floorToInt()),
-                (audioDataProvider.totalFrames / minSamplesPerChunk).floorToInt(),
+        val model = audioDataProvider ?: return
+        _maxChunks = minOf(max(maxChunks, (model.totalFrames / maxSamplesPerChunk).floorToInt()),
+                (model.totalFrames / minSamplesPerChunk).floorToInt(),
                 Int.MAX_VALUE / minSamplesPerChunk)
         _visibleChunks = max(min(visibleChunks, _maxChunks), 1)
         _firstVisibleChunk = max(min(firstVisibleChunk, _maxChunks - _visibleChunks - 1), 0)
     }
 
-    fun getChunk(frame: Long) = audioDataProvider.getChunk(_maxChunks, frame)
+    init {
+        multimediaModel.editionModel.addChangeListener(ChangeListener {
+            fireStateChanged()
+        })
+        multimediaModel.addTranscriptDataListener(object : MultimediaModel.Listener {
+            override fun onTranscriptDataChanged() {
+                coordinatesCacheCoherent = false
+                fireStateChanged()
+            }
+        })
+    }
+
+    fun getChunk(frame: Long) = audioDataProvider?.getChunk(_maxChunks, frame) ?: 0
 
     fun chunkRangeToFrameRange(chunkRange: ClosedIntRange): ClosedLongRange {
-        return ClosedLongRange(audioDataProvider.getStartFrame(_maxChunks, chunkRange.start),
-                audioDataProvider.getStartFrame(_maxChunks, chunkRange.end + 1) - 1)
+        val model = audioDataProvider ?: return ClosedLongRange.EMPTY_RANGE
+        return ClosedLongRange(model.getStartFrame(_maxChunks, chunkRange.start),
+                model.getStartFrame(_maxChunks, chunkRange.end + 1) - 1)
     }
 
     fun frameRangeToChunkRange(frameRange: ClosedLongRange): ClosedIntRange {
-        return ClosedIntRange(audioDataProvider.getChunk(_maxChunks, frameRange.start),
-                audioDataProvider.getChunk(_maxChunks, frameRange.end))
+        val model = audioDataProvider ?: return ClosedIntRange.EMPTY_RANGE
+        return ClosedIntRange(model.getChunk(_maxChunks, frameRange.start),
+                model.getChunk(_maxChunks, frameRange.end))
     }
 
     fun getCoordinates(word: WordData): ClosedIntRange {
-        val left = audioDataProvider.getChunk(_maxChunks, (word.range.start / audioDataProvider.millisecondsPerFrame).toLong())
-        val right = audioDataProvider.getChunk(_maxChunks, (word.range.end / audioDataProvider.millisecondsPerFrame).toLong())
+        val model = audioDataProvider ?: return ClosedIntRange.EMPTY_RANGE
+        val left = model.getChunk(_maxChunks, (word.range.start / model.millisecondsPerFrame).toLong())
+        val right = model.getChunk(_maxChunks, (word.range.end / model.millisecondsPerFrame).toLong())
         return ClosedIntRange(left, right)
     }
 
     fun getEnclosingWord(coordinate: Int): WordData? {
         val index = coordinates.binarySearch(ClosedIntRange(coordinate, coordinate), ClosedIntRange.INTERSECTS_CMP)
         return if (index < 0) null
-        else transcriptModel?.data?.words?.get(index)
+        else multimediaModel.data?.words?.get(index)
     }
 
     /**
@@ -184,18 +131,23 @@ class WaveformModel(val file: Path) : ChangeNotifier by DefaultChangeNotifier(),
         }
     }
 
-    private fun loadData(maxChunks: Int, drawRange: ClosedIntRange, callback: () -> Unit) = runBlocking {
-        if (broken.get()) return@runBlocking
-        currentTask?.cancelAndJoin()
-        val job = Job()
-        currentTask = job
-        launch(CommonPool, parent = job) {
+    private fun loadData(maxChunks: Int, drawRange: ClosedIntRange, callback: () -> Unit) {
+        if (broken.get()) return
+        val model = audioDataProvider ?: return
+        currentTask?.cancel(true)
+        try {
+            currentTask?.get()
+        } catch (_: CancellationException) {
+        }
+        currentTask = ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                _audioData = audioDataProvider.getAveragedSampleData(maxChunks, drawRange, job)
+                _audioData = model.getAveragedSampleData(maxChunks, drawRange, currentTask!!)
             } catch (ex: IOException) {
                 if (broken.compareAndSet(false, true)) {
-                    showNotification("I/O error occurred during reading $file audio file. Try reopen file.")
+                    showNotification("I/O error occurred during reading ${multimediaModel.audioFile} audio file. Try reopen file.")
                 }
+            } catch (ex: CancellationException) {
+                return@executeOnPooledThread
             }
             ApplicationManager.getApplication().invokeLater {
                 callback()

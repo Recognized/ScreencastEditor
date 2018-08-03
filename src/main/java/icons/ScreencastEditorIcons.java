@@ -21,5 +21,5 @@ public interface ScreencastEditorIcons {
     Icon SETTINGS = IconLoader.getIcon("/icons/settings.png");
     Icon SETTINGS_TOOL_WINDOW = IconLoader.getIcon("/icons/settingsTool.png");
     Icon STOP = IconLoader.getIcon("/icons/stop.png");
-    Icon STOP_TOOL_WINDOW = IconLoader.getIcon("/icons/stopTool.png");
+    Icon STOP_TOOL_WINDOW = IconLoader.getIcon("/icons/stopTool.png"); 
 }

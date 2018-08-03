@@ -4,21 +4,21 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MultiSelectionModel
 import java.awt.*
-import java.nio.file.Path
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 import kotlin.math.max
 
 private val logger = logger<JWaveform>()
 
-class JWaveform(val file: Path) : JBPanel<JWaveform>(), ChangeListener {
+class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), ChangeListener {
     private val wordFont
         get() = JBUI.Fonts.label()
-    val model = WaveformModel(file)
+    val model = WaveformModel(multimediaModel)
     var selectionModel = MultiSelectionModel()
 
     init {
@@ -149,7 +149,7 @@ class JWaveform(val file: Path) : JBPanel<JWaveform>(), ChangeListener {
      */
     private fun Graphics2D.drawWords() {
         val usedRange = model.drawRange
-        val words = model.transcriptModel?.data?.words ?: return
+        val words = model.multimediaModel.data?.words ?: return
         for (word in words) {
             val coordinates = model.getCoordinates(word)
             if (coordinates.intersects(usedRange)) {

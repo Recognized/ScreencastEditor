@@ -9,6 +9,7 @@ import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.ClosedLongRange
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.*
 import java.awt.Dimension
+import java.io.File
 import java.io.IOException
 import javax.swing.JScrollPane
 import javax.swing.event.ChangeEvent
@@ -21,7 +22,9 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     private var blockScaling = false
     @Volatile
     private var _playState = STOP
-    val playState
+    val hasSelection: Boolean
+        get() = !waveform.selectionModel.selectedRanges.isEmpty()
+    val playState: Player.PlayState
         get() = _playState
 
     fun installZoom(scrollPane: JScrollPane) {
@@ -77,9 +80,10 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
      */
     fun play() {
         if (_playState == PLAY) return
+        _playState = PLAY
         if (_playState == STOP) {
-            _playState = PLAY
-            val player = Player.create(waveform.file).also { this.player = it }
+            val file = waveform.model.multimediaModel.audioFile ?: return
+            val player = Player.create(File(file.path).toPath()).also { this.player = it }
             player.setProcessUpdater(this::positionUpdater)
             player.play()
             ApplicationManager.getApplication().executeOnPooledThread {

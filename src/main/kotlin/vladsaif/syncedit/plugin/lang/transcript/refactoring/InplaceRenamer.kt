@@ -72,9 +72,11 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
             if (model != null) {
                 println(CommandProcessor.getInstance().currentCommandName)
                 val currentData = model.data
-                val newData = model.data.excludeWord(originalIndex)
-                val undo = TranscriptModelUndoableAction(model, currentData, newData)
-                manager.undoableActionPerformed(undo)
+                val newData = model.data?.excludeWord(originalIndex)
+                if (currentData != null && newData != null) {
+                    val undo = TranscriptModelUndoableAction(model, currentData, newData)
+                    manager.undoableActionPerformed(undo)
+                }
                 // Now apply changes to model, because manager do not invoke redo() method
                 model.excludeWord(originalIndex)
             }
@@ -83,8 +85,11 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
             val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
             if (model != null) {
                 val currentData = model.data
-                val newData = model.data.renameWord(originalIndex, editor.document.getText(textRange))
-                manager.undoableActionPerformed(TranscriptModelUndoableAction(model, currentData, newData))
+                val newData = model.data?.renameWord(originalIndex, editor.document.getText(textRange))
+                if (currentData != null && newData != null) {
+                    val undo = TranscriptModelUndoableAction(model, currentData, newData)
+                    manager.undoableActionPerformed(undo)
+                }
                 model.renameWord(originalIndex, editor.document.getText(textRange))
             }
             finishEditing()

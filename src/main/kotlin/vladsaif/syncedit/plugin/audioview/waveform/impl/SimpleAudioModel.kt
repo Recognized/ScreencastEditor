@@ -1,13 +1,15 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
-import kotlinx.coroutines.experimental.Job
 import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.ClosedLongRange
 import vladsaif.syncedit.plugin.audioview.AudioSampler
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.audioview.waveform.AveragedSampleData
 import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.floorToInt
 import java.nio.file.Path
+import java.util.concurrent.CancellationException
+import java.util.concurrent.Future
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.max
@@ -20,7 +22,7 @@ import kotlin.math.sqrt
  * or if it cannot be converted to decode format.
  * @throws java.io.IOException If I/O error occurs.
  */
-class BasicStatProvider(file: Path) : AudioDataModel {
+class SimpleAudioModel(file: Path) : AudioDataModel {
     private val file = file.toAbsolutePath().toFile()
     override var trackDurationMilliseconds = 0.0
         private set
@@ -48,6 +50,20 @@ class BasicStatProvider(file: Path) : AudioDataModel {
         }
     }
 
+    override fun msRangeToFrameRange(range: ClosedIntRange): ClosedLongRange {
+        return ClosedLongRange(
+                (framesPerMillisecond * range.start).toLong(),
+                (framesPerMillisecond * range.end).toLong()
+        )
+    }
+
+    override fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange {
+        return ClosedIntRange(
+                (millisecondsPerFrame * range.start).toInt(),
+                (millisecondsPerFrame * range.end).toInt()
+        )
+    }
+
     override fun getStartFrame(maxChunks: Int, chunk: Int): Long {
         val framesPerChunk = (totalFrames / maxChunks).toInt()
         val bigChunkRange = getBigChunkRange(maxChunks)
@@ -58,7 +74,7 @@ class BasicStatProvider(file: Path) : AudioDataModel {
         }
     }
 
-    override suspend fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, job: Job): List<AveragedSampleData> {
+    override fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, future: Future<*>): List<AveragedSampleData> {
         val framesPerChunk = (totalFrames / maxChunks).toInt()
         AudioSystem.getAudioInputStream(file).use { input ->
             val decodeFormat = input.format.toDecodeFormat()
@@ -70,7 +86,7 @@ class BasicStatProvider(file: Path) : AudioDataModel {
             AudioSampler(AudioSystem.getAudioInputStream(decodeFormat, input),
                     countSkippedFrames(maxChunks, chunkRange, framesPerChunk),
                     countReadFrames(maxChunks, chunkRange, framesPerChunk)).use {
-                countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, job)
+                countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, future)
             }
             return ret
         }
@@ -87,20 +103,20 @@ class BasicStatProvider(file: Path) : AudioDataModel {
         return res.floorToInt()
     }
 
-    private suspend fun countStat(audio: AudioSampler,
-                                  framesPerChunk: Int,
-                                  data: List<AveragedSampleData>,
-                                  maxChunks: Int,
-                                  chunkRange: ClosedIntRange,
-                                  channels: Int,
-                                  job: Job) {
+    private fun countStat(audio: AudioSampler,
+                          framesPerChunk: Int,
+                          data: List<AveragedSampleData>,
+                          maxChunks: Int,
+                          chunkRange: ClosedIntRange,
+                          channels: Int,
+                          future: Future<*>) {
         val peaks = List(channels) { LongArray(framesPerChunk + 1) }
         var restCounter = getBigChunkRange(maxChunks).intersect(chunkRange).length
         var frameCounter = 0
         var channelCounter = 0
         var chunkCounter = 0
         audio.forEachSample {
-            if (job.isCancelled) throw job.getCancellationException()
+            if (future.isCancelled) throw CancellationException()
             peaks[channelCounter++][frameCounter] = it
             if (channelCounter == channels) {
                 channelCounter = 0

@@ -4,7 +4,7 @@ import com.intellij.openapi.command.undo.DocumentReference
 import com.intellij.openapi.command.undo.UndoableAction
 
 class TranscriptModelUndoableAction(
-        private val model: TranscriptModel,
+        private val model: MultimediaModel,
         private val currentData: TranscriptData,
         private val newData: TranscriptData
 ) : UndoableAction {
