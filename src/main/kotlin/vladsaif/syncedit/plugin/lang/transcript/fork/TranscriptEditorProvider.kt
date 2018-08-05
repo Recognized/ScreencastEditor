@@ -73,13 +73,7 @@ class TranscriptEditorProvider : FileEditorProvider {
                 isGreedyToLeft = true
                 isGreedyToRight = true
             }
-            val listener = object : MultimediaModel.Listener {
-                override fun onTranscriptDataChanged() {
-                    val psi = model.transcriptPsi ?: return model.removeTranscriptDataListener(this)
-                    PsiDocumentManager.getInstance(project).reparseFiles(listOf(psi.virtualFile), true)
-                }
-            }
-            model.addTranscriptDataListener(listener)
+            editor.putUserData(TranscriptEditorDisposer.modelKey, model)
             editor.document.putUserData(InplaceRenamer.GUARDED_BLOCKS, listOf(marker))
             with(editor.colorsScheme) {
                 setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)

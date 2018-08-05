@@ -10,6 +10,7 @@ import vladsaif.syncedit.plugin.floorToInt
 import java.nio.file.Path
 import java.util.concurrent.CancellationException
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.max
@@ -74,7 +75,7 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
         }
     }
 
-    override fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, future: Future<*>): List<AveragedSampleData> {
+    override fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, isActive: AtomicBoolean): List<AveragedSampleData> {
         val framesPerChunk = (totalFrames / maxChunks).toInt()
         AudioSystem.getAudioInputStream(file).use { input ->
             val decodeFormat = input.format.toDecodeFormat()
@@ -86,7 +87,7 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
             AudioSampler(AudioSystem.getAudioInputStream(decodeFormat, input),
                     countSkippedFrames(maxChunks, chunkRange, framesPerChunk),
                     countReadFrames(maxChunks, chunkRange, framesPerChunk)).use {
-                countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, future)
+                countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, isActive)
             }
             return ret
         }
@@ -109,14 +110,14 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
                           maxChunks: Int,
                           chunkRange: ClosedIntRange,
                           channels: Int,
-                          future: Future<*>) {
+                          isActive: AtomicBoolean) {
         val peaks = List(channels) { LongArray(framesPerChunk + 1) }
         var restCounter = getBigChunkRange(maxChunks).intersect(chunkRange).length
         var frameCounter = 0
         var channelCounter = 0
         var chunkCounter = 0
         audio.forEachSample {
-            if (future.isCancelled) throw CancellationException()
+            if (!isActive.get()) throw CancellationException()
             peaks[channelCounter++][frameCounter] = it
             if (channelCounter == channels) {
                 channelCounter = 0

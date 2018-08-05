@@ -36,6 +36,8 @@ class TranscriptData(words: List<WordData>) {
     @Suppress("unused")
     private constructor() : this(ArrayList())
 
+    operator fun get(index: Int): WordData = words[index]
+
     fun replaceWords(replacements: List<Pair<Int, WordData>>): TranscriptData {
         val newWords = words.toMutableList()
         for ((index, word) in replacements) {

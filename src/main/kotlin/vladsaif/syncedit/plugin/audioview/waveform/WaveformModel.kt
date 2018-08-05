@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.Ref
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import java.io.IOException
@@ -36,6 +37,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     @Volatile
     private var _audioData = listOf(AveragedSampleData())
     private var currentTask: Future<*>? = null
+    private var currentTaskIsActive: AtomicBoolean? = null
     private var coordinatesCacheCoherent = false
     private var coordinatesCache = listOf<ClosedIntRange>()
     private var _visibleChunks = 4000
@@ -134,14 +136,17 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     private fun loadData(maxChunks: Int, drawRange: ClosedIntRange, callback: () -> Unit) {
         if (broken.get()) return
         val model = audioDataProvider ?: return
+        currentTaskIsActive?.set(false)
         currentTask?.cancel(true)
         try {
             currentTask?.get()
         } catch (_: CancellationException) {
         }
+        val taskIsActive = AtomicBoolean(true)
+        currentTaskIsActive = taskIsActive
         currentTask = ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                _audioData = model.getAveragedSampleData(maxChunks, drawRange, currentTask!!)
+                _audioData = model.getAveragedSampleData(maxChunks, drawRange, taskIsActive)
             } catch (ex: IOException) {
                 if (broken.compareAndSet(false, true)) {
                     showNotification("I/O error occurred during reading ${multimediaModel.audioFile} audio file. Try reopen file.")

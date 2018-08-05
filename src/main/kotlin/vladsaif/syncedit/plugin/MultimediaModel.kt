@@ -83,13 +83,7 @@ class MultimediaModel(
                     return
                 }
             }
-            val xml = xmlFile ?: return
-            val nonNullData = data ?: return
-            FileDocumentManager.getInstance().getDocument(xml)?.let { doc ->
-                ApplicationManager.getApplication().runWriteAction {
-                    doc.setText(nonNullData.toXml())
-                }
-            }
+            updateXml()
         }
     var transcriptFile: VirtualFile? = null
         set(value) {
@@ -170,6 +164,17 @@ class MultimediaModel(
         this.xmlFile = xmlFile
         val newData = xmlFile.inputStream.use { TranscriptData.createFrom(it) }
         data = newData.replaceWords(getWordReplacements(newData))
+    }
+
+
+    fun updateXml() {
+        val xml = xmlFile ?: return
+        val nonNullData = data ?: return
+        FileDocumentManager.getInstance().getDocument(xml)?.let { doc ->
+            ApplicationManager.getApplication().runWriteAction {
+                doc.setText(nonNullData.toXml())
+            }
+        }
     }
 
     fun addTranscriptDataListener(listener: Listener) {

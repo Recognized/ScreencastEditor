@@ -16,6 +16,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFileFactory
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.runBlocking
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
@@ -32,36 +33,22 @@ class RecognizeAudioAction : AnAction() {
         val project = e.project ?: return
         val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
         if (CredentialProvider.Instance.gSettings == null) {
-            Messages.showWarningDialog(
-                    e.project,
-                    "Credentials for cloud service account should be set before recognition is used",
-                    "Credentials not found"
-            )
+            showNoCredentialsDialog(project)
             return
         }
         descriptor.title = "Choose audio file"
         descriptor.description = "Choose audio file for cloud recognition"
         FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
             val waveform = OpenAudioAction.openAudio(project, file) ?: return@chooseFile
-            try {
-                val recognizeTask = RecognizeTask(
-                        e.project,
-                        "Getting transcript for $file",
-                        File(file.path).toPath(),
-                        waveform
-                )
-                ProgressManager.getInstance().run(recognizeTask)
-            } catch (ex: IOException) {
-                Messages.showErrorDialog(e.project, ex.message, "I/O error occurred")
-            }
+            runRecognitionTask(project, waveform.multimediaModel, file)
         }
     }
 
     private class RecognizeTask(
-            project: Project?,
+            project: Project,
             title: String,
             private val path: Path,
-            private val waveformModel: WaveformModel
+            private val multimedia: MultimediaModel
     ) : Task.Backgroundable(project, title, true) {
 
         private var job: Job? = null
@@ -82,7 +69,7 @@ class RecognizeAudioAction : AnAction() {
                                 0L,
                                 true
                         )
-                        waveformModel.multimediaModel.setAndReadXml(xml.virtualFile)
+                        multimedia.setAndReadXml(xml.virtualFile)
                         FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
                         indicator.stop()
                     }
@@ -94,5 +81,30 @@ class RecognizeAudioAction : AnAction() {
             job?.cancel()
             super.onCancel()
         }
+    }
+
+    companion object {
+        fun showNoCredentialsDialog(project: Project) {
+            Messages.showWarningDialog(
+                    project,
+                    "Credentials for cloud service account should be set before recognition is used",
+                    "Credentials not found"
+            )
+        }
+
+        fun runRecognitionTask(project: Project, model: MultimediaModel, audio: VirtualFile) {
+            try {
+                val recognizeTask = RecognizeTask(
+                        project,
+                        "Getting transcript for $audio",
+                        File(audio.path).toPath(),
+                        model
+                )
+                ProgressManager.getInstance().run(recognizeTask)
+            } catch (ex: IOException) {
+                Messages.showErrorDialog(project, ex.message, "I/O error occurred")
+            }
+        }
+
     }
 }

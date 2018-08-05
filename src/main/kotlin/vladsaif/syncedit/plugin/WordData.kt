@@ -14,6 +14,9 @@ data class WordData(
         @field:XmlAttribute
         val state: State
 ) : Comparable<WordData> {
+    /**
+     * Replaces non-breaking space symbol because it is used in TranscriptView language as word separator
+     */
     val filteredText
         get() = if (text.contains('\u00A0')) text.replace('\u00A0', ' ') else text
 
