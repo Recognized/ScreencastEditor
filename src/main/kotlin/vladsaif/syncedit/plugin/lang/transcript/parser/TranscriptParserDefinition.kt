@@ -18,40 +18,40 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWordImpl
 
 class TranscriptParserDefinition : ParserDefinition {
 
-    override fun createLexer(project: Project): Lexer {
-        return TranscriptLexerAdapter()
-    }
+  override fun createLexer(project: Project): Lexer {
+    return TranscriptLexerAdapter()
+  }
 
-    override fun getCommentTokens(): TokenSet {
-        return TokenSet.EMPTY
-    }
+  override fun getCommentTokens(): TokenSet {
+    return TokenSet.EMPTY
+  }
 
-    override fun getStringLiteralElements(): TokenSet {
-        return STRINGS
-    }
+  override fun getStringLiteralElements(): TokenSet {
+    return STRINGS
+  }
 
-    override fun createParser(project: Project): PsiParser {
-        return TranscriptParser()
-    }
+  override fun createParser(project: Project): PsiParser {
+    return TranscriptParser()
+  }
 
-    override fun getFileNodeType(): IFileElementType {
-        return FILE
-    }
+  override fun getFileNodeType(): IFileElementType {
+    return FILE
+  }
 
-    override fun createFile(viewProvider: FileViewProvider): PsiFile {
-        return TranscriptPsiFile(viewProvider)
-    }
+  override fun createFile(viewProvider: FileViewProvider): PsiFile {
+    return TranscriptPsiFile(viewProvider)
+  }
 
-    override fun spaceExistanceTypeBetweenTokens(left: ASTNode, right: ASTNode): ParserDefinition.SpaceRequirements {
-        return ParserDefinition.SpaceRequirements.MAY
-    }
+  override fun spaceExistanceTypeBetweenTokens(left: ASTNode, right: ASTNode): ParserDefinition.SpaceRequirements {
+    return ParserDefinition.SpaceRequirements.MAY
+  }
 
-    override fun createElement(node: ASTNode): PsiElement {
-        return TranscriptWordImpl(node)
-    }
+  override fun createElement(node: ASTNode): PsiElement {
+    return TranscriptWordImpl(node)
+  }
 
-    companion object {
-        val STRINGS = TokenSet.create(TranscriptParser.WORD)
-        val FILE = IFileElementType(TranscriptLanguage)
-    }
+  companion object {
+    val STRINGS = TokenSet.create(TranscriptParser.WORD)
+    val FILE = IFileElementType(TranscriptLanguage)
+  }
 }

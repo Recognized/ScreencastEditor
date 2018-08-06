@@ -22,178 +22,178 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
 class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
-    private val myHighlighters = mutableListOf<RangeHighlighter>()
-    private val myPsiFile: TranscriptPsiFile?
-        get() {
-            val manager = PsiDocumentManager.getInstance(editor.project ?: return null)
-            return manager.getPsiFile(editor.document) as? TranscriptPsiFile
-        }
-    private var myOriginalIndex = word.number
-    private var myOriginalWord = word.text
-
-    private fun finishEditing() {
-        ourActiveRenamers.pop()
-        val project = editor.project
-        if (project != null && !project.isDisposed) {
-            val highlightManager = HighlightManager.getInstance(project)
-            for (highlighter in myHighlighters) {
-                highlightManager.removeSegmentHighlighter(editor, highlighter)
-            }
-        }
-        with(editor.document) {
-            getUserData(GUARDED_BLOCKS)?.forEach { removeGuardedBlock(it) }
-            val marker = createGuardedBlock(0, textLength).apply {
-                isGreedyToLeft = true
-                isGreedyToRight = true
-            }
-            putUserData(GUARDED_BLOCKS, listOf(marker))
-        }
+  private val myHighlighters = mutableListOf<RangeHighlighter>()
+  private val myPsiFile: TranscriptPsiFile?
+    get() {
+      val manager = PsiDocumentManager.getInstance(editor.project ?: return null)
+      return manager.getPsiFile(editor.document) as? TranscriptPsiFile
     }
+  private var myOriginalIndex = word.number
+  private var myOriginalWord = word.text
 
-    fun cancel() {
-        // Revert how it was before renaming if it was cancelled
-        val highlighter = myHighlighters[0]
-        ApplicationManager.getApplication().runWriteAction {
-            editor.document.replaceString(highlighter.startOffset, highlighter.endOffset, myOriginalWord)
-        }
-        finishEditing()
+  private fun finishEditing() {
+    ourActiveRenamers.pop()
+    val project = editor.project
+    if (project != null && !project.isDisposed) {
+      val highlightManager = HighlightManager.getInstance(project)
+      for (highlighter in myHighlighters) {
+        highlightManager.removeSegmentHighlighter(editor, highlighter)
+      }
     }
+    with(editor.document) {
+      getUserData(GUARDED_BLOCKS)?.forEach { removeGuardedBlock(it) }
+      val marker = createGuardedBlock(0, textLength).apply {
+        isGreedyToLeft = true
+        isGreedyToRight = true
+      }
+      putUserData(GUARDED_BLOCKS, listOf(marker))
+    }
+  }
 
-    fun acceptTemplate() {
-        val highlighter = myHighlighters[0]
-        val project = editor.project
-        val model = myPsiFile?.model
-        val manager = if (project == null)
-            UndoManager.getGlobalInstance()
-        else
-            UndoManager.getInstance(project)
-        if (highlighter.startOffset == highlighter.endOffset) {
-            // If word was deleted, lets exclude it
-            if (model != null) {
-                println(CommandProcessor.getInstance().currentCommandName)
-                val currentData = model.data
-                val newData = model.data?.excludeWord(myOriginalIndex)
-                if (currentData != null && newData != null) {
-                    val undo = TranscriptModelUndoableAction(model, currentData, newData)
-                    manager.undoableActionPerformed(undo)
-                }
-                // Now apply changes to model, because manager do not invoke redo() method
-                model.excludeWord(myOriginalIndex)
-            }
+  fun cancel() {
+    // Revert how it was before renaming if it was cancelled
+    val highlighter = myHighlighters[0]
+    ApplicationManager.getApplication().runWriteAction {
+      editor.document.replaceString(highlighter.startOffset, highlighter.endOffset, myOriginalWord)
+    }
+    finishEditing()
+  }
+
+  fun acceptTemplate() {
+    val highlighter = myHighlighters[0]
+    val project = editor.project
+    val model = myPsiFile?.model
+    val manager = if (project == null)
+      UndoManager.getGlobalInstance()
+    else
+      UndoManager.getInstance(project)
+    if (highlighter.startOffset == highlighter.endOffset) {
+      // If word was deleted, lets exclude it
+      if (model != null) {
+        println(CommandProcessor.getInstance().currentCommandName)
+        val currentData = model.data
+        val newData = model.data?.excludeWord(myOriginalIndex)
+        if (currentData != null && newData != null) {
+          val undo = TranscriptModelUndoableAction(model, currentData, newData)
+          manager.undoableActionPerformed(undo)
+        }
+        // Now apply changes to model, because manager do not invoke redo() method
+        model.excludeWord(myOriginalIndex)
+      }
+      cancel()
+    } else {
+      val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
+      if (model != null) {
+        val currentData = model.data
+        val newData = model.data?.renameWord(myOriginalIndex, editor.document.getText(textRange))
+        if (currentData != null && newData != null) {
+          val undo = TranscriptModelUndoableAction(model, currentData, newData)
+          manager.undoableActionPerformed(undo)
+        }
+        model.renameWord(myOriginalIndex, editor.document.getText(textRange))
+      }
+      finishEditing()
+    }
+  }
+
+
+  fun rename() {
+    val project = editor.project ?: return
+    myHighlighters.clear()
+
+    val range = word.textRange
+
+    allowEditions(range)
+
+    CommandProcessor.getInstance().executeCommand(editor.project, {
+      ApplicationManager.getApplication().runWriteAction {
+        val offset = editor.caretModel.offset
+        editor.caretModel.moveToOffset(word.textOffset)
+
+        val template = buildTemplate(word)
+
+        TemplateManager.getInstance(project).startTemplate(editor, template, object : TemplateEditingAdapter() {
+          override fun templateFinished(template: Template?, brokenOff: Boolean) {
+            acceptTemplate()
+          }
+
+          override fun templateCancelled(template: Template?) {
             cancel()
-        } else {
-            val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
-            if (model != null) {
-                val currentData = model.data
-                val newData = model.data?.renameWord(myOriginalIndex, editor.document.getText(textRange))
-                if (currentData != null && newData != null) {
-                    val undo = TranscriptModelUndoableAction(model, currentData, newData)
-                    manager.undoableActionPerformed(undo)
-                }
-                model.renameWord(myOriginalIndex, editor.document.getText(textRange))
-            }
-            finishEditing()
+          }
+        }) { _, value ->
+          value.isEmpty() || value[value.length - 1] != '\u00A0'
         }
+
+        // restore old offset
+        editor.caretModel.moveToOffset(offset)
+
+        addHighlight(range, editor, myHighlighters)
+        LOG.assertTrue(myHighlighters.size == 1)
+      }
+    }, RefactoringBundle.message("rename.title"), null)
+  }
+
+  private fun allowEditions(textRange: TextRange) {
+    with(editor.document) {
+      getUserData(GUARDED_BLOCKS)?.forEach { removeGuardedBlock(it) }
+      val newBlocks = mutableListOf<RangeMarker>()
+      if (textRange.startOffset > 0) {
+        newBlocks.add(createGuardedBlock(0, textRange.startOffset).apply {
+          isGreedyToLeft = false
+          isGreedyToRight = false
+        })
+      }
+      if (textRange.endOffset < textLength) {
+        newBlocks.add(createGuardedBlock(textRange.endOffset, textLength).apply {
+          isGreedyToLeft = false
+          isGreedyToRight = false
+        })
+      }
+      putUserData(GUARDED_BLOCKS, newBlocks.toList())
+    }
+  }
+
+  companion object {
+    private val LOG = logger<InplaceRenamer>()
+    private val ourActiveRenamers = Stack<InplaceRenamer>()
+    val GUARDED_BLOCKS: Key<List<RangeMarker>> = Key.create("GUARDER_BLOCKS")
+
+    fun rename(editor: Editor, word: TranscriptWord) {
+      if (!ourActiveRenamers.isEmpty()) {
+        ourActiveRenamers.peek().finishEditing()
+      }
+      val renamer = InplaceRenamer(editor, word)
+      ourActiveRenamers.push(renamer)
+      renamer.rename()
     }
 
+    private fun addHighlight(range: TextRange, editor: Editor, highlighters: List<RangeHighlighter>) {
+      val colorsManager = EditorColorsManager.getInstance()
+      val attributes = colorsManager.globalScheme.getAttributes(EditorColors.WRITE_SEARCH_RESULT_ATTRIBUTES)
 
-    fun rename() {
-        val project = editor.project ?: return
-        myHighlighters.clear()
-
-        val range = word.textRange
-
-        allowEditions(range)
-
-        CommandProcessor.getInstance().executeCommand(editor.project, {
-            ApplicationManager.getApplication().runWriteAction {
-                val offset = editor.caretModel.offset
-                editor.caretModel.moveToOffset(word.textOffset)
-
-                val template = buildTemplate(word)
-
-                TemplateManager.getInstance(project).startTemplate(editor, template, object : TemplateEditingAdapter() {
-                    override fun templateFinished(template: Template?, brokenOff: Boolean) {
-                        acceptTemplate()
-                    }
-
-                    override fun templateCancelled(template: Template?) {
-                        cancel()
-                    }
-                }) { _, value ->
-                    value.isEmpty() || value[value.length - 1] != '\u00A0'
-                }
-
-                // restore old offset
-                editor.caretModel.moveToOffset(offset)
-
-                addHighlight(range, editor, myHighlighters)
-                LOG.assertTrue(myHighlighters.size == 1)
-            }
-        }, RefactoringBundle.message("rename.title"), null)
+      val highlightManager = HighlightManager.getInstance(editor.project ?: return)
+      highlightManager.addOccurrenceHighlight(editor, range.startOffset, range.endOffset, attributes, 0, highlighters, null)
+      for (highlighter in highlighters) {
+        highlighter.isGreedyToLeft = true
+        highlighter.isGreedyToRight = true
+      }
     }
 
-    private fun allowEditions(textRange: TextRange) {
-        with(editor.document) {
-            getUserData(GUARDED_BLOCKS)?.forEach { removeGuardedBlock(it) }
-            val newBlocks = mutableListOf<RangeMarker>()
-            if (textRange.startOffset > 0) {
-                newBlocks.add(createGuardedBlock(0, textRange.startOffset).apply {
-                    isGreedyToLeft = false
-                    isGreedyToRight = false
-                })
-            }
-            if (textRange.endOffset < textLength) {
-                newBlocks.add(createGuardedBlock(textRange.endOffset, textLength).apply {
-                    isGreedyToLeft = false
-                    isGreedyToRight = false
-                })
-            }
-            putUserData(GUARDED_BLOCKS, newBlocks.toList())
+    private fun buildTemplate(word: TranscriptWord): Template {
+      val builder = TemplateBuilderImpl(word)
+
+      val node = word.node
+      builder.replaceElement(word, "Your word", object : EmptyExpression() {
+        override fun calculateQuickResult(context: ExpressionContext?): Result? {
+          return TextResult(node.text)
         }
+
+        override fun calculateResult(context: ExpressionContext?): Result? {
+          return TextResult(node.text)
+        }
+      }, true)
+
+      return builder.buildInlineTemplate()
     }
-
-    companion object {
-        private val LOG = logger<InplaceRenamer>()
-        private val ourActiveRenamers = Stack<InplaceRenamer>()
-        val GUARDED_BLOCKS: Key<List<RangeMarker>> = Key.create("GUARDER_BLOCKS")
-
-        fun rename(editor: Editor, word: TranscriptWord) {
-            if (!ourActiveRenamers.isEmpty()) {
-                ourActiveRenamers.peek().finishEditing()
-            }
-            val renamer = InplaceRenamer(editor, word)
-            ourActiveRenamers.push(renamer)
-            renamer.rename()
-        }
-
-        private fun addHighlight(range: TextRange, editor: Editor, highlighters: List<RangeHighlighter>) {
-            val colorsManager = EditorColorsManager.getInstance()
-            val attributes = colorsManager.globalScheme.getAttributes(EditorColors.WRITE_SEARCH_RESULT_ATTRIBUTES)
-
-            val highlightManager = HighlightManager.getInstance(editor.project ?: return)
-            highlightManager.addOccurrenceHighlight(editor, range.startOffset, range.endOffset, attributes, 0, highlighters, null)
-            for (highlighter in highlighters) {
-                highlighter.isGreedyToLeft = true
-                highlighter.isGreedyToRight = true
-            }
-        }
-
-        private fun buildTemplate(word: TranscriptWord): Template {
-            val builder = TemplateBuilderImpl(word)
-
-            val node = word.node
-            builder.replaceElement(word, "Your word", object : EmptyExpression() {
-                override fun calculateQuickResult(context: ExpressionContext?): Result? {
-                    return TextResult(node.text)
-                }
-
-                override fun calculateResult(context: ExpressionContext?): Result? {
-                    return TextResult(node.text)
-                }
-            }, true)
-
-            return builder.buildInlineTemplate()
-        }
-    }
+  }
 }

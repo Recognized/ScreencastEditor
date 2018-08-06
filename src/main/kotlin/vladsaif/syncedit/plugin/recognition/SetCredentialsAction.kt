@@ -13,27 +13,27 @@ import java.io.IOException
 
 class SetCredentialsAction : AnAction() {
 
-    override fun actionPerformed(e: AnActionEvent?) {
-        e ?: return
-        val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
-        descriptor.title = "Choose file with credentials"
-        descriptor.description = "Choose file with credentials that are used in cloud recognition service."
-        FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
-            try {
-                CredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
-                Notification(
-                        "Screencast Editor",
-                        "Credentials",
-                        "Credentials are successfully installed: \"${file.path}\"",
-                        NotificationType.INFORMATION
-                ).notify(e.project)
-            } catch (ex: IOException) {
-                Messages.showErrorDialog(
-                        e.project,
-                        "Not valid credentials file: \"${file.path}\"",
-                        "Corrupted credentials"
-                )
-            }
-        }
+  override fun actionPerformed(e: AnActionEvent?) {
+    e ?: return
+    val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
+    descriptor.title = "Choose file with credentials"
+    descriptor.description = "Choose file with credentials that are used in cloud recognition service."
+    FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
+      try {
+        CredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
+        Notification(
+            "Screencast Editor",
+            "Credentials",
+            "Credentials are successfully installed: \"${file.path}\"",
+            NotificationType.INFORMATION
+        ).notify(e.project)
+      } catch (ex: IOException) {
+        Messages.showErrorDialog(
+            e.project,
+            "Not valid credentials file: \"${file.path}\"",
+            "Corrupted credentials"
+        )
+      }
     }
+  }
 }

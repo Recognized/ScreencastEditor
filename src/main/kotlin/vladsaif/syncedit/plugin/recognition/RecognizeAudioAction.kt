@@ -27,83 +27,83 @@ import kotlin.coroutines.experimental.coroutineContext
 
 class RecognizeAudioAction : AnAction() {
 
-    override fun actionPerformed(e: AnActionEvent?) {
-        e ?: return
-        val project = e.project ?: return
-        val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
-        if (CredentialProvider.Instance.gSettings == null) {
-            showNoCredentialsDialog(project)
-            return
-        }
-        descriptor.title = "Choose audio file"
-        descriptor.description = "Choose audio file for cloud recognition"
-        FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
-            val waveform = OpenAudioAction.openAudio(project, file) ?: return@chooseFile
-            runRecognitionTask(project, waveform.multimediaModel, file)
-        }
+  override fun actionPerformed(e: AnActionEvent?) {
+    e ?: return
+    val project = e.project ?: return
+    val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
+    if (CredentialProvider.Instance.gSettings == null) {
+      showNoCredentialsDialog(project)
+      return
     }
-
-    private class RecognizeTask(
-            project: Project,
-            title: String,
-            private val path: Path,
-            private val multimedia: MultimediaModel
-    ) : Task.Backgroundable(project, title, true) {
-
-        private var job: Job? = null
-
-        override fun run(indicator: ProgressIndicator) {
-            indicator.isIndeterminate = true
-            runBlocking {
-                job = coroutineContext[Job]
-                val data = Files.newInputStream(path).use {
-                    SpeechRecognizer.getDefault().recognize(it)
-                }
-                ApplicationManager.getApplication().invokeAndWait {
-                    ApplicationManager.getApplication().runWriteAction {
-                        val xml = PsiFileFactory.getInstance(project).createFileFromText(
-                                "${FileUtil.getNameWithoutExtension(path.toFile())}.${InternalFileType.defaultExtension}",
-                                InternalFileType,
-                                data.toXml(),
-                                0L,
-                                true
-                        )
-                        multimedia.setAndReadXml(xml.virtualFile)
-                        FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
-                        indicator.stop()
-                    }
-                }
-            }
-        }
-
-        override fun onCancel() {
-            job?.cancel()
-            super.onCancel()
-        }
+    descriptor.title = "Choose audio file"
+    descriptor.description = "Choose audio file for cloud recognition"
+    FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
+      val waveform = OpenAudioAction.openAudio(project, file) ?: return@chooseFile
+      runRecognitionTask(project, waveform.multimediaModel, file)
     }
+  }
 
-    companion object {
-        fun showNoCredentialsDialog(project: Project) {
-            Messages.showWarningDialog(
-                    project,
-                    "Credentials for cloud service account should be set before recognition is used",
-                    "Credentials not found"
+  private class RecognizeTask(
+      project: Project,
+      title: String,
+      private val path: Path,
+      private val multimedia: MultimediaModel
+  ) : Task.Backgroundable(project, title, true) {
+
+    private var myJob: Job? = null
+
+    override fun run(indicator: ProgressIndicator) {
+      indicator.isIndeterminate = true
+      runBlocking {
+        myJob = coroutineContext[Job]
+        val data = Files.newInputStream(path).use {
+          SpeechRecognizer.getDefault().recognize(it)
+        }
+        ApplicationManager.getApplication().invokeAndWait {
+          ApplicationManager.getApplication().runWriteAction {
+            val xml = PsiFileFactory.getInstance(project).createFileFromText(
+                "${FileUtil.getNameWithoutExtension(path.toFile())}.${InternalFileType.defaultExtension}",
+                InternalFileType,
+                data.toXml(),
+                0L,
+                true
             )
+            multimedia.setAndReadXml(xml.virtualFile)
+            FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
+            indicator.stop()
+          }
         }
-
-        fun runRecognitionTask(project: Project, model: MultimediaModel, audio: VirtualFile) {
-            try {
-                val recognizeTask = RecognizeTask(
-                        project,
-                        "Getting transcript for $audio",
-                        File(audio.path).toPath(),
-                        model
-                )
-                ProgressManager.getInstance().run(recognizeTask)
-            } catch (ex: IOException) {
-                Messages.showErrorDialog(project, ex.message, "I/O error occurred")
-            }
-        }
-
+      }
     }
+
+    override fun onCancel() {
+      myJob?.cancel()
+      super.onCancel()
+    }
+  }
+
+  companion object {
+    fun showNoCredentialsDialog(project: Project) {
+      Messages.showWarningDialog(
+          project,
+          "Credentials for cloud service account should be set before recognition is used",
+          "Credentials not found"
+      )
+    }
+
+    fun runRecognitionTask(project: Project, model: MultimediaModel, audio: VirtualFile) {
+      try {
+        val recognizeTask = RecognizeTask(
+            project,
+            "Getting transcript for $audio",
+            File(audio.path).toPath(),
+            model
+        )
+        ProgressManager.getInstance().run(recognizeTask)
+      } catch (ex: IOException) {
+        Messages.showErrorDialog(project, ex.message, "I/O error occurred")
+      }
+    }
+
+  }
 }

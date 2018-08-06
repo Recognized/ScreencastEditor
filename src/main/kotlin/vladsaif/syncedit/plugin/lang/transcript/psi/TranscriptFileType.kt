@@ -6,13 +6,13 @@ import javax.swing.Icon
 
 // Do not create file of this file type manually
 object TranscriptFileType : LanguageFileType(TranscriptLanguage) {
-    private val extension = UUID.randomUUID().toString()
+  private val extension = UUID.randomUUID().toString()
 
-    override fun getName() = "Transcript file"
+  override fun getName() = "Transcript file"
 
-    override fun getDescription() = "Transcript PSI Skeleton"
+  override fun getDescription() = "Transcript PSI Skeleton"
 
-    override fun getDefaultExtension() = extension
+  override fun getDefaultExtension() = extension
 
-    override fun getIcon(): Icon? = null
+  override fun getIcon(): Icon? = null
 }

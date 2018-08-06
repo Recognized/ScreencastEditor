@@ -7,19 +7,19 @@ import java.io.InputStream
 
 interface SpeechRecognizer {
 
-    /**
-     * @return Recognized [TranscriptData] in audio from [inputStream].
-     * @throws java.io.IOException If I/O error occurred
-     * @throws anything if input stream contains trash
-     */
+  /**
+   * @return Recognized [TranscriptData] in audio from [inputStream].
+   * @throws java.io.IOException If I/O error occurred
+   * @throws anything if input stream contains trash
+   */
+  @Throws(IOException::class)
+  suspend fun recognize(inputStream: InputStream): TranscriptData
+
+  companion object {
+
     @Throws(IOException::class)
-    suspend fun recognize(inputStream: InputStream): TranscriptData
-
-    companion object {
-
-        @Throws(IOException::class)
-        fun getDefault(): SpeechRecognizer {
-            return GSpeechKit.create()
-        }
+    fun getDefault(): SpeechRecognizer {
+      return GSpeechKit.create()
     }
+  }
 }

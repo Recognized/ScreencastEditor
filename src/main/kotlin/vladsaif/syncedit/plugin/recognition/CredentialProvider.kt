@@ -8,25 +8,25 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class CredentialProvider private constructor() : PersistentStateComponent<CredentialProvider> {
-    var gSettings: SpeechSettings? = null
-        private set
+  var gSettings: SpeechSettings? = null
+    private set
 
-    fun setGCredentialsFile(file: Path) {
-        Files.newInputStream(file).use {
-            gSettings = SpeechSettings.newBuilder()
-                    .setCredentialsProvider(FixedCredentialsProvider.create(ServiceAccountCredentials.fromStream(it)))
-                    .build()
-        }
+  fun setGCredentialsFile(file: Path) {
+    Files.newInputStream(file).use {
+      gSettings = SpeechSettings.newBuilder()
+          .setCredentialsProvider(FixedCredentialsProvider.create(ServiceAccountCredentials.fromStream(it)))
+          .build()
     }
+  }
 
-    override fun loadState(state: CredentialProvider) {
-        Instance = state
-    }
+  override fun loadState(state: CredentialProvider) {
+    Instance = state
+  }
 
-    override fun getState() = Instance
+  override fun getState() = Instance
 
-    companion object {
-        var Instance = CredentialProvider()
-            private set
-    }
+  companion object {
+    var Instance = CredentialProvider()
+      private set
+  }
 }

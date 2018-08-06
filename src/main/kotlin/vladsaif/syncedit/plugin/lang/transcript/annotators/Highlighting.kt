@@ -17,36 +17,36 @@ import vladsaif.syncedit.plugin.lang.transcript.lexer.TranscriptLexerAdapter
 import vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParser
 
 class TranscriptHighlighterFactory : SyntaxHighlighterFactory() {
-    override fun getSyntaxHighlighter(project: Project?, virtualFile: VirtualFile?): SyntaxHighlighter {
-        return TranscriptHighlighter()
-    }
+  override fun getSyntaxHighlighter(project: Project?, virtualFile: VirtualFile?): SyntaxHighlighter {
+    return TranscriptHighlighter()
+  }
 }
 
 class TranscriptHighlighter : SyntaxHighlighterBase() {
-    override fun getHighlightingLexer(): Lexer {
-        return TranscriptLexerAdapter()
-    }
+  override fun getHighlightingLexer(): Lexer {
+    return TranscriptLexerAdapter()
+  }
 
-    override fun getTokenHighlights(tokenType: IElementType?): Array<TextAttributesKey> {
-        return if (tokenType == TranscriptParser.WORD_TOKEN) {
-            Highlighters.STRING_KEYS
-        } else {
-            Highlighters.EMPTY_KEYS
-        }
+  override fun getTokenHighlights(tokenType: IElementType?): Array<TextAttributesKey> {
+    return if (tokenType == TranscriptParser.WORD_TOKEN) {
+      Highlighters.STRING_KEYS
+    } else {
+      Highlighters.EMPTY_KEYS
     }
+  }
 }
 
 @Suppress("unused")
 object Highlighters {
-    val STRING = createTextAttributesKey("STRING_LITERAL", DefaultLanguageHighlighterColors.STRING)
-    val TIME_OFFSET = createTextAttributesKey("TIME_OFFSET", DefaultLanguageHighlighterColors.METADATA)
-    val COMMENT = DefaultLanguageHighlighterColors.LINE_COMMENT
-    val BAD_CHARACTER = HighlighterColors.BAD_CHARACTER
-    val EXCLUDED_WORD = EditorColors.DELETED_TEXT_ATTRIBUTES
-    val MUTED_WORD = HighlightInfoType.UNUSED_SYMBOL.attributesKey
+  val STRING = createTextAttributesKey("STRING_LITERAL", DefaultLanguageHighlighterColors.STRING)
+  val TIME_OFFSET = createTextAttributesKey("TIME_OFFSET", DefaultLanguageHighlighterColors.METADATA)
+  val COMMENT = DefaultLanguageHighlighterColors.LINE_COMMENT
+  val BAD_CHARACTER = HighlighterColors.BAD_CHARACTER
+  val EXCLUDED_WORD = EditorColors.DELETED_TEXT_ATTRIBUTES
+  val MUTED_WORD = HighlightInfoType.UNUSED_SYMBOL.attributesKey
 
-    val STRING_KEYS = arrayOf(STRING)
-    val COMMENT_KEYS = arrayOf(COMMENT)
-    val TIME_OFFSET_KEYS = arrayOf(TIME_OFFSET)
-    val EMPTY_KEYS = arrayOf<TextAttributesKey>()
+  val STRING_KEYS = arrayOf(STRING)
+  val COMMENT_KEYS = arrayOf(COMMENT)
+  val TIME_OFFSET_KEYS = arrayOf(TIME_OFFSET)
+  val EMPTY_KEYS = arrayOf<TextAttributesKey>()
 }

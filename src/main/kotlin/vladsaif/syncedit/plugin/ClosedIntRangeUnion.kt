@@ -5,9 +5,9 @@ import kotlin.math.max
 import kotlin.math.min
 
 class ClosedIntRangeUnion {
-  private var lastCalculated: ClosedIntRange? = null
-  private var cachedIndex = 0
-  private var cachedAccum = 0
+  private var myLastCalculated: ClosedIntRange? = null
+  private var myCachedIndex = 0
+  private var myCachedAccum = 0
   /**
    * Invariant: sorted in ascending order, distance between each other at least one
    */
@@ -17,7 +17,7 @@ class ClosedIntRangeUnion {
 
   fun clear() {
     myRanges.clear()
-    lastCalculated = null
+    myLastCalculated = null
   }
 
   fun load(other: ClosedIntRangeUnion) {
@@ -40,7 +40,7 @@ class ClosedIntRangeUnion {
 
   fun exclude(range: ClosedIntRange) {
     if (range.empty) return
-    lastCalculated = null
+    myLastCalculated = null
     val startPos = myRanges.binarySearch(ClosedIntRange.from(range.start, 1), INTERSECTS_CMP)
     val endPos = myRanges.binarySearch(ClosedIntRange.from(range.end, 1), INTERSECTS_CMP)
     val lastTouched = if (endPos < 0) toInsertPosition(endPos) - 1 else endPos
@@ -73,7 +73,7 @@ class ClosedIntRangeUnion {
 
   fun union(range: ClosedIntRange) {
     if (range.empty) return
-    lastCalculated = null
+    myLastCalculated = null
     val startPos = myRanges.binarySearch(ClosedIntRange.from(range.start - 1, 1), INTERSECTS_CMP)
     val endPos = myRanges.binarySearch(ClosedIntRange.from(range.end + 1, 1), INTERSECTS_CMP)
     val lastTouched = if (endPos < 0) toInsertPosition(endPos) - 1 else endPos
@@ -92,17 +92,17 @@ class ClosedIntRangeUnion {
   fun impose(range: ClosedIntRange): ClosedIntRange {
     var accumulator = 0
     var i = 0
-    if (lastCalculated != null && lastCalculated!!.start <= range.start) {
-      i = cachedIndex
-      accumulator = cachedAccum
+    if (myLastCalculated != null && myLastCalculated!!.start <= range.start) {
+      i = myCachedIndex
+      accumulator = myCachedAccum
     }
     while (i < myRanges.size && myRanges[i].end < range.start) {
       accumulator += myRanges[i].length
       ++i
     }
-    cachedIndex = i
-    cachedAccum = accumulator
-    lastCalculated = range
+    myCachedIndex = i
+    myCachedAccum = accumulator
+    myLastCalculated = range
     var left = range.start - accumulator
     var right = range.end - accumulator
     val leftPart = ClosedIntRange(0, Math.max(range.start - 1, 0))

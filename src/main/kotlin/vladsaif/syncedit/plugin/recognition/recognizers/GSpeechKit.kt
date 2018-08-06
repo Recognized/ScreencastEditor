@@ -20,38 +20,38 @@ class GSpeechKit
 @Throws(IOException::class)
 private constructor(settings: SpeechSettings) : SpeechClient(settings), SpeechRecognizer {
 
-    @Throws(IOException::class)
-    override suspend fun recognize(inputStream: InputStream): TranscriptData {
-        val audioBytes = ByteString.readFrom(inputStream)
-        val config = RecognitionConfig.newBuilder()
-                .setEnableWordTimeOffsets(true)
-                .setModel("video")
-                .setLanguageCode("en-US")
-                .setEnableAutomaticPunctuation(true)
-                .build()
-        val audio = RecognitionAudio.newBuilder()
-                .setContent(audioBytes)
-                .build()
-        val response = ApiFutureToListenableFuture(longRunningRecognizeAsync(config, audio)).await()
-        val wordData = response.getResults(0)
-                .getAlternatives(0)
-                .wordsList
-                .map { info -> WordData(info.word, getMsRange(info), WordData.State.PRESENTED) }
-        return TranscriptData(wordData)
-    }
+  @Throws(IOException::class)
+  override suspend fun recognize(inputStream: InputStream): TranscriptData {
+    val audioBytes = ByteString.readFrom(inputStream)
+    val config = RecognitionConfig.newBuilder()
+        .setEnableWordTimeOffsets(true)
+        .setModel("video")
+        .setLanguageCode("en-US")
+        .setEnableAutomaticPunctuation(true)
+        .build()
+    val audio = RecognitionAudio.newBuilder()
+        .setContent(audioBytes)
+        .build()
+    val response = ApiFutureToListenableFuture(longRunningRecognizeAsync(config, audio)).await()
+    val wordData = response.getResults(0)
+        .getAlternatives(0)
+        .wordsList
+        .map { info -> WordData(info.word, getMsRange(info), WordData.State.PRESENTED) }
+    return TranscriptData(wordData)
+  }
 
-    private fun getMsRange(info: WordInfo): ClosedIntRange {
-        return ClosedIntRange((info.startTime.seconds * 1000 + info.startTime.nanos / 1_000_000).toInt(),
-                (info.endTime.seconds * 1000 + info.endTime.nanos / 1_000_000).toInt())
-    }
+  private fun getMsRange(info: WordInfo): ClosedIntRange {
+    return ClosedIntRange((info.startTime.seconds * 1000 + info.startTime.nanos / 1_000_000).toInt(),
+        (info.endTime.seconds * 1000 + info.endTime.nanos / 1_000_000).toInt())
+  }
 
-    companion object {
+  companion object {
 
-        @Throws(IOException::class, IllegalStateException::class)
-        fun create(): GSpeechKit {
-            val settings = CredentialProvider.Instance.gSettings
-                    ?: throw IllegalStateException("Set credentials before creating GSpeechKit")
-            return GSpeechKit(settings)
-        }
+    @Throws(IOException::class, IllegalStateException::class)
+    fun create(): GSpeechKit {
+      val settings = CredentialProvider.Instance.gSettings
+          ?: throw IllegalStateException("Set credentials before creating GSpeechKit")
+      return GSpeechKit(settings)
     }
+  }
 }
