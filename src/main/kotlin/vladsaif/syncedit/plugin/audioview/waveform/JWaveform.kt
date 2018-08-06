@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.Settings
@@ -44,6 +45,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
     super.paintComponent(graphics)
     graphics ?: return
     with(graphics as Graphics2D) {
+      background = UIUtil.getPanelBackground()
       clearRect(0, 0, width, height)
       drawSelectedRanges()
       drawHorizontalLine()

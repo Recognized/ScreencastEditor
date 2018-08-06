@@ -16,8 +16,8 @@ data class Settings(
     private val selectedRangeColorBrightTheme: Int = Color(200, 200, 200).rgb,
     private val playLineColorBrightTheme: Int = Color(0, 0, 0).rgb,
 
-    private val rootMeanSquareColorDarcula: Int = Color(184, 244, 139).rgb,
-    private val peakColorDarcula: Int = Color(96, 240, 112).rgb,
+    private val rootMeanSquareColorDarcula: Int = Color(255, 176, 71).rgb,
+    private val peakColorDarcula: Int = Color(255, 146, 31).rgb,
     private val wordSeparatorColorDarcula: Int = Color(255, 164, 160).rgb,
     private val wordColorDarcula: Int = Color(255, 164, 160).rgb,
     private val selectedRangeColorDarcula: Int = Color(123, 123, 123).rgb,
