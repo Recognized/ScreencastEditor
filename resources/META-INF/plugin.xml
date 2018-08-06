@@ -10,7 +10,6 @@
     <br>
     Usage: Tools -> Open Audio
     <br>
-    Icons made by <a href="https://www.flaticon.com/authors/roundicons" title="Roundicons">Roundicons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
     ]]></description>
 
     <idea-version since-build="181.0"/>
@@ -38,10 +37,10 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <action id="vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction"
                     class="vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction"
-                    icon="ScreencastEditorIcons.MUSIC_1"
+                    icon="ScreencastEditorIcons.EQUALIZER"
                     text="Open audio" description="Opens audio waveform view"/>
             <action id="vladsaif.syncedit.plugin.recognition.RecognizeAudioAction"
-                    icon="ScreencastEditorIcons.MUSIC_1"
+                    icon="ScreencastEditorIcons.EQUALIZER"
                     class="vladsaif.syncedit.plugin.recognition.RecognizeAudioAction" text="Open and recognize audio"
                     description="Get transcript of audio and open it"/>
 

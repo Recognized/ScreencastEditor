@@ -5,6 +5,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import icons.ScreencastEditorIcons
 import icons.ScreencastEditorIcons.*
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
@@ -22,18 +23,18 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
     val group = DefaultActionGroup()
     with(wave.controller) {
       // Maybe, actions should be placed in two groups
-      group.addAction("Play", "Play audio", PLAY_BUTTON, this::play) { playState != PLAY }
+      group.addAction("Play", "Play audio", ScreencastEditorIcons.PLAY, this::play) { playState != PLAY }
       group.addAction("Pause", "Pause audio", PAUSE, this::pause) { playState == PLAY }
       group.addAction("Stop", "Stop audio", STOP, this::stop) { playState != Player.PlayState.STOP }
       group.addAction("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo) { hasSelection }
-      group.addAction("Clip", "Clip audio", REMOVE, this::cutSelected) { hasSelection }
-      group.addAction("Mute", "Mute selected", MUTE, this::muteSelected) { hasSelection }
+      group.addAction("Clip", "Clip audio", DELETE, this::cutSelected) { hasSelection }
+      group.addAction("Mute", "Mute selected", VOLUME_OFF, this::muteSelected) { hasSelection }
       group.addAction("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, this::zoomIn) { true }
       group.addAction("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, this::zoomOut) { true }
       group.addAction(
           "Open transcript",
           "Open transcript in editor",
-          MUSIC_1,
+          EQUALIZER,
           this@AudioToolWindowPanel::openTranscript
       ) { true }
     }

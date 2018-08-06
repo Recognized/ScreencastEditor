@@ -17,7 +17,7 @@ object AudioToolWindowManager {
     val manager = ToolWindowManager.getInstance(project)
     val toolWindow = manager.getToolWindow(myToolWindowId)
         ?: manager.registerToolWindow(myToolWindowId, false, ToolWindowAnchor.BOTTOM)
-    toolWindow.icon = ScreencastEditorIcons.MUSIC_1_TOOL_WINDOW
+    toolWindow.icon = ScreencastEditorIcons.EQUALIZER_TOOL_WINDOW
     return toolWindow
   }
 
