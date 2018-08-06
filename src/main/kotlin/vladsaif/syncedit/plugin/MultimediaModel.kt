@@ -28,25 +28,25 @@ import javax.swing.event.ChangeListener
 class MultimediaModel(
         val project: Project
 ) : Disposable {
-    private val listeners: MutableSet<Listener> = mutableSetOf()
-    private var editionListenerEnabled = true
-    private val editionModelListener = ChangeListener {
-        if (editionListenerEnabled) {
+    private val myListeners: MutableSet<Listener> = mutableSetOf()
+    private var myEditionListenerEnabled = true
+    private val myEditionModelListener = ChangeListener {
+        if (myEditionListenerEnabled) {
             onEditionModelChanged()
         }
     }
-    private var transcriptListenerEnabled = true
-    private val transcriptDataListener = object : MultimediaModel.Listener {
+    private var myTranscriptListenerEnabled = true
+    private val myTranscriptDataListener = object : MultimediaModel.Listener {
         override fun onTranscriptDataChanged() {
-            if (transcriptListenerEnabled) {
+            if (myTranscriptListenerEnabled) {
                 editionModel.isNotificationSuppressed = true
                 synchronizeTranscriptWithEditionModel()
                 editionModel.isNotificationSuppressed = false
                 try {
-                    editionListenerEnabled = false
+                    myEditionListenerEnabled = false
                     editionModel.fireStateChanged()
                 } finally {
-                    editionListenerEnabled = true
+                    myEditionListenerEnabled = true
                 }
             }
         }
@@ -108,19 +108,19 @@ class MultimediaModel(
     }
 
     init {
-        editionModel.addChangeListener(editionModelListener)
+        editionModel.addChangeListener(myEditionModelListener)
         // Synchronize edition model with transcript data if it was changed in editor.
         // Also do not forger to reset coordinates cache.
-        addTranscriptDataListener(transcriptDataListener)
+        addTranscriptDataListener(myTranscriptDataListener)
     }
 
     private fun onEditionModelChanged() {
         val preparedEditions = data?.let { getWordReplacements(it) } ?: return
-        transcriptListenerEnabled = false
+        myTranscriptListenerEnabled = false
         try {
             replaceWords(preparedEditions)
         } finally {
-            transcriptListenerEnabled = true
+            myTranscriptListenerEnabled = true
         }
     }
 
@@ -178,15 +178,15 @@ class MultimediaModel(
     }
 
     fun addTranscriptDataListener(listener: Listener) {
-        listeners += listener
+        myListeners += listener
     }
 
     fun removeTranscriptDataListener(listener: Listener) {
-        listeners -= listener
+        myListeners -= listener
     }
 
     private fun fireTranscriptDataChanged() {
-        for (x in listeners) x.onTranscriptDataChanged()
+        for (x in myListeners) x.onTranscriptDataChanged()
     }
 
     private fun replaceWords(replacements: List<Pair<Int, WordData>>) {
@@ -219,7 +219,7 @@ class MultimediaModel(
     }
 
     override fun dispose() {
-        listeners.clear()
+        myListeners.clear()
         xmlFile?.let { fileModelMap.remove(it) }
         transcriptFile?.let { fileModelMap.remove(it) }
         data = null

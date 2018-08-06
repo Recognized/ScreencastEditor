@@ -12,37 +12,37 @@ import java.awt.event.MouseEvent
 import javax.swing.event.MouseInputAdapter
 
 class WordHintBalloonListener(parent: Component, private val locator: WaveformModel) : MouseInputAdapter() {
-    private var previousBalloon: Balloon? = null
-    private val balloonLabel = JBLabel()
-    private var balloonPoint = Point(0, 0)
-    private val balloonPositionTracker = object : PositionTracker<Balloon>(parent) {
-        override fun recalculateLocation(baloon: Balloon?): RelativePoint {
-            return RelativePoint(component, balloonPoint)
-        }
+  private var myPreviousBalloon: Balloon? = null
+  private val myBalloonLabel = JBLabel()
+  private var myBalloonPoint = Point(0, 0)
+  private val myBalloonPositionTracker = object : PositionTracker<Balloon>(parent) {
+    override fun recalculateLocation(baloon: Balloon?): RelativePoint {
+      return RelativePoint(component, myBalloonPoint)
     }
-    private val balloon: Balloon
-        get() {
-            val prev = previousBalloon
-            return if (prev == null || prev.isDisposed || prev.wasFadedOut()) {
-                JBPopupFactory.getInstance().createBalloonBuilder(balloonLabel)
-                        .setFadeoutTime(3000)
-                        .createBalloon()
-                        .also {
-                            it.setAnimationEnabled(false)
-                            previousBalloon = it
-                        }
-            } else {
-                prev
+  }
+  private val myBalloon: Balloon
+    get() {
+      val prev = myPreviousBalloon
+      return if (prev == null || prev.isDisposed || prev.wasFadedOut()) {
+        JBPopupFactory.getInstance().createBalloonBuilder(myBalloonLabel)
+            .setFadeoutTime(3000)
+            .createBalloon()
+            .also {
+              it.setAnimationEnabled(false)
+              myPreviousBalloon = it
             }
-        }
-
-    override fun mouseMoved(e: MouseEvent?) {
-        e ?: return
-        if (UIUtil.isControlKeyDown(e)) {
-            balloonLabel.text = locator.getEnclosingWord(e.x)?.filteredText ?: return
-            balloonPoint = e.point
-            balloon.show(balloonPositionTracker, Balloon.Position.above)
-            balloon.revalidate()
-        }
+      } else {
+        prev
+      }
     }
+
+  override fun mouseMoved(e: MouseEvent?) {
+    e ?: return
+    if (UIUtil.isControlKeyDown(e)) {
+      myBalloonLabel.text = locator.getEnclosingWord(e.x)?.filteredText ?: return
+      myBalloonPoint = e.point
+      myBalloon.show(myBalloonPositionTracker, Balloon.Position.above)
+      myBalloon.revalidate()
+    }
+  }
 }

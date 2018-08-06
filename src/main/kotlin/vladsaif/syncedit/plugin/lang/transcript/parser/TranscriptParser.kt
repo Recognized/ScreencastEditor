@@ -17,7 +17,7 @@ class TranscriptParser : PsiParser, LightPsiParser {
         root ?: return
         builder ?: return
         val start = builder.mark()
-        while(builder.tokenType != null) {
+        while (builder.tokenType != null) {
             val mark = builder.mark()
             builder.advanceLexer()
             mark.done(WORD)

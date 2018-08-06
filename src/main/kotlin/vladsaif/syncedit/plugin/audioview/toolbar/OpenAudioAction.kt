@@ -15,36 +15,36 @@ import javax.sound.sampled.UnsupportedAudioFileException
 
 class OpenAudioAction : AnAction() {
 
-    override fun actionPerformed(e: AnActionEvent?) {
-        e ?: return
-        val project = e.project ?: return
-        val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
-        FileChooser.chooseFile(descriptor, project, project.projectFile) {
-            openAudio(project, it)
-        }
+  override fun actionPerformed(e: AnActionEvent?) {
+    e ?: return
+    val project = e.project ?: return
+    val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
+    FileChooser.chooseFile(descriptor, project, project.projectFile) {
+      openAudio(project, it)
     }
+  }
 
-    companion object {
+  companion object {
 
-        fun openAudio(project: Project, file: VirtualFile): WaveformModel? {
-            return try {
-                AudioSystem.getAudioFileFormat(File(file.path))
-                AudioToolWindowManager.openAudioFile(project, file)
-            } catch (ex: UnsupportedAudioFileException) {
-                Messages.showErrorDialog(
-                        project,
-                        "Audio file format is not supported. File: $file",
-                        "Unsupported file format"
-                )
-                null
-            } catch (ex: IOException) {
-                Messages.showErrorDialog(
-                        project,
-                        "I/O error occurred. ${ex.message}",
-                        "I/O error"
-                )
-                null
-            }
-        }
+    fun openAudio(project: Project, file: VirtualFile): WaveformModel? {
+      return try {
+        AudioSystem.getAudioFileFormat(File(file.path))
+        AudioToolWindowManager.openAudioFile(project, file)
+      } catch (ex: UnsupportedAudioFileException) {
+        Messages.showErrorDialog(
+            project,
+            "Audio file format is not supported. File: $file",
+            "Unsupported file format"
+        )
+        null
+      } catch (ex: IOException) {
+        Messages.showErrorDialog(
+            project,
+            "I/O error occurred. ${ex.message}",
+            "I/O error"
+        )
+        null
+      }
     }
+  }
 }

@@ -18,7 +18,6 @@ import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.runBlocking
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction
-import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
 import java.io.File
 import java.io.IOException

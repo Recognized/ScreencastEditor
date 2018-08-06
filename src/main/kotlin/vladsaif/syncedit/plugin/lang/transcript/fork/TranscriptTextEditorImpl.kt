@@ -23,138 +23,138 @@ import java.util.concurrent.Future
 import javax.swing.JComponent
 
 class TranscriptTextEditorImpl(project: Project, file: VirtualFile, provider: TranscriptEditorProvider) : UserDataHolderBase(), TextEditor {
-    private var myBackgroundHighlighter: TextEditorBackgroundHighlighter? = null
-    private val myChangeSupport: PropertyChangeSupport
-    private var myComponent: TranscriptEditorComponent
-    private val myAsyncLoader: AsyncEditorLoader
-    private val myLoadingFinished: Future<*>
-    val myProject: Project = project
-    val myFile: VirtualFile = file
+  private val myChangeSupport: PropertyChangeSupport
+  private val myAsyncLoader: AsyncEditorLoader
+  private val myLoadingFinished: Future<*>
+  private var myBackgroundHighlighter: TextEditorBackgroundHighlighter? = null
+  private var myComponent: TranscriptEditorComponent
+  val myProject: Project = project
+  val myFile: VirtualFile = file
 
-    init {
-        myChangeSupport = PropertyChangeSupport(this)
-        myComponent = TranscriptEditorComponent(project, file, this)
-        myAsyncLoader = AsyncEditorLoader(this, myComponent, provider)
-        myLoadingFinished = myAsyncLoader.start()
-        Disposer.register(this, myComponent)
+  init {
+    myChangeSupport = PropertyChangeSupport(this)
+    myComponent = TranscriptEditorComponent(project, file, this)
+    myAsyncLoader = AsyncEditorLoader(this, myComponent, provider)
+    myLoadingFinished = myAsyncLoader.start()
+    Disposer.register(this, myComponent)
+  }
+
+  private fun baseLoadEditorInBackground(): Runnable {
+    val scheme = EditorColorsManager.getInstance().globalScheme
+    val highlighter = EditorHighlighterFactory.getInstance().createEditorHighlighter(myFile, scheme, myProject)
+    val editor = editor as EditorEx
+    highlighter.setText(editor.document.immutableCharSequence)
+    return Runnable { editor.highlighter = highlighter }
+  }
+
+  fun loadEditorInBackground(): Runnable {
+    val baseAction = baseLoadEditorInBackground()
+    val psiFile = PsiManager.getInstance(myProject).findFile(myFile)
+    val document = FileDocumentManager.getInstance().getDocument(myFile)
+    val foldingState = if (document != null && !myProject.isDefault)
+      CodeFoldingManager.getInstance(myProject).buildInitialFoldings(document)
+    else
+      null
+    return Runnable {
+      baseAction.run()
+      foldingState?.setToEditor(editor)
+      if (psiFile != null && psiFile.isValid) {
+        DaemonCodeAnalyzer.getInstance(myProject).restart(psiFile)
+      }
+      EditorNotifications.getInstance(myProject).updateNotifications(myFile)
+    }
+  }
+
+  override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? {
+    if (!AsyncEditorLoader.isEditorLoaded(editor)) {
+      return null
     }
 
-    private fun baseLoadEditorInBackground(): Runnable {
-        val scheme = EditorColorsManager.getInstance().globalScheme
-        val highlighter = EditorHighlighterFactory.getInstance().createEditorHighlighter(myFile, scheme, myProject)
-        val editor = editor as EditorEx
-        highlighter.setText(editor.document.immutableCharSequence)
-        return Runnable { editor.highlighter = highlighter }
+    if (myBackgroundHighlighter == null) {
+      myBackgroundHighlighter = TextEditorBackgroundHighlighter(myProject, editor)
     }
+    return myBackgroundHighlighter
+  }
 
-    fun loadEditorInBackground(): Runnable {
-        val baseAction = baseLoadEditorInBackground()
-        val psiFile = PsiManager.getInstance(myProject).findFile(myFile)
-        val document = FileDocumentManager.getInstance().getDocument(myFile)
-        val foldingState = if (document != null && !myProject.isDefault)
-            CodeFoldingManager.getInstance(myProject).buildInitialFoldings(document)
-        else
-            null
-        return Runnable {
-            baseAction.run()
-            foldingState?.setToEditor(editor)
-            if (psiFile != null && psiFile.isValid) {
-                DaemonCodeAnalyzer.getInstance(myProject).restart(psiFile)
-            }
-            EditorNotifications.getInstance(myProject).updateNotifications(myFile)
-        }
-    }
+  override fun dispose() {}
 
-    override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? {
-        if (!AsyncEditorLoader.isEditorLoaded(editor)) {
-            return null
-        }
+  override fun getFile(): VirtualFile {
+    return myFile
+  }
 
-        if (myBackgroundHighlighter == null) {
-            myBackgroundHighlighter = TextEditorBackgroundHighlighter(myProject, editor)
-        }
-        return myBackgroundHighlighter
-    }
+  override fun getComponent(): TranscriptEditorComponent {
+    return myComponent
+  }
 
-    override fun dispose() {}
+  override fun getPreferredFocusedComponent(): JComponent {
+    return getActiveEditor().contentComponent
+  }
 
-    override fun getFile(): VirtualFile {
-        return myFile
-    }
+  override fun getEditor(): Editor {
+    return getActiveEditor()
+  }
 
-    override fun getComponent(): TranscriptEditorComponent {
-        return myComponent
-    }
+  private fun getActiveEditor(): Editor {
+    return myComponent.editor
+  }
 
-    override fun getPreferredFocusedComponent(): JComponent {
-        return getActiveEditor().contentComponent
-    }
+  override fun getName(): String {
+    return file.name
+  }
 
-    override fun getEditor(): Editor {
-        return getActiveEditor()
-    }
+  override fun getState(level: FileEditorStateLevel): FileEditorState {
+    return myAsyncLoader.getEditorState(level)
+  }
 
-    private fun getActiveEditor(): Editor {
-        return myComponent.editor
-    }
+  override fun setState(state: FileEditorState) {
+    myAsyncLoader.setEditorState(state as TextEditorState)
+  }
 
-    override fun getName(): String {
-        return file.name
-    }
+  override fun isModified(): Boolean {
+    return myComponent.isModified
+  }
 
-    override fun getState(level: FileEditorStateLevel): FileEditorState {
-        return myAsyncLoader.getEditorState(level)
-    }
+  override fun isValid(): Boolean {
+    return myComponent.isEditorValid
+  }
 
-    override fun setState(state: FileEditorState) {
-        myAsyncLoader.setEditorState(state as TextEditorState)
-    }
+  override fun selectNotify() {
+    myComponent.selectNotify()
+  }
 
-    override fun isModified(): Boolean {
-        return myComponent.isModified
-    }
+  override fun deselectNotify() {}
 
-    override fun isValid(): Boolean {
-        return myComponent.isEditorValid
-    }
+  internal fun firePropertyChange(propertyName: String, oldValue: Any, newValue: Any) {
+    myChangeSupport.firePropertyChange(propertyName, oldValue, newValue)
+  }
 
-    override fun selectNotify() {
-        myComponent.selectNotify()
-    }
+  override fun addPropertyChangeListener(listener: PropertyChangeListener) {
+    myChangeSupport.addPropertyChangeListener(listener)
+  }
 
-    override fun deselectNotify() {}
+  override fun removePropertyChangeListener(listener: PropertyChangeListener) {
+    myChangeSupport.removePropertyChangeListener(listener)
+  }
 
-    internal fun firePropertyChange(propertyName: String, oldValue: Any, newValue: Any) {
-        myChangeSupport.firePropertyChange(propertyName, oldValue, newValue)
-    }
+  override fun getCurrentLocation(): FileEditorLocation? {
+    return TextEditorLocation(editor.caretModel.logicalPosition, this)
+  }
 
-    override fun addPropertyChangeListener(listener: PropertyChangeListener) {
-        myChangeSupport.addPropertyChangeListener(listener)
-    }
+  override fun getStructureViewBuilder(): StructureViewBuilder? {
+    val document = myComponent.editor.document
+    val file = FileDocumentManager.getInstance().getFile(document)
+    return if (file == null || !file.isValid) null else StructureViewBuilder.PROVIDER.getStructureViewBuilder(file.fileType, file, myProject)
+  }
 
-    override fun removePropertyChangeListener(listener: PropertyChangeListener) {
-        myChangeSupport.removePropertyChangeListener(listener)
-    }
+  override fun canNavigateTo(navigatable: Navigatable): Boolean {
+    return navigatable is OpenFileDescriptor && (navigatable.line >= 0 || navigatable.offset >= 0)
+  }
 
-    override fun getCurrentLocation(): FileEditorLocation? {
-        return TextEditorLocation(editor.caretModel.logicalPosition, this)
-    }
+  override fun navigateTo(navigatable: Navigatable) {
+    (navigatable as OpenFileDescriptor).navigateIn(editor)
+  }
 
-    override fun getStructureViewBuilder(): StructureViewBuilder? {
-        val document = myComponent.editor.document
-        val file = FileDocumentManager.getInstance().getFile(document)
-        return if (file == null || !file.isValid) null else StructureViewBuilder.PROVIDER.getStructureViewBuilder(file.fileType, file, myProject)
-    }
-
-    override fun canNavigateTo(navigatable: Navigatable): Boolean {
-        return navigatable is OpenFileDescriptor && (navigatable.line >= 0 || navigatable.offset >= 0)
-    }
-
-    override fun navigateTo(navigatable: Navigatable) {
-        (navigatable as OpenFileDescriptor).navigateIn(editor)
-    }
-
-    override fun toString(): String {
-        return "Editor: " + myComponent.file
-    }
+  override fun toString(): String {
+    return "Editor: " + myComponent.file
+  }
 }

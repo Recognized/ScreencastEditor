@@ -12,13 +12,13 @@ import javax.sound.sampled.SourceDataLine
 import kotlin.math.min
 
 class PlayerImpl(private val file: Path) : Player {
-    private val source: SourceDataLine
-    private var processUpdater: (Long) -> Unit = {}
-    private var signalStopReceived = false
+    private val mySource: SourceDataLine
+    private var myProcessUpdater: (Long) -> Unit = {}
+    private var mySignalStopReceived = false
 
     init {
         val fileFormat = AudioSystem.getAudioFileFormat(file.toFile())
-        source = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
+        mySource = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
     }
 
     override fun applyEditions(editionModel: EditionModel) {
@@ -32,8 +32,8 @@ class PlayerImpl(private val file: Path) : Player {
 
     private fun applyEditionImpl(decodedStream: AudioInputStream, editionModel: EditionModel) {
         val editions = editionModel.editions
-        if (!source.isOpen) source.open(decodedStream.format)
-        ApplicationManager.getApplication().invokeLater { source.start() }
+        if (!mySource.isOpen) mySource.open(decodedStream.format)
+        ApplicationManager.getApplication().invokeLater { mySource.start() }
         val frameSize = decodedStream.format.frameSize
         val buffer = ByteArray(1 shl 14)
         var totalFrames = 0L
@@ -43,11 +43,11 @@ class PlayerImpl(private val file: Path) : Player {
             when (edition.second) {
                 CUT -> {
                     totalFrames += needBytes / frameSize
-                    processUpdater(totalFrames)
-                    while (needBytes != 0L && !signalStopReceived) {
+                    myProcessUpdater(totalFrames)
+                    while (needBytes != 0L && !mySignalStopReceived) {
                         val skipped = decodedStream.skip(needBytes)
                         needBytes -= skipped
-                        if (skipped == 0L || signalStopReceived) {
+                        if (skipped == 0L || mySignalStopReceived) {
                             break@outer
                         }
                     }
@@ -60,12 +60,12 @@ class PlayerImpl(private val file: Path) : Player {
                             val zeroesCount = min(buffer.size.toLong(), needBytes)
                                     .toInt()
                                     .modFloor(frameSize)
-                            if (signalStopReceived) {
+                            if (mySignalStopReceived) {
                                 break@outer
                             }
                             writeOrBlock(buffer, zeroesCount)
                             totalFrames += zeroesCount / frameSize
-                            processUpdater(totalFrames)
+                            myProcessUpdater(totalFrames)
                             needBytes -= zeroesCount
                         }
                         if (needSkip != 0L) {
@@ -80,14 +80,14 @@ class PlayerImpl(private val file: Path) : Player {
                 NO_CHANGES -> {
                     while (needBytes != 0L) {
                         val read = decodedStream.read(buffer, 0, min(buffer.size.toLong(), needBytes).toInt())
-                        if (read == -1 || signalStopReceived) {
-                            println("Break no changes $signalStopReceived")
+                        if (read == -1 || mySignalStopReceived) {
+                            println("Break no changes $mySignalStopReceived")
                             break@outer
                         }
                         needBytes -= read
                         writeOrBlock(buffer, read)
                         totalFrames += read / frameSize
-                        processUpdater(totalFrames)
+                        myProcessUpdater(totalFrames)
                     }
                 }
             }
@@ -98,7 +98,7 @@ class PlayerImpl(private val file: Path) : Player {
     private fun writeOrBlock(buffer: ByteArray, size: Int) {
         var needWrite = size
         while (needWrite != 0) {
-            val written = source.write(buffer, size - needWrite, needWrite)
+            val written = mySource.write(buffer, size - needWrite, needWrite)
             needWrite -= written
         }
     }
@@ -107,29 +107,29 @@ class PlayerImpl(private val file: Path) : Player {
      * Set [updater] that will be sometimes called with the number of frames written to the source data line.
      */
     override fun setProcessUpdater(updater: (Long) -> Unit) {
-        processUpdater = updater
+        myProcessUpdater = updater
     }
 
     override fun pause() {
-        source.stop()
+        mySource.stop()
     }
 
     override fun stop() {
-        signalStopReceived = true
-        source.stop()
-        source.drain()
-        source.flush()
+        mySignalStopReceived = true
+        mySource.stop()
+        mySource.drain()
+        mySource.flush()
     }
 
     override fun close() {
         try {
-            source.close()
+            mySource.close()
         } catch (ex: Throwable) {
         }
     }
 
     override fun play() {
-        source.start()
+        mySource.start()
     }
 }
 

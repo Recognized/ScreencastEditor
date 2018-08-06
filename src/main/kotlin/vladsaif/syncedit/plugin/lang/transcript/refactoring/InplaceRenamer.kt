@@ -23,16 +23,16 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
 class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
     private val myHighlighters = mutableListOf<RangeHighlighter>()
-    private val psiFile: TranscriptPsiFile?
+    private val myPsiFile: TranscriptPsiFile?
         get() {
             val manager = PsiDocumentManager.getInstance(editor.project ?: return null)
             return manager.getPsiFile(editor.document) as? TranscriptPsiFile
         }
-    private var originalIndex = word.number
-    private var originalWord = word.text
+    private var myOriginalIndex = word.number
+    private var myOriginalWord = word.text
 
     private fun finishEditing() {
-        activeRenamers.pop()
+        ourActiveRenamers.pop()
         val project = editor.project
         if (project != null && !project.isDisposed) {
             val highlightManager = HighlightManager.getInstance(project)
@@ -54,7 +54,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
         // Revert how it was before renaming if it was cancelled
         val highlighter = myHighlighters[0]
         ApplicationManager.getApplication().runWriteAction {
-            editor.document.replaceString(highlighter.startOffset, highlighter.endOffset, originalWord)
+            editor.document.replaceString(highlighter.startOffset, highlighter.endOffset, myOriginalWord)
         }
         finishEditing()
     }
@@ -62,7 +62,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
     fun acceptTemplate() {
         val highlighter = myHighlighters[0]
         val project = editor.project
-        val model = psiFile?.model
+        val model = myPsiFile?.model
         val manager = if (project == null)
             UndoManager.getGlobalInstance()
         else
@@ -72,25 +72,25 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
             if (model != null) {
                 println(CommandProcessor.getInstance().currentCommandName)
                 val currentData = model.data
-                val newData = model.data?.excludeWord(originalIndex)
+                val newData = model.data?.excludeWord(myOriginalIndex)
                 if (currentData != null && newData != null) {
                     val undo = TranscriptModelUndoableAction(model, currentData, newData)
                     manager.undoableActionPerformed(undo)
                 }
                 // Now apply changes to model, because manager do not invoke redo() method
-                model.excludeWord(originalIndex)
+                model.excludeWord(myOriginalIndex)
             }
             cancel()
         } else {
             val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
             if (model != null) {
                 val currentData = model.data
-                val newData = model.data?.renameWord(originalIndex, editor.document.getText(textRange))
+                val newData = model.data?.renameWord(myOriginalIndex, editor.document.getText(textRange))
                 if (currentData != null && newData != null) {
                     val undo = TranscriptModelUndoableAction(model, currentData, newData)
                     manager.undoableActionPerformed(undo)
                 }
-                model.renameWord(originalIndex, editor.document.getText(textRange))
+                model.renameWord(myOriginalIndex, editor.document.getText(textRange))
             }
             finishEditing()
         }
@@ -155,15 +155,15 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
 
     companion object {
         private val LOG = logger<InplaceRenamer>()
-        private val activeRenamers = Stack<InplaceRenamer>()
+        private val ourActiveRenamers = Stack<InplaceRenamer>()
         val GUARDED_BLOCKS: Key<List<RangeMarker>> = Key.create("GUARDER_BLOCKS")
 
         fun rename(editor: Editor, word: TranscriptWord) {
-            if (!activeRenamers.isEmpty()) {
-                activeRenamers.peek().finishEditing()
+            if (!ourActiveRenamers.isEmpty()) {
+                ourActiveRenamers.peek().finishEditing()
             }
             val renamer = InplaceRenamer(editor, word)
-            activeRenamers.push(renamer)
+            ourActiveRenamers.push(renamer)
             renamer.rename()
         }
 

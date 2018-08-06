@@ -65,7 +65,7 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
 
     companion object {
 
-        val INTERSECTS_CMP = Comparator<ClosedLongRange>  { a, b ->
+        val INTERSECTS_CMP = Comparator<ClosedLongRange> { a, b ->
             return@Comparator if (a.intersects(b)) 0 else (a.start - b.start).floorToInt()
         }
 

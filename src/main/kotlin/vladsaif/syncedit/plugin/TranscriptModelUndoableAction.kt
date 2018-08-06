@@ -9,7 +9,7 @@ class TranscriptModelUndoableAction(
         private val newData: TranscriptData
 ) : UndoableAction {
 
-    private val affectedDocuments = mutableSetOf<DocumentReference>()
+    private val myAffectedDocuments = mutableSetOf<DocumentReference>()
 
     override fun redo() {
         model.data = newData
@@ -20,10 +20,10 @@ class TranscriptModelUndoableAction(
     }
 
     fun addAffectedDocuments(ref: DocumentReference) {
-        affectedDocuments.add(ref)
+        myAffectedDocuments.add(ref)
     }
 
     override fun isGlobal() = false
 
-    override fun getAffectedDocuments() = affectedDocuments.toTypedArray()
+    override fun getAffectedDocuments() = myAffectedDocuments.toTypedArray()
 }

@@ -9,7 +9,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
  */
 class IncludeAction : IncludeExcludeActionBase() {
 
-    override fun doAction(model: MultimediaModel, words: List<TranscriptWord>) {
-        model.showWords(words.map { it.number }.toIntArray())
-    }
+  override fun doAction(model: MultimediaModel, words: List<TranscriptWord>) {
+    model.showWords(words.map { it.number }.toIntArray())
+  }
 }

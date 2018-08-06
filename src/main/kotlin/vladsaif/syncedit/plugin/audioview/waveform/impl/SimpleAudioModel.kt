@@ -9,7 +9,6 @@ import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.floorToInt
 import java.nio.file.Path
 import java.util.concurrent.CancellationException
-import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.UnsupportedAudioFileException
@@ -24,7 +23,7 @@ import kotlin.math.sqrt
  * @throws java.io.IOException If I/O error occurs.
  */
 class SimpleAudioModel(file: Path) : AudioDataModel {
-    private val file = file.toAbsolutePath().toFile()
+    private val myFile = file.toAbsolutePath().toFile()
     override var trackDurationMilliseconds = 0.0
         private set
     override var millisecondsPerFrame = 0.0
@@ -35,7 +34,7 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
         private set
 
     init {
-        AudioSystem.getAudioInputStream(this.file).use {
+        AudioSystem.getAudioInputStream(this.myFile).use {
             if (!AudioSystem.isConversionSupported(it.format.toDecodeFormat(), it.format)) {
                 throw UnsupportedAudioFileException("Cannot decode audio file.")
             }
@@ -77,7 +76,7 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
 
     override fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, isActive: AtomicBoolean): List<AveragedSampleData> {
         val framesPerChunk = (totalFrames / maxChunks).toInt()
-        AudioSystem.getAudioInputStream(file).use { input ->
+        AudioSystem.getAudioInputStream(myFile).use { input ->
             val decodeFormat = input.format.toDecodeFormat()
             val chunks = chunkRange.length
             val ret = List(decodeFormat.channels) {

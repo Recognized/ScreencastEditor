@@ -14,62 +14,62 @@ import kotlin.math.max
 import kotlin.math.min
 
 class MultiSelectionModel : MouseInputAdapter(), SelectionModel, ChangeNotifier by DefaultChangeNotifier() {
-    private val _selectedRanges = ClosedIntRangeUnion()
-    private var pressStartCoordinate = 0
-    private var isControlDown = false
-    private var locator: WaveformModel? = null
-    private var cacheCoherent = false
-    private var cacheSelectedRanges = listOf<ClosedIntRange>()
-    private var tempSelectedRange = EMPTY_RANGE
+    private val mySelectedRanges = ClosedIntRangeUnion()
+    private var myPressStartCoordinate = 0
+    private var myIsControlDown = false
+    private var myLocator: WaveformModel? = null
+    private var myCacheCoherent = false
+    private var myCacheSelectedRanges = listOf<ClosedIntRange>()
+    private var myTempSelectedRange = EMPTY_RANGE
         set(value) {
-            if (tempSelectedRange != value) {
-                cacheCoherent = false
+            if (myTempSelectedRange != value) {
+                myCacheCoherent = false
                 field = value
             }
         }
 
     fun enableWordSelection(locator: WaveformModel) {
-        this.locator = locator
+        this.myLocator = locator
     }
 
     override val selectedRanges: List<ClosedIntRange>
         get() = when {
-            cacheCoherent -> cacheSelectedRanges
-            tempSelectedRange.empty -> _selectedRanges.ranges
-            else -> _selectedRanges.ranges + tempSelectedRange
+            myCacheCoherent -> myCacheSelectedRanges
+            myTempSelectedRange.empty -> mySelectedRanges.ranges
+            else -> mySelectedRanges.ranges + myTempSelectedRange
         }.also {
-            cacheCoherent = true
-            cacheSelectedRanges = it
+            myCacheCoherent = true
+            myCacheSelectedRanges = it
         }
 
     override fun resetSelection() {
-        _selectedRanges.clear()
-        tempSelectedRange = EMPTY_RANGE
-        cacheCoherent = false
+        mySelectedRanges.clear()
+        myTempSelectedRange = EMPTY_RANGE
+        myCacheCoherent = false
     }
 
     override fun addSelection(range: ClosedIntRange) {
-        _selectedRanges.union(range)
-        cacheCoherent = false
+        mySelectedRanges.union(range)
+        myCacheCoherent = false
     }
 
     override fun removeSelected(range: ClosedIntRange) {
-        _selectedRanges.exclude(range)
-        cacheCoherent = false
+        mySelectedRanges.exclude(range)
+        myCacheCoherent = false
     }
 
     override fun mouseReleased(e: MouseEvent?) {
         e ?: return
-        if (!tempSelectedRange.empty) {
-            addSelection(tempSelectedRange)
-            tempSelectedRange = EMPTY_RANGE
+        if (!myTempSelectedRange.empty) {
+            addSelection(myTempSelectedRange)
+            myTempSelectedRange = EMPTY_RANGE
             fireStateChanged()
         }
     }
 
     override fun mousePressed(e: MouseEvent?) {
         e ?: return
-        pressStartCoordinate = e.x
+        myPressStartCoordinate = e.x
         if (!e.isShiftDown) {
             resetSelection()
             fireStateChanged()
@@ -79,12 +79,12 @@ class MultiSelectionModel : MouseInputAdapter(), SelectionModel, ChangeNotifier 
     override fun mouseClicked(e: MouseEvent?) {
         e ?: return
         if (!JBSwingUtilities.isLeftMouseButton(e)) return
-        val model = locator ?: return
+        val model = myLocator ?: return
         val rangeUnderClick = model.getContainingWordRange(e.x)
         println(rangeUnderClick)
         if (rangeUnderClick.empty) return
         if (e.isShiftDown) {
-            if (rangeUnderClick in _selectedRanges) {
+            if (rangeUnderClick in mySelectedRanges) {
                 removeSelected(rangeUnderClick)
             } else {
                 addSelection(rangeUnderClick)
@@ -98,13 +98,13 @@ class MultiSelectionModel : MouseInputAdapter(), SelectionModel, ChangeNotifier 
 
     override fun mouseDragged(e: MouseEvent?) {
         e ?: return
-        if (isControlDown != UIUtil.isControlKeyDown(e)) pressStartCoordinate = e.x
-        isControlDown = UIUtil.isControlKeyDown(e)
-        val border = ClosedIntRange(min(pressStartCoordinate, e.x), max(pressStartCoordinate, e.x))
-        tempSelectedRange = if (isControlDown) {
+        if (myIsControlDown != UIUtil.isControlKeyDown(e)) myPressStartCoordinate = e.x
+        myIsControlDown = UIUtil.isControlKeyDown(e)
+        val border = ClosedIntRange(min(myPressStartCoordinate, e.x), max(myPressStartCoordinate, e.x))
+        myTempSelectedRange = if (myIsControlDown) {
             border
         } else {
-            locator?.getCoveredRange(border) ?: return
+            myLocator?.getCoveredRange(border) ?: return
         }
         fireStateChanged()
     }
