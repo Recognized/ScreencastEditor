@@ -15,6 +15,7 @@
     <idea-version since-build="181.0"/>
 
     <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
