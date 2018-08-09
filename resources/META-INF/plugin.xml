@@ -20,10 +20,14 @@
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
         <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
-        <lang.parserDefinition language="TranscriptLanguage"
-                               implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
         <fileTypeFactory
                 implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
+        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.script.psi.UIScriptFileTypeFactory"/>
+        <lang.parserDefinition language="TranscriptLanguage"
+                               implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
+        <lang.parserDefinition language="GUI Script"
+                               implementationClass="vladsaif.syncedit.plugin.lang.script.parser.UIScriptParserDefinition"/>
+
         <lang.syntaxHighlighterFactory language="TranscriptLanguage"
                                        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
         <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
