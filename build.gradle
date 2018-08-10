@@ -32,7 +32,15 @@ task generateTranscriptLexer(type: GenerateLexer) {
     purgeOldFiles = true
 }
 
+task generateUIScriptLexer(type: GenerateLexer) {
+    source = "grammar/UIScript.flex"
+    targetDir = "gen/vladsaif/syncedit/plugin/lang/script/lexer"
+    targetClass = "UIScriptLexer"
+    purgeOldFiles = true
+}
+
 compileJava.dependsOn generateTranscriptLexer
+compileJava.dependsOn generateUIScriptLexer
 
 compileKotlin {
     kotlinOptions.verbose = true

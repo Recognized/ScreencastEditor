@@ -24,8 +24,8 @@
         <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.script.psi.UIScriptFileTypeFactory"/>
         <lang.parserDefinition language="TranscriptLanguage"
                                implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
-        <lang.parserDefinition language="GUI Script"
-                               implementationClass="vladsaif.syncedit.plugin.lang.script.parser.UIScriptParserDefinition"/>
+        <!--<lang.parserDefinition language="GUI Script"-->
+        <!--implementationClass="vladsaif.syncedit.plugin.lang.script.parser.UIScriptParserDefinition"/>-->
 
         <lang.syntaxHighlighterFactory language="TranscriptLanguage"
                                        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
