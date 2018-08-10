@@ -15,6 +15,7 @@ data class Settings(
     private val wordColorBrightTheme: Int = Color(150, 15, 160).rgb,
     private val selectedRangeColorBrightTheme: Int = Color(200, 200, 200).rgb,
     private val playLineColorBrightTheme: Int = Color(0, 0, 0).rgb,
+    private val wordMovingSeparatorColorBrightTheme: Int = Color(60, 60, 60).rgb,
 
     private val rootMeanSquareColorDarcula: Int = Color(255, 176, 71).rgb,
     private val peakColorDarcula: Int = Color(255, 146, 31).rgb,
@@ -22,6 +23,7 @@ data class Settings(
     private val wordColorDarcula: Int = Color(255, 164, 160).rgb,
     private val selectedRangeColorDarcula: Int = Color(123, 123, 123).rgb,
     private val playLineColorDarcula: Int = Color(220, 220, 220).rgb,
+    private val wordMovingSeparatorColorDarcula: Int = Color(170, 70, 30).rgb,
 
     private val wordSeparatorWidthDp: Float = 1.0f,
     private val peakStrokeWidthDp: Float = 1.0f,
@@ -29,16 +31,42 @@ data class Settings(
     private val dashWidthDp: Float = 10f
 ) : PersistentStateComponent<Settings> {
 
-  val rootMeanSquareColor by Theme(bright = rootMeanSquareColorBrightTheme, dark = rootMeanSquareColorDarcula)
-  val rootMeanSquareCutColor by Theme(bright = Color(rootMeanSquareColorBrightTheme).muchBrighter().rgb,
-      dark = Color(rootMeanSquareColorDarcula).muchDarker().rgb)
-  val peakColor by Theme(bright = peakColorBrightTheme, dark = peakColorDarcula)
-  val peakCutColor by Theme(bright = Color(peakColorBrightTheme).muchBrighter().rgb,
-      dark = Color(peakColorDarcula).muchDarker().rgb)
-  val wordSeparatorColor by Theme(bright = wordSeparatorColorBrightTheme, dark = wordSeparatorColorDarcula)
-  val wordColor by Theme(bright = wordColorBrightTheme, dark = wordColorDarcula)
-  val selectionColor by Theme(bright = selectedRangeColorBrightTheme, dark = selectedRangeColorDarcula)
-  val playLineColor by Theme(bright = playLineColorBrightTheme, dark = playLineColorDarcula)
+  val rootMeanSquareColor by Theme(
+      bright = rootMeanSquareColorBrightTheme,
+      dark = rootMeanSquareColorDarcula
+  )
+  val rootMeanSquareCutColor by Theme(
+      bright = Color(rootMeanSquareColorBrightTheme).muchBrighter().rgb,
+      dark = Color(rootMeanSquareColorDarcula).muchDarker().rgb
+  )
+  val peakColor by Theme(
+      bright = peakColorBrightTheme,
+      dark = peakColorDarcula
+  )
+  val peakCutColor by Theme(
+      bright = Color(peakColorBrightTheme).muchBrighter().rgb,
+      dark = Color(peakColorDarcula).muchDarker().rgb
+  )
+  val wordSeparatorColor by Theme(
+      bright = wordSeparatorColorBrightTheme,
+      dark = wordSeparatorColorDarcula
+  )
+  val wordMovingSeparatorColor by Theme(
+      bright = wordMovingSeparatorColorBrightTheme,
+      dark = wordMovingSeparatorColorDarcula
+  )
+  val wordColor by Theme(
+      bright = wordColorBrightTheme,
+      dark = wordColorDarcula
+  )
+  val selectionColor by Theme(
+      bright = selectedRangeColorBrightTheme,
+      dark = selectedRangeColorDarcula
+  )
+  val playLineColor by Theme(
+      bright = playLineColorBrightTheme,
+      dark = playLineColorDarcula
+  )
 
   val wordSeparatorWidth by DpConverter(this::wordSeparatorWidthDp)
   val peakStrokeWidth by DpConverter(this::peakStrokeWidthDp)
@@ -54,6 +82,7 @@ data class Settings(
   companion object {
     @Volatile
     var currentSettings = Settings()
+      private set
 
     private fun Color.muchBrighter() = this.brighter().brighter().brighter().brighter()
 

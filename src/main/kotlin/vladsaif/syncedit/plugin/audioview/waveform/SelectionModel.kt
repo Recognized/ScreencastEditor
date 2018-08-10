@@ -1,9 +1,8 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import vladsaif.syncedit.plugin.ClosedIntRange
-import javax.swing.event.MouseInputListener
 
-interface SelectionModel : ChangeNotifier, MouseInputListener {
+interface SelectionModel : ChangeNotifier {
   val selectedRanges: List<ClosedIntRange>
 
   fun resetSelection()

@@ -54,6 +54,12 @@ data class ClosedIntRange(
     else EMPTY_RANGE
   }
 
+  fun inside(x: Int) = when {
+    x in start..end -> x
+    x < start -> start
+    else -> end
+  }
+
   override fun compareTo(other: ClosedIntRange): Int {
     return start - other.start
   }

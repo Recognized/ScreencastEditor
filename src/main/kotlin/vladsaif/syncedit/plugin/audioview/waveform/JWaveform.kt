@@ -28,9 +28,12 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
    * enable popup balloon with word text when hovering over a word.
    */
   fun installListeners() {
-    addMouseListener(selectionModel)
-    addMouseMotionListener(selectionModel)
+    val mover = WordRangeMover(this)
+    addMouseListener(selectionModel.dragListener)
+    addMouseListener(mover)
+    addMouseMotionListener(selectionModel.dragListener)
     addMouseMotionListener(WordHintBalloonListener(this, model))
+    addMouseMotionListener(mover)
     selectionModel.enableWordSelection(model)
     selectionModel.addChangeListener(this)
     model.addChangeListener(this)
@@ -51,6 +54,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
       drawHorizontalLine()
       drawAveragedWaveform(model.audioData[0])
       drawWords()
+      drawMovingBorder()
       if (model.playFramePosition != -1L) {
         drawPosition(model.playFramePosition)
       }
@@ -169,6 +173,19 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
         drawLine(rightBound, 0, rightBound, height)
       }
     }
+  }
+
+  private fun Graphics2D.drawMovingBorder() {
+    val x = selectionModel.movingBorder
+    if (x == -1) return
+    color = Settings.currentSettings.wordMovingSeparatorColor
+    stroke = BasicStroke(Settings.currentSettings.wordSeparatorWidth,
+        BasicStroke.CAP_BUTT,
+        BasicStroke.JOIN_BEVEL,
+        0f,
+        FloatArray(1) { Settings.currentSettings.dashWidth },
+        0f)
+    drawLine(x, 0, x, height)
   }
 
   private fun Graphics2D.drawCenteredWord(word: String, borders: ClosedIntRange) {

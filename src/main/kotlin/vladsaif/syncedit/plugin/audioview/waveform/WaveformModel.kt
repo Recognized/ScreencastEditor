@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import java.io.IOException
@@ -30,6 +31,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
       if (xx != null) {
         myCoordinatesCacheCoherent = true
         myCoordinatesCache = xx
+        myWordBorders = calculateWordBorders()
       }
       xx ?: listOf()
     }
@@ -63,11 +65,30 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
         myNeedInitialLoad = false
       }
     }
-  val drawRange
+  val drawRange: ClosedIntRange
     get() = ClosedIntRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
         min(myFirstVisibleChunk + myVisibleChunks * 3, myMaxChunks - 1))
   val editionModel: EditionModel
     get() = multimediaModel.editionModel
+  private var myWordBorders: List<ClosedIntRange> = listOf()
+  val wordBorders: List<ClosedIntRange>
+    get() {
+      if (!myCoordinatesCacheCoherent) {
+        myCoordinates
+      }
+      return myWordBorders
+    }
+  val wordCoordinates: List<ClosedIntRange>
+    get() = myCoordinates
+
+  private fun calculateWordBorders(): List<ClosedIntRange> {
+    val list = mutableListOf<ClosedIntRange>()
+    for (x in myCoordinatesCache) {
+      list.add(ClosedIntRange(x.start - JBUI.scale(magnetRange), x.start + JBUI.scale(magnetRange)))
+      list.add(ClosedIntRange(x.end - JBUI.scale(magnetRange), x.end + JBUI.scale(magnetRange)))
+    }
+    return list
+  }
 
   fun setRangeProperties(
       maxChunks: Int = myMaxChunks,
@@ -202,5 +223,6 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   companion object {
     private const val maxSamplesPerChunk = 100000
     private const val minSamplesPerChunk = 20
+    private const val magnetRange = 10
   }
 }

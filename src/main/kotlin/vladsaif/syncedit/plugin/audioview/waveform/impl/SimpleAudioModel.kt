@@ -38,14 +38,14 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
       if (!AudioSystem.isConversionSupported(it.format.toDecodeFormat(), it.format)) {
         throw UnsupportedAudioFileException("Cannot decode audio file.")
       }
-      AudioSystem.getAudioInputStream(it.format.toDecodeFormat(), it).use {
-        val audio = AudioSampler(it)
+      AudioSystem.getAudioInputStream(it.format.toDecodeFormat(), it).use { stream ->
+        val audio = AudioSampler(stream)
         var sampleCount = 0L
-        audio.forEachSample { sampleCount++ }
-        totalFrames = sampleCount / it.format.channels
-        millisecondsPerFrame = 1000.0 / it.format.frameRate
-        framesPerMillisecond = it.format.frameRate / 1000.0
-        trackDurationMilliseconds = totalFrames * 1000L / it.format.frameRate.toDouble()
+        audio.forEachSample { _ -> sampleCount++ }
+        totalFrames = sampleCount / stream.format.channels
+        millisecondsPerFrame = 1000.0 / stream.format.frameRate
+        framesPerMillisecond = stream.format.frameRate / 1000.0
+        trackDurationMilliseconds = totalFrames * 1000L / stream.format.frameRate.toDouble()
       }
     }
   }

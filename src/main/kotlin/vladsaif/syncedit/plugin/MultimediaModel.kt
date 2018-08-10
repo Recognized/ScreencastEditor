@@ -166,7 +166,6 @@ class MultimediaModel(
     data = newData.replaceWords(getWordReplacements(newData))
   }
 
-
   fun updateXml() {
     val xml = xmlFile ?: return
     val nonNullData = data ?: return
@@ -196,6 +195,11 @@ class MultimediaModel(
 
   fun renameWord(index: Int, text: String) {
     data = data?.renameWord(index, text)
+  }
+
+  fun changeRange(index: Int, newRange: ClosedIntRange) {
+    val word = data?.get(index) ?: return
+    data = data?.replaceWords(listOf(index to word.copy(range = newRange)))
   }
 
   fun concatenateWords(indexRange: ClosedIntRange) {
