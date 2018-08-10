@@ -10,7 +10,7 @@ interface SpeechRecognizer {
   /**
    * @return Recognized [TranscriptData] in audio from [inputStream].
    * @throws java.io.IOException If I/O error occurred
-   * @throws anything if input stream contains trash
+   * @throws Throwable if input stream contains trash
    */
   @Throws(IOException::class)
   suspend fun recognize(inputStream: InputStream): TranscriptData

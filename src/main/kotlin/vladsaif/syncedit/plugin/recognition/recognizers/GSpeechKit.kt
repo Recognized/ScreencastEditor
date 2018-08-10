@@ -1,16 +1,17 @@
 package vladsaif.syncedit.plugin.recognition.recognizers
 
-import com.google.api.core.ApiFutureToListenableFuture
-import com.google.cloud.speech.v1p1beta1.*
-import com.google.protobuf.ByteString
-import kotlinx.coroutines.experimental.guava.await
 import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.LibrariesLoader
 import vladsaif.syncedit.plugin.TranscriptData
 import vladsaif.syncedit.plugin.WordData
 import vladsaif.syncedit.plugin.recognition.CredentialProvider
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import java.io.IOException
 import java.io.InputStream
+import java.lang.reflect.InvocationTargetException
+import java.nio.file.Path
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 
 /**
  * @constructor
@@ -18,31 +19,34 @@ import java.io.InputStream
  */
 class GSpeechKit
 @Throws(IOException::class)
-private constructor(settings: SpeechSettings) : SpeechClient(settings), SpeechRecognizer {
+private constructor(path: Path) : SpeechRecognizer {
+  private val myInternalKit = LibrariesLoader.createGSpeechKitInstance(path)
 
+  @Suppress("unchecked_cast")
   @Throws(IOException::class)
   override suspend fun recognize(inputStream: InputStream): TranscriptData {
-    val audioBytes = ByteString.readFrom(inputStream)
-    val config = RecognitionConfig.newBuilder()
-        .setEnableWordTimeOffsets(true)
-        .setModel("video")
-        .setLanguageCode("en-US")
-        .setEnableAutomaticPunctuation(true)
-        .build()
-    val audio = RecognitionAudio.newBuilder()
-        .setContent(audioBytes)
-        .build()
-    val response = ApiFutureToListenableFuture(longRunningRecognizeAsync(config, audio)).await()
-    val wordData = response.getResults(0)
-        .getAlternatives(0)
-        .wordsList
-        .map { info -> WordData(info.word, getMsRange(info), WordData.State.PRESENTED) }
-    return TranscriptData(wordData)
+    val speechKitClass = LibrariesLoader.getGSpeechKit()
+    val method = speechKitClass.getMethod("recognize", InputStream::class.java)
+    val result = try {
+      method.invoke(myInternalKit, inputStream) as List<List<Any>>
+    } catch (ex: InvocationTargetException) {
+      if (ex.targetException !is ExecutionException && ex.targetException !is InterruptedException) {
+        throw CancellationException()
+      }
+      throw ex.targetException
+    }
+    return parseResponse(result)
   }
 
-  private fun getMsRange(info: WordInfo): ClosedIntRange {
-    return ClosedIntRange((info.startTime.seconds * 1000 + info.startTime.nanos / 1_000_000).toInt(),
-        (info.endTime.seconds * 1000 + info.endTime.nanos / 1_000_000).toInt())
+  private fun parseResponse(result: List<List<Any>>): TranscriptData {
+    val list = mutableListOf<WordData>()
+    for (x in result) {
+      val word = x[0] as String
+      val startTime = x[1] as Int
+      val endTime = x[2] as Int
+      list.add(WordData(word, ClosedIntRange(startTime, endTime), WordData.State.PRESENTED))
+    }
+    return TranscriptData(list)
   }
 
   companion object {

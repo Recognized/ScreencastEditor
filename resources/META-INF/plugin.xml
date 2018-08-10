@@ -14,7 +14,6 @@
 
     <idea-version since-build="181.0"/>
 
-    <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -79,4 +78,9 @@
             <keyboard-shortcut keymap="$default" first-keystroke="alt M"/>
         </action>
     </actions>
+    <application-components>
+        <component>
+            <implementation-class>vladsaif.syncedit.plugin.LibrariesLoader</implementation-class>
+        </component>
+    </application-components>
 </idea-plugin>
