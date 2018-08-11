@@ -8,6 +8,7 @@ import org.picocontainer.Disposable
 import vladsaif.syncedit.plugin.ClosedIntRange
 import vladsaif.syncedit.plugin.ClosedLongRange
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.*
+import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import java.awt.Dimension
 import java.io.File
 import java.io.IOException
@@ -22,6 +23,9 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
   private var myBlockScaling = false
   @Volatile
   private var myPlayState = STOP
+  @Volatile
+  private var myUpdateTime: Long = -1
+  //  private val myTimer: Timer = Timer(32) { timeTicks() }
   val hasSelection: Boolean
     get() = !waveform.selectionModel.selectedRanges.isEmpty()
   val playState: Player.PlayState
@@ -88,25 +92,52 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
       player.play()
       ApplicationManager.getApplication().executeOnPooledThread {
         try {
-          player.applyEditions(waveform.model.editionModel)
+          if (waveform.selectionModel.selectedRanges.isEmpty()) {
+            player.applyEditions(waveform.model.editionModel)
+          } else {
+            player.applyEditions(waveform.selectionModel.toEditionModel())
+          }
         } catch (ex: IOException) {
           showNotification("I/O error occurred while playing audio. ${ex.message}")
         } catch (ex: SecurityException) {
           showNotification("Cannot access audio file due to security restrictions.")
         } finally {
-          waveform.model.playFramePosition = -1
-          stop()
+          ApplicationManager.getApplication().invokeAndWait {
+            stop()
+            waveform.model.playFramePosition.set(-1L)
+          }
         }
       }
     } else {
       myPlayState = PLAY
       myPlayer?.play()
+//      myTimer.start()
     }
   }
 
+  private fun SelectionModel.toEditionModel(): EditionModel {
+    val editionModel = DefaultEditionModel()
+    val audioModel = waveform.model.multimediaModel.audioDataModel ?: return editionModel
+    editionModel.cut(ClosedLongRange(0, audioModel.totalFrames))
+    for (selected in selectedRanges) {
+      editionModel.undo(waveform.model.chunkRangeToFrameRange(selected))
+    }
+    return editionModel
+  }
+
   private fun positionUpdater(pos: Long) {
-    waveform.model.playFramePosition = pos
-    waveform.stateChanged(ChangeEvent(myPlayer))
+    waveform.model.playFramePosition.set(pos)
+    ApplicationManager.getApplication().invokeLater {
+      waveform.stateChanged(ChangeEvent(this))
+    }
+  }
+
+  private fun timeTicks() {
+    val audio = waveform.model.multimediaModel.audioDataModel ?: return
+    val pos = waveform.model.playFramePosition.get()
+    if (pos == -1L) return
+    waveform.model.playFramePosition.compareAndSet(pos, pos + (audio.framesPerMillisecond * 32).toLong())
+    waveform.stateChanged(ChangeEvent(this))
   }
 
   fun pause() {
@@ -115,14 +146,25 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     myPlayer?.pause()
   }
 
-  fun stop() {
+  fun stopImmediately() {
+    stopBase(Player::stopImmediately)
+  }
+
+  private fun stop() {
+    stopBase(Player::stop)
+  }
+
+  private fun stopBase(action: Player.() -> Unit) {
     if (myPlayState == STOP) return
     myPlayState = STOP
-    myPlayer?.stop()
+    myPlayer?.action()
+    waveform.stateChanged(ChangeEvent(this))
+    waveform.model.playFramePosition.set(-1)
+    myPlayer = null
   }
 
   override fun dispose() {
-    stop()
+    stopImmediately()
   }
 
   private fun scale(factor: Float) {

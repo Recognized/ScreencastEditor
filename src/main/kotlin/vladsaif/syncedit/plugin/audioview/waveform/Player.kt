@@ -26,6 +26,8 @@ interface Player : AutoCloseable {
 
   fun stop()
 
+  fun stopImmediately()
+
   companion object {
     fun create(file: Path): Player = PlayerImpl(file)
   }

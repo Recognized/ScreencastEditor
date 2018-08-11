@@ -22,8 +22,7 @@ class PlayerImpl(private val file: Path) : Player {
   }
 
   override fun applyEditions(editionModel: EditionModel) {
-    AudioSystem.getAudioInputStream(file.toFile()).use {
-      val inputStream = it
+    AudioSystem.getAudioInputStream(file.toFile()).use { inputStream ->
       AudioSystem.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
         applyEditionImpl(it, editionModel)
       }
@@ -37,7 +36,6 @@ class PlayerImpl(private val file: Path) : Player {
     val frameSize = decodedStream.format.frameSize
     val buffer = ByteArray(1 shl 14)
     var totalFrames = 0L
-    println(editions)
     outer@ for (edition in editions) {
       var needBytes = edition.first.length * frameSize
       when (edition.second) {
@@ -63,9 +61,9 @@ class PlayerImpl(private val file: Path) : Player {
               if (mySignalStopReceived) {
                 break@outer
               }
+              myProcessUpdater(totalFrames)
               writeOrBlock(buffer, zeroesCount)
               totalFrames += zeroesCount / frameSize
-              myProcessUpdater(totalFrames)
               needBytes -= zeroesCount
             }
             if (needSkip != 0L) {
@@ -85,9 +83,9 @@ class PlayerImpl(private val file: Path) : Player {
               break@outer
             }
             needBytes -= read
+            myProcessUpdater(totalFrames)
             writeOrBlock(buffer, read)
             totalFrames += read / frameSize
-            myProcessUpdater(totalFrames)
           }
         }
       }
@@ -116,8 +114,14 @@ class PlayerImpl(private val file: Path) : Player {
 
   override fun stop() {
     mySignalStopReceived = true
-    mySource.stop()
     mySource.drain()
+    mySource.flush()
+    mySource.stop()
+  }
+
+  override fun stopImmediately() {
+    mySignalStopReceived = true
+    mySource.stop()
     mySource.flush()
   }
 

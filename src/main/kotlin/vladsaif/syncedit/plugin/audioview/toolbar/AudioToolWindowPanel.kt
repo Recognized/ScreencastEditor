@@ -25,7 +25,7 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
       // Maybe, actions should be placed in two groups
       group.addAction("Play", "Play audio", ScreencastEditorIcons.PLAY, this::play) { playState != PLAY }
       group.addAction("Pause", "Pause audio", PAUSE, this::pause) { playState == PLAY }
-      group.addAction("Stop", "Stop audio", STOP, this::stop) { playState != Player.PlayState.STOP }
+      group.addAction("Stop", "Stop audio", STOP, this::stopImmediately) { playState != Player.PlayState.STOP }
       group.addAction("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo) { hasSelection }
       group.addAction("Clip", "Clip audio", DELETE, this::cutSelected) { hasSelection }
       group.addAction("Mute", "Mute selected", VOLUME_OFF, this::muteSelected) { hasSelection }
@@ -73,6 +73,6 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
   }
 
   override fun dispose() {
-    wave.controller.stop()
+    wave.controller.stopImmediately()
   }
 }

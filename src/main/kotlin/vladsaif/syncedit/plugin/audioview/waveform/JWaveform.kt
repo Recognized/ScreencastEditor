@@ -55,8 +55,9 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
       drawAveragedWaveform(model.audioData[0])
       drawWords()
       drawMovingBorder()
-      if (model.playFramePosition != -1L) {
-        drawPosition(model.playFramePosition)
+      val position = model.playFramePosition.get()
+      if (position != -1L) {
+        drawPosition(position)
       }
     }
   }

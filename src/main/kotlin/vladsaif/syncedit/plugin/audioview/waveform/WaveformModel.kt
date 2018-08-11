@@ -8,6 +8,7 @@ import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
@@ -47,8 +48,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   private var myLastLoadedVisibleRange: ClosedIntRange? = null
   private var myMaxChunks = myVisibleChunks
   private var myIsBroken = AtomicBoolean(false)
-  @Volatile
-  var playFramePosition = -1L
+  var playFramePosition: AtomicLong = AtomicLong(-1L)
   // TODO use it
   val isBroken
     get() = myIsBroken.get()

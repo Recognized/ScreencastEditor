@@ -131,7 +131,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       val start = dragStartEvent ?: return
       when {
         start.isControlKeyDown -> dragControlSelection(start.point, point)
-        myIsPressedOverBorder -> dragBorder(start.point, point)
+        myIsPressedOverBorder -> dragBorder(point)
         else -> dragSelection(start.point, point)
       }
     }
@@ -175,23 +175,50 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     }
   }
 
-  private fun dragBorder(start: Point, point: Point) {
+  private fun dragBorder(point: Point) {
     movingBorder = myMoveRange.inside(point.x - myStartDifference)
     fireStateChanged()
   }
 
   private fun dragBorderFinished() {
-    val model = myLocator ?: return
-    movingBorder = -1
-    val original = model.wordCoordinates[myWordBorderIndex / 2]
-    val newPxRange = if (myWordBorderIndex % 2 == 0) {
-      ClosedIntRange(movingBorder, original.end)
-    } else {
-      ClosedIntRange(original.start, movingBorder)
+    val locator = myLocator ?: return
+    val model = myLocator?.multimediaModel ?: return
+    val audioModel = model.audioDataModel ?: return
+    val data = model.data ?: return
+
+    val oldWord = data[myWordBorderIndex / 2]
+    var leftBorder = 0
+    var rightBorder = Int.MAX_VALUE
+    if (myWordBorderIndex - 1 >= 0) {
+      leftBorder = data[(myWordBorderIndex - 1) / 2].range.let {
+        if ((myWordBorderIndex - 1) % 2 == 0) {
+          it.start
+        } else {
+          it.end
+        }
+      }
     }
-    val frameRange = myLocator?.chunkRangeToFrameRange(newPxRange) ?: return
-    val msRange = myLocator?.multimediaModel?.audioDataModel?.frameRangeToMsRange(frameRange) ?: return
-    myLocator?.multimediaModel?.changeRange(myWordBorderIndex / 2, msRange)
+    if (myWordBorderIndex + 1 < data.words.size * 2) {
+      rightBorder = data[(myWordBorderIndex + 1) / 2].range.let {
+        if ((myWordBorderIndex + 1) % 2 == 0) {
+          it.start
+        } else {
+          it.end
+        }
+      }
+    }
+    val borderPx = ClosedIntRange(movingBorder, movingBorder)
+    val frameRange = locator.chunkRangeToFrameRange(borderPx)
+
+    val moveMsBorder = ClosedIntRange(leftBorder, rightBorder)
+    val newMs = moveMsBorder.inside(audioModel.frameRangeToMsRange(frameRange).start)
+    val newMsRange = if (myWordBorderIndex % 2 == 0) {
+      ClosedIntRange(newMs, oldWord.range.end)
+    } else {
+      ClosedIntRange(oldWord.range.start, newMs)
+    }
+    movingBorder = -1
+    model.changeRange(myWordBorderIndex / 2, newMsRange)
   }
 
   private val MouseEvent.isControlKeyDown get() = UIUtil.isControlKeyDown(this)
@@ -205,6 +232,4 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     val rangeClick = ClosedIntRange.from(e.x, 1)
     return myLocator?.wordBorders?.binarySearch(rangeClick, ClosedIntRange.INTERSECTS_CMP) ?: -1
   }
-
-
 }
