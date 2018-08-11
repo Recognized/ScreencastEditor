@@ -38,12 +38,12 @@ class TranscriptHighlighter : SyntaxHighlighterBase() {
 
 @Suppress("unused")
 object Highlighters {
-  val STRING = createTextAttributesKey("STRING_LITERAL", DefaultLanguageHighlighterColors.STRING)
-  val TIME_OFFSET = createTextAttributesKey("TIME_OFFSET", DefaultLanguageHighlighterColors.METADATA)
-  val COMMENT = DefaultLanguageHighlighterColors.LINE_COMMENT
-  val BAD_CHARACTER = HighlighterColors.BAD_CHARACTER
-  val EXCLUDED_WORD = EditorColors.DELETED_TEXT_ATTRIBUTES
-  val MUTED_WORD = HighlightInfoType.UNUSED_SYMBOL.attributesKey
+  val STRING: TextAttributesKey = createTextAttributesKey("STRING_LITERAL", DefaultLanguageHighlighterColors.STRING)
+  val TIME_OFFSET: TextAttributesKey = createTextAttributesKey("TIME_OFFSET", DefaultLanguageHighlighterColors.METADATA)
+  val COMMENT: TextAttributesKey get() = DefaultLanguageHighlighterColors.LINE_COMMENT
+  val BAD_CHARACTER: TextAttributesKey get() = HighlighterColors.BAD_CHARACTER
+  val EXCLUDED_WORD: TextAttributesKey get() = EditorColors.DELETED_TEXT_ATTRIBUTES
+  val MUTED_WORD: TextAttributesKey get() = HighlightInfoType.UNUSED_SYMBOL.attributesKey
 
   val STRING_KEYS = arrayOf(STRING)
   val COMMENT_KEYS = arrayOf(COMMENT)

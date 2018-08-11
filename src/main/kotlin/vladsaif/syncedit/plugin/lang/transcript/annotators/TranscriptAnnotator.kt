@@ -14,11 +14,11 @@ class TranscriptAnnotator : Annotator {
       when (element.data?.state) {
         EXCLUDED -> {
           val annotation = holder.createInfoAnnotation(element, "Word is excluded from transcript")
-          annotation.enforcedTextAttributes = Highlighters.EXCLUDED_WORD.defaultAttributes
+          annotation.textAttributes = Highlighters.EXCLUDED_WORD
         }
         MUTED -> {
           val annotation = holder.createInfoAnnotation(element, "Word is muted")
-          annotation.enforcedTextAttributes = Highlighters.MUTED_WORD.defaultAttributes
+          annotation.textAttributes = Highlighters.MUTED_WORD
         }
         else -> Unit
       }
