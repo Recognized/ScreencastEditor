@@ -12,7 +12,15 @@ import java.nio.file.Path
 
 class LibrariesLoader : ApplicationComponent {
   companion object {
+    private val myUrls: List<URL>
+    private var myLoaderField: ClassLoader? = null
     private val myUrlClassLoader: ClassLoader
+      get() {
+        if (myLoaderField == null) {
+          myLoaderField = UrlClassLoader.build().urls(myUrls).parent(ClassLoader.getSystemClassLoader()).get()
+        }
+        return myLoaderField!!
+      }
 
     init {
       val loadedUrls = (LibrariesLoader::class.java.classLoader as PluginClassLoader).urls
@@ -20,7 +28,7 @@ class LibrariesLoader : ApplicationComponent {
       val extUrl = URL(path + "ext")
       val urls = File(extUrl.toURI()).walk().map { it.toURI().toURL() }.toMutableList()
       urls.removeAt(0)
-      myUrlClassLoader = UrlClassLoader.build().urls(urls).parent(ClassLoader.getSystemClassLoader()).get()
+      myUrls = urls
     }
 
     fun getGSpeechKit(): Class<*> {
@@ -42,10 +50,13 @@ class LibrariesLoader : ApplicationComponent {
         try {
           getGSpeechKit().getConstructor(InputStream::class.java).newInstance(it)
         } catch (ex: InvocationTargetException) {
-          throw  ex.targetException
+          throw ex.targetException
         }
       }
     }
-  }
 
+    fun releaseClassloader() {
+      myLoaderField = null
+    }
+  }
 }

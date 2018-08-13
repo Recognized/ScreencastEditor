@@ -8,6 +8,7 @@ class CredentialProvider private constructor() : PersistentStateComponent<Creden
   var gSettings: Path? = null
     private set
 
+  @Synchronized
   fun setGCredentialsFile(file: Path) {
     LibrariesLoader.checkCredentials(file)
     gSettings = file
@@ -15,12 +16,18 @@ class CredentialProvider private constructor() : PersistentStateComponent<Creden
 
   override fun loadState(state: CredentialProvider) {
     Instance = state
+    println("Loaded state: $state")
     state.gSettings?.let {
       Instance.setGCredentialsFile(it)
     }
+    LibrariesLoader.releaseClassloader()
   }
 
   override fun getState() = Instance
+
+  override fun toString(): String {
+    return "CredentialProvider(gSettings=$gSettings)"
+  }
 
   companion object {
     var Instance = CredentialProvider()

@@ -72,6 +72,11 @@ class MultimediaModel(
         audioDataModel = SimpleAudioModel(File(value.path).toPath())
       }
     }
+  var scriptFile: VirtualFile? = null
+    set(value) {
+      setDependencies(field, value)
+      field = value
+    }
   var data: TranscriptData? = null
     set(value) {
       if (value != field) {

@@ -16,6 +16,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFileFactory
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.runBlocking
+import vladsaif.syncedit.plugin.LibrariesLoader
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
@@ -23,7 +24,6 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.coroutines.experimental.coroutineContext
 
 class RecognizeAudioAction : AnAction() {
 
@@ -57,7 +57,10 @@ class RecognizeAudioAction : AnAction() {
       runBlocking {
         myJob = coroutineContext[Job]
         val data = Files.newInputStream(path).use {
-          SpeechRecognizer.getDefault().recognize(it)
+          val res = SpeechRecognizer.getDefault().recognize(it)
+          // Probably, after recognition, library won't be used again
+          LibrariesLoader.releaseClassloader()
+          res
         }
         ApplicationManager.getApplication().invokeAndWait {
           ApplicationManager.getApplication().runWriteAction {
