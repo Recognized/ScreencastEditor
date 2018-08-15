@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
-import vladsaif.syncedit.plugin.ClosedIntRange
-import vladsaif.syncedit.plugin.ClosedLongRange
+import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.LRange
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.sound.sampled.AudioFormat
 
@@ -28,7 +28,7 @@ interface AudioDataModel {
    * @return Averaged audio data for each chunk in [chunkRange].
    * Chunk is a sequence of XX or XX + 1 samples, where XX = [totalFrames] / [maxChunks].
    */
-  fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, isActive: AtomicBoolean): List<AveragedSampleData>
+  fun getAveragedSampleData(maxChunks: Int, chunkRange: IRange, isActive: AtomicBoolean): List<AveragedSampleData>
 
   /**
    * @return Number of chunk (if all frame were split into [maxChunks] number of chunks)
@@ -41,9 +41,9 @@ interface AudioDataModel {
    */
   fun getStartFrame(maxChunks: Int, chunk: Int): Long
 
-  fun msRangeToFrameRange(range: ClosedIntRange): ClosedLongRange
+  fun msRangeToFrameRange(range: IRange): LRange
 
-  fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange
+  fun frameRangeToMsRange(range: LRange): IRange
 }
 
 fun AudioFormat.toDecodeFormat() =

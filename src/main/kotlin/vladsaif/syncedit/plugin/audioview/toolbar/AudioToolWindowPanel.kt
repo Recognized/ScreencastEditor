@@ -8,11 +8,11 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import icons.ScreencastEditorIcons
 import icons.ScreencastEditorIcons.*
 import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.actions.RecognizeAudioAction
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
 import vladsaif.syncedit.plugin.audioview.waveform.Player
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.PLAY
 import vladsaif.syncedit.plugin.recognition.CredentialProvider
-import vladsaif.syncedit.plugin.recognition.RecognizeAudioAction
 import javax.swing.Icon
 
 class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowPanel(false), Disposable {

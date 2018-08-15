@@ -1,13 +1,13 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
-import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.IRange
 
 interface SelectionModel : ChangeNotifier {
-  val selectedRanges: List<ClosedIntRange>
+  val selectedRanges: List<IRange>
 
   fun resetSelection()
 
-  fun addSelection(range: ClosedIntRange)
+  fun addSelection(range: IRange)
 
-  fun removeSelected(range: ClosedIntRange)
+  fun removeSelected(range: IRange)
 }

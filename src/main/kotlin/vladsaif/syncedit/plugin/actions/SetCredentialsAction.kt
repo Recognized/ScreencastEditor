@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.recognition
+package vladsaif.syncedit.plugin.actions
 
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
@@ -9,6 +9,7 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import vladsaif.syncedit.plugin.recognition.CredentialProvider
 import java.io.File
 import java.io.IOException
 

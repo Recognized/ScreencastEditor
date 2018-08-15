@@ -80,6 +80,8 @@ intellij {
     pluginName "ScreencastEditor"
     version "IC-2018.1"
     plugins 'Kotlin'
+    downloadSources true
+    instrumentCode true
 }
 
 task copyRuntime(type: Copy) {

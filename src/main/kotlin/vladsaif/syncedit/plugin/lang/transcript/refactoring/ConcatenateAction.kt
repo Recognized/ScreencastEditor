@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiDocumentManager
-import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.getElementBounds
@@ -25,7 +25,7 @@ class ConcatenateAction : AnAction() {
     val psi = PsiDocumentManager
         .getInstance(e.project!!)
         .getPsiFile(editor.document) as TranscriptPsiFile
-    val selection = ClosedIntRange(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd - 1)
+    val selection = IRange(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd - 1)
     val model = psi.model ?: return
     val data = model.data ?: return
     concatenateWords(model, selection, psi)
@@ -34,7 +34,7 @@ class ConcatenateAction : AnAction() {
     }
   }
 
-  private fun concatenateWords(model: MultimediaModel, selection: ClosedIntRange, psi: TranscriptPsiFile) {
+  private fun concatenateWords(model: MultimediaModel, selection: IRange, psi: TranscriptPsiFile) {
     val bounds = getElementBounds(selection, psi) ?: return
     var first = -1
     var last = -1
@@ -43,7 +43,7 @@ class ConcatenateAction : AnAction() {
       last = word.number
     }
     if (first == -1) return
-    model.concatenateWords(ClosedIntRange(first, last))
+    model.concatenateWords(IRange(first, last))
   }
 
   override fun update(e: AnActionEvent?) {

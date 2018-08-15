@@ -2,9 +2,9 @@ package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
-import vladsaif.syncedit.plugin.ClosedIntRange
-import vladsaif.syncedit.plugin.ClosedIntRange.Companion.EMPTY_RANGE
-import vladsaif.syncedit.plugin.ClosedIntRangeUnion
+import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.IRange.Companion.EMPTY_RANGE
+import vladsaif.syncedit.plugin.IRangeUnion
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.SelectionModel
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
@@ -15,11 +15,11 @@ import kotlin.math.max
 import kotlin.math.min
 
 class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotifier() {
-  private val mySelectedRanges = ClosedIntRangeUnion()
+  private val mySelectedRanges = IRangeUnion()
   private var myLocator: WaveformModel? = null
   private var myCacheCoherent = false
-  private var myCacheSelectedRanges = listOf<ClosedIntRange>()
-  private var myMoveRange: ClosedIntRange = EMPTY_RANGE
+  private var myCacheSelectedRanges = listOf<IRange>()
+  private var myMoveRange: IRange = EMPTY_RANGE
   private var myIsPressedOverBorder: Boolean = false
   private var myWordBorderIndex: Int = -1
   private var myStartDifference: Int = -1
@@ -37,7 +37,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     this.myLocator = locator
   }
 
-  override val selectedRanges: List<ClosedIntRange>
+  override val selectedRanges: List<IRange>
     get() = when {
       myCacheCoherent -> myCacheSelectedRanges
       myTempSelectedRange.empty -> mySelectedRanges.ranges
@@ -53,12 +53,12 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     myCacheCoherent = false
   }
 
-  override fun addSelection(range: ClosedIntRange) {
+  override fun addSelection(range: IRange) {
     mySelectedRanges.union(range)
     myCacheCoherent = false
   }
 
-  override fun removeSelected(range: ClosedIntRange) {
+  override fun removeSelected(range: IRange) {
     mySelectedRanges.exclude(range)
     myCacheCoherent = false
   }
@@ -123,7 +123,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
         if (number + 1 < myLocator!!.wordCoordinates.size * 2) {
           rightBorder = getBorder(number + 1)
         }
-        myMoveRange = ClosedIntRange(leftBorder, rightBorder)
+        myMoveRange = IRange(leftBorder, rightBorder)
       }
     }
 
@@ -157,12 +157,12 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun dragControlSelection(start: Point, point: Point) {
-    myTempSelectedRange = ClosedIntRange(min(start.x, point.x), max(start.x, point.x))
+    myTempSelectedRange = IRange(min(start.x, point.x), max(start.x, point.x))
     fireStateChanged()
   }
 
   private fun dragSelection(start: Point, point: Point) {
-    val border = ClosedIntRange(min(start.x, point.x), max(start.x, point.x))
+    val border = IRange(min(start.x, point.x), max(start.x, point.x))
     myTempSelectedRange = myLocator?.getCoveredRange(border) ?: return
     fireStateChanged()
   }
@@ -207,15 +207,15 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
         }
       }
     }
-    val borderPx = ClosedIntRange(movingBorder, movingBorder)
+    val borderPx = IRange(movingBorder, movingBorder)
     val frameRange = locator.chunkRangeToFrameRange(borderPx)
 
-    val moveMsBorder = ClosedIntRange(leftBorder, rightBorder)
+    val moveMsBorder = IRange(leftBorder, rightBorder)
     val newMs = moveMsBorder.inside(audioModel.frameRangeToMsRange(frameRange).start)
     val newMsRange = if (myWordBorderIndex % 2 == 0) {
-      ClosedIntRange(newMs, oldWord.range.end)
+      IRange(newMs, oldWord.range.end)
     } else {
-      ClosedIntRange(oldWord.range.start, newMs)
+      IRange(oldWord.range.start, newMs)
     }
     movingBorder = -1
     model.changeRange(myWordBorderIndex / 2, newMsRange)
@@ -229,7 +229,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun getBorderNumber(e: MouseEvent): Int {
-    val rangeClick = ClosedIntRange.from(e.x, 1)
-    return myLocator?.wordBorders?.binarySearch(rangeClick, ClosedIntRange.INTERSECTS_CMP) ?: -1
+    val rangeClick = IRange.from(e.x, 1)
+    return myLocator?.wordBorders?.binarySearch(rangeClick, IRange.INTERSECTS_CMP) ?: -1
   }
 }

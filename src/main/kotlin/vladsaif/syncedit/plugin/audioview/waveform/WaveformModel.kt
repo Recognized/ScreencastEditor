@@ -20,12 +20,12 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
    * Waveform presented using sliding window and this is the visible part of it.
    */
   private val myVisibleRange
-    get() = ClosedIntRange(myFirstVisibleChunk, myFirstVisibleChunk + myVisibleChunks - 1)
+    get() = IRange(myFirstVisibleChunk, myFirstVisibleChunk + myVisibleChunks - 1)
   /**
    * Coordinates are expected to be called very frequently and most of the time they do not change.
    * So it worth to cache it, because it requires some possibly heavy calculations.
    */
-  private val myCoordinates: List<ClosedIntRange>
+  private val myCoordinates: List<IRange>
     get() = if (myCoordinatesCacheCoherent) myCoordinatesCache
     else {
       val xx = multimediaModel.data?.words?.map { getCoordinates(it) }
@@ -41,11 +41,11 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   private var myCurrentTask: Future<*>? = null
   private var myCurrentTaskIsActive: AtomicBoolean? = null
   private var myCoordinatesCacheCoherent = false
-  private var myCoordinatesCache = listOf<ClosedIntRange>()
+  private var myCoordinatesCache = listOf<IRange>()
   private var myVisibleChunks = 4000
   private var myFirstVisibleChunk = 0
   private var myNeedInitialLoad = true
-  private var myLastLoadedVisibleRange: ClosedIntRange? = null
+  private var myLastLoadedVisibleRange: IRange? = null
   private var myMaxChunks = myVisibleChunks
   private var myIsBroken = AtomicBoolean(false)
   var playFramePosition: AtomicLong = AtomicLong(-1L)
@@ -65,27 +65,27 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
         myNeedInitialLoad = false
       }
     }
-  val drawRange: ClosedIntRange
-    get() = ClosedIntRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
+  val drawRange: IRange
+    get() = IRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
         min(myFirstVisibleChunk + myVisibleChunks * 3, myMaxChunks - 1))
   val editionModel: EditionModel
     get() = multimediaModel.editionModel
-  private var myWordBorders: List<ClosedIntRange> = listOf()
-  val wordBorders: List<ClosedIntRange>
+  private var myWordBorders: List<IRange> = listOf()
+  val wordBorders: List<IRange>
     get() {
       if (!myCoordinatesCacheCoherent) {
         myCoordinates
       }
       return myWordBorders
     }
-  val wordCoordinates: List<ClosedIntRange>
+  val wordCoordinates: List<IRange>
     get() = myCoordinates
 
-  private fun calculateWordBorders(): List<ClosedIntRange> {
-    val list = mutableListOf<ClosedIntRange>()
+  private fun calculateWordBorders(): List<IRange> {
+    val list = mutableListOf<IRange>()
     for (x in myCoordinatesCache) {
-      list.add(ClosedIntRange(x.start - JBUI.scale(magnetRange), x.start + JBUI.scale(magnetRange)))
-      list.add(ClosedIntRange(x.end - JBUI.scale(magnetRange), x.end + JBUI.scale(magnetRange)))
+      list.add(IRange(x.start - JBUI.scale(magnetRange), x.start + JBUI.scale(magnetRange)))
+      list.add(IRange(x.end - JBUI.scale(magnetRange), x.end + JBUI.scale(magnetRange)))
     }
     return list
   }
@@ -117,27 +117,27 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
 
   fun getChunk(frame: Long) = myAudioDataProvider?.getChunk(myMaxChunks, frame) ?: 0
 
-  fun chunkRangeToFrameRange(chunkRange: ClosedIntRange): ClosedLongRange {
-    val model = myAudioDataProvider ?: return ClosedLongRange.EMPTY_RANGE
-    return ClosedLongRange(model.getStartFrame(myMaxChunks, chunkRange.start),
+  fun chunkRangeToFrameRange(chunkRange: IRange): LRange {
+    val model = myAudioDataProvider ?: return LRange.EMPTY_RANGE
+    return LRange(model.getStartFrame(myMaxChunks, chunkRange.start),
         model.getStartFrame(myMaxChunks, chunkRange.end + 1) - 1)
   }
 
-  fun frameRangeToChunkRange(frameRange: ClosedLongRange): ClosedIntRange {
-    val model = myAudioDataProvider ?: return ClosedIntRange.EMPTY_RANGE
-    return ClosedIntRange(model.getChunk(myMaxChunks, frameRange.start),
+  fun frameRangeToChunkRange(frameRange: LRange): IRange {
+    val model = myAudioDataProvider ?: return IRange.EMPTY_RANGE
+    return IRange(model.getChunk(myMaxChunks, frameRange.start),
         model.getChunk(myMaxChunks, frameRange.end))
   }
 
-  fun getCoordinates(word: WordData): ClosedIntRange {
-    val model = myAudioDataProvider ?: return ClosedIntRange.EMPTY_RANGE
+  fun getCoordinates(word: WordData): IRange {
+    val model = myAudioDataProvider ?: return IRange.EMPTY_RANGE
     val left = model.getChunk(myMaxChunks, (word.range.start / model.millisecondsPerFrame).toLong())
     val right = model.getChunk(myMaxChunks, (word.range.end / model.millisecondsPerFrame).toLong())
-    return ClosedIntRange(left, right)
+    return IRange(left, right)
   }
 
   fun getEnclosingWord(coordinate: Int): WordData? {
-    val index = myCoordinates.binarySearch(ClosedIntRange(coordinate, coordinate), ClosedIntRange.INTERSECTS_CMP)
+    val index = myCoordinates.binarySearch(IRange(coordinate, coordinate), IRange.INTERSECTS_CMP)
     return if (index < 0) null
     else multimediaModel.data?.words?.get(index)
   }
@@ -154,7 +154,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     }
   }
 
-  private fun loadData(maxChunks: Int, drawRange: ClosedIntRange, callback: () -> Unit) {
+  private fun loadData(maxChunks: Int, drawRange: IRange, callback: () -> Unit) {
     if (myIsBroken.get()) return
     val model = myAudioDataProvider ?: return
     myCurrentTaskIsActive?.set(false)
@@ -211,13 +211,13 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   }
 
   fun getContainingWordRange(coordinate: Int) =
-      myCoordinates.find { it.contains(coordinate) } ?: ClosedIntRange.EMPTY_RANGE
+      myCoordinates.find { it.contains(coordinate) } ?: IRange.EMPTY_RANGE
 
-  fun getCoveredRange(extent: ClosedIntRange): ClosedIntRange {
+  fun getCoveredRange(extent: IRange): IRange {
     val coordinates = myCoordinates
-    val left = coordinates.find { it.end >= extent.start }?.start ?: return ClosedIntRange.EMPTY_RANGE
-    val right = coordinates.findLast { it.start <= extent.end }?.end ?: return ClosedIntRange.EMPTY_RANGE
-    return ClosedIntRange(left, right)
+    val left = coordinates.find { it.end >= extent.start }?.start ?: return IRange.EMPTY_RANGE
+    val right = coordinates.findLast { it.start <= extent.end }?.end ?: return IRange.EMPTY_RANGE
+    return IRange(left, right)
   }
 
   companion object {

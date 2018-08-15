@@ -7,7 +7,7 @@ import kotlin.math.min
 /**
  * Represents time range with included ends
  */
-data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLongRange> {
+data class LRange(val start: Long, val end: Long) : Comparable<LRange> {
 
   val length: Long
     get() = max(end - start + 1, 0L)
@@ -15,7 +15,7 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
   val empty: Boolean
     get() = start > end
 
-  operator fun contains(other: ClosedLongRange): Boolean {
+  operator fun contains(other: LRange): Boolean {
     return start <= other.start && other.end <= end
   }
 
@@ -23,29 +23,29 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
     return other in start..end
   }
 
-  infix fun shift(delta: Long): ClosedLongRange {
+  infix fun shift(delta: Long): LRange {
     if (delta > 0L && end > Long.MAX_VALUE - delta || delta < 0L && start < Long.MIN_VALUE - delta) {
       throw IllegalArgumentException()
     }
-    return ClosedLongRange(start + delta, end + delta)
+    return LRange(start + delta, end + delta)
   }
 
-  fun stretchRight(delta: Long): ClosedLongRange {
+  fun stretchRight(delta: Long): LRange {
     if (delta < 0L || Long.MAX_VALUE - end < delta) throw IllegalArgumentException()
-    return ClosedLongRange(start, end + min(delta, Long.MAX_VALUE - end))
+    return LRange(start, end + min(delta, Long.MAX_VALUE - end))
   }
 
-  fun intersects(other: ClosedLongRange): Boolean {
+  fun intersects(other: LRange): Boolean {
     if (other.empty || empty) return false
     return !(start > other.end || other.start > end)
   }
 
-  infix fun intersect(other: ClosedLongRange): ClosedLongRange {
-    return if (intersects(other)) ClosedLongRange(max(start, other.start), min(end, other.end))
+  infix fun intersect(other: LRange): LRange {
+    return if (intersects(other)) LRange(max(start, other.start), min(end, other.end))
     else EMPTY_RANGE
   }
 
-  override fun compareTo(other: ClosedLongRange): Int {
+  override fun compareTo(other: LRange): Int {
     return (start - other.start).floorToInt()
   }
 
@@ -54,7 +54,7 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is ClosedLongRange) return false
+    if (other !is LRange) return false
     if (empty && other.empty) return true
     return start == other.start && end == other.end
   }
@@ -65,16 +65,16 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
 
   companion object {
 
-    val INTERSECTS_CMP = Comparator<ClosedLongRange> { a, b ->
+    val INTERSECTS_CMP = Comparator<LRange> { a, b ->
       return@Comparator if (a.intersects(b)) 0 else (a.start - b.start).floorToInt()
     }
 
-    infix fun Long.clr(other: Long) = ClosedLongRange(this, other)
+    infix fun Long.clr(other: Long) = LRange(this, other)
 
-    val EMPTY_RANGE = ClosedLongRange(0, -1)
+    val EMPTY_RANGE = LRange(0, -1)
 
-    fun from(startOffsetMs: Long, length: Long): ClosedLongRange {
-      return ClosedLongRange(startOffsetMs, startOffsetMs + length - 1)
+    fun from(startOffsetMs: Long, length: Long): LRange {
+      return LRange(startOffsetMs, startOffsetMs + length - 1)
     }
 
     /**
@@ -84,7 +84,7 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
      * @param ranges the ranges to merge
      * @return new set with merged ranges
      */
-    fun mergeAdjacent(ranges: Set<ClosedLongRange>): Set<ClosedLongRange> {
+    fun mergeAdjacent(ranges: Set<LRange>): Set<LRange> {
       return mergeAdjacent(ArrayList(ranges)).toSet()
     }
 
@@ -95,20 +95,20 @@ data class ClosedLongRange(val start: Long, val end: Long) : Comparable<ClosedLo
      * @param merge ranges to merge
      * @return new list with merged ranges
      */
-    fun mergeAdjacent(merge: List<ClosedLongRange>): List<ClosedLongRange> {
+    fun mergeAdjacent(merge: List<LRange>): List<LRange> {
       val list = merge.toMutableList().sorted()
-      val result = mutableListOf<ClosedLongRange>()
+      val result = mutableListOf<LRange>()
       var start = -1L
       for (i in list.indices) {
         if (i == 0 || list[i].start > list[i - 1].end + 1) {
           if (start != -1L) {
-            result.add(ClosedLongRange(start, list[i - 1].end))
+            result.add(LRange(start, list[i - 1].end))
           }
           start = list[i].start
         }
       }
       if (start != -1L) {
-        result.add(ClosedLongRange(start, list.last().end))
+        result.add(LRange(start, list.last().end))
       }
       return result
     }

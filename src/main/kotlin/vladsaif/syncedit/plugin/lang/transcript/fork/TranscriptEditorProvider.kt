@@ -75,9 +75,7 @@ class TranscriptEditorProvider : FileEditorProvider {
       }
       editor.putUserData(TranscriptEditorDisposer.modelKey, model)
       editor.document.putUserData(InplaceRenamer.GUARDED_BLOCKS, listOf(marker))
-      with(editor.colorsScheme) {
-        setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
-      }
+      editor.colorsScheme.setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
       EditorActionManager.getInstance().setReadonlyFragmentModificationHandler(editor.document) { }
     }
   }

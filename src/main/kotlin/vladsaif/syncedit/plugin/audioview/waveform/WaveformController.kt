@@ -5,8 +5,8 @@ import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import org.picocontainer.Disposable
-import vladsaif.syncedit.plugin.ClosedIntRange
-import vladsaif.syncedit.plugin.ClosedLongRange
+import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.LRange
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import java.awt.Dimension
@@ -71,9 +71,9 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     edit(waveform.model.editionModel::undo)
   }
 
-  private inline fun edit(consumer: (ClosedLongRange) -> Unit) {
+  private inline fun edit(consumer: (LRange) -> Unit) {
     waveform.selectionModel.selectedRanges.forEach {
-      val truncated = it intersect ClosedIntRange(0, waveform.model.maxChunks - 1)
+      val truncated = it intersect IRange(0, waveform.model.maxChunks - 1)
       consumer(waveform.model.chunkRangeToFrameRange(truncated))
     }
     waveform.stateChanged(ChangeEvent(waveform.model.editionModel))
@@ -118,7 +118,7 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
   private fun SelectionModel.toEditionModel(): EditionModel {
     val editionModel = DefaultEditionModel()
     val audioModel = waveform.model.multimediaModel.audioDataModel ?: return editionModel
-    editionModel.cut(ClosedLongRange(0, audioModel.totalFrames))
+    editionModel.cut(LRange(0, audioModel.totalFrames))
     for (selected in selectedRanges) {
       editionModel.undo(waveform.model.chunkRangeToFrameRange(selected))
     }

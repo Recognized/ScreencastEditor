@@ -55,12 +55,16 @@ class TranscriptData(words: List<WordData>) {
     return replaceWord(index, newWord)
   }
 
-  fun concatenateWords(indexRange: ClosedIntRange): TranscriptData {
+  fun concatenateWords(indexRange: IRange): TranscriptData {
     val concat = words.subList(indexRange.start, indexRange.end + 1)
     if (concat.size < 2) return this
     val concatText = concat.joinToString(separator = " ") { it.filteredText }
-    println("\'$concatText\'")
-    val newWord = WordData(concatText, ClosedIntRange(concat.first().range.start, concat.last().range.end), WordData.State.PRESENTED)
+    val newWord = WordData(
+        concatText,
+        IRange(concat.first().range.start, concat.last().range.end),
+        WordData.State.PRESENTED,
+        -1
+    )
     val newWords = mutableListOf<WordData>()
     newWords.addAll(words.subList(0, indexRange.start))
     newWords.add(newWord)

@@ -8,6 +8,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.WordData.State.*
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
@@ -77,6 +78,13 @@ class MultimediaModel(
       setDependencies(field, value)
       field = value
     }
+  val scriptPsi: KtFile?
+    get() {
+      val file = scriptFile ?: return null
+      val doc = FileDocumentManager.getInstance().getDocument(file) ?: return null
+      return PsiDocumentManager.getInstance(project).getPsiFile(doc) as? KtFile
+    }
+
   var data: TranscriptData? = null
     set(value) {
       if (value != field) {
@@ -202,12 +210,12 @@ class MultimediaModel(
     data = data?.renameWord(index, text)
   }
 
-  fun changeRange(index: Int, newRange: ClosedIntRange) {
+  fun changeRange(index: Int, newRange: IRange) {
     val word = data?.get(index) ?: return
     data = data?.replaceWords(listOf(index to word.copy(range = newRange)))
   }
 
-  fun concatenateWords(indexRange: ClosedIntRange) {
+  fun concatenateWords(indexRange: IRange) {
     data = data?.concatenateWords(indexRange)
   }
 

@@ -16,8 +16,8 @@ class TranscriptDataTest {
         "fifth",
         "sixth"
     )
-    val ranges = (1..words.size).map { ClosedIntRange(it, it + 1) }
-    val wordsData = words.zip(ranges).map { WordData(it.first, it.second, WordData.State.PRESENTED) }
+    val ranges = (1..words.size).map { IRange(it, it + 1) }
+    val wordsData = words.zip(ranges).map { WordData(it.first, it.second, WordData.State.PRESENTED, -1) }
     return TranscriptData(wordsData)
   }
 

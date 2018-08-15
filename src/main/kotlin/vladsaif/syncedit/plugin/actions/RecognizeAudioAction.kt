@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.recognition
+package vladsaif.syncedit.plugin.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -18,8 +18,9 @@ import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.runBlocking
 import vladsaif.syncedit.plugin.LibrariesLoader
 import vladsaif.syncedit.plugin.MultimediaModel
-import vladsaif.syncedit.plugin.audioview.toolbar.OpenAudioAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
+import vladsaif.syncedit.plugin.recognition.CredentialProvider
+import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files

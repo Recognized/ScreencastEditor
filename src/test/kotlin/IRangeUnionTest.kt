@@ -2,15 +2,15 @@ package vladsaif.syncedit.plugin
 
 import org.junit.Assert.*
 import org.junit.Test
-import vladsaif.syncedit.plugin.ClosedIntRange.Companion.clr
+import vladsaif.syncedit.plugin.IRange.Companion.clr
 import java.util.*
 
-class ClosedIntRangeUnionTest {
-  private fun createTestModel(): ClosedIntRangeUnion {
-    val model = ClosedIntRangeUnion()
+class IRangeUnionTest {
+  private fun createTestModel(): IRangeUnion {
+    val model = IRangeUnion()
     model.clear()
     for (i in 0..9) {
-      model.union(ClosedIntRange.from(i * 20, 10))
+      model.union(IRange.from(i * 20, 10))
     }
     return model
   }
@@ -19,7 +19,7 @@ class ClosedIntRangeUnionTest {
   fun `test exclude all ranges`() {
     val model = createTestModel()
     for (i in 0..9) {
-      model.exclude(ClosedIntRange.from(i * 20, 10))
+      model.exclude(IRange.from(i * 20, 10))
     }
     assertEquals(0, model.ranges.size)
   }
@@ -28,7 +28,7 @@ class ClosedIntRangeUnionTest {
   fun `test exclude one unit from each range`() {
     val model = createTestModel()
     for (i in 10 downTo 0) {
-      model.exclude(ClosedIntRange.from(i * 20 + 10, 10))
+      model.exclude(IRange.from(i * 20 + 10, 10))
     }
     assertEquals(10, model.ranges.size)
   }
@@ -36,14 +36,14 @@ class ClosedIntRangeUnionTest {
   @Test
   fun `test exclude range that cover three ranges in model`() {
     val model = createTestModel()
-    model.exclude(ClosedIntRange(25, 89))
+    model.exclude(IRange(25, 89))
     assertEquals(7, model.ranges.size)
   }
 
   @Test
   fun `test exclude part of ranges`() {
     val model = createTestModel()
-    model.exclude(ClosedIntRange(10, 59))
+    model.exclude(IRange(10, 59))
     assertEquals(8, model.ranges.size)
   }
 
@@ -58,7 +58,7 @@ class ClosedIntRangeUnionTest {
 
   @Test
   fun `test add intersecting ranges`() {
-    val model = ClosedIntRangeUnion()
+    val model = IRangeUnion()
     model.union(0 clr 10)
     model.union(20 clr 30)
     model.union(9 clr 29)
@@ -76,69 +76,69 @@ class ClosedIntRangeUnionTest {
 
   @Test
   fun `test add intersecting ranges incrementally`() {
-    val model = ClosedIntRangeUnion()
-    model.union(ClosedIntRange.from(1, 30))
+    val model = IRangeUnion()
+    model.union(IRange.from(1, 30))
     assertEquals(1, model.ranges.size)
-    model.union(ClosedIntRange.from(0, 50))
+    model.union(IRange.from(0, 50))
     assertEquals(1, model.ranges.size)
-    model.union(ClosedIntRange.from(5, 60))
+    model.union(IRange.from(5, 60))
     assertEquals(1, model.ranges.size)
-    model.union(ClosedIntRange.from(40, 10))
+    model.union(IRange.from(40, 10))
     assertEquals(1, model.ranges.size)
   }
 
   @Test
   fun `test divide range by excluding center part`() {
-    val model = ClosedIntRangeUnion()
-    model.union(ClosedIntRange.from(1, 30))
-    model.exclude(ClosedIntRange.from(5, 5))
-    model.exclude(ClosedIntRange.from(12, 5))
+    val model = IRangeUnion()
+    model.union(IRange.from(1, 30))
+    model.exclude(IRange.from(5, 5))
+    model.exclude(IRange.from(12, 5))
     assertEquals(3, model.ranges.size)
   }
 
   @Test
   fun `test exclude outer and inner parts from range`() {
-    val model = ClosedIntRangeUnion()
-    model.union(ClosedIntRange.from(1, 100))
-    model.exclude(ClosedIntRange.from(5, 5))
-    model.exclude(ClosedIntRange.from(12, 5))
-    model.exclude(ClosedIntRange.from(0, 3))
-    model.exclude(ClosedIntRange.from(90, 20))
+    val model = IRangeUnion()
+    model.union(IRange.from(1, 100))
+    model.exclude(IRange.from(5, 5))
+    model.exclude(IRange.from(12, 5))
+    model.exclude(IRange.from(0, 3))
+    model.exclude(IRange.from(90, 20))
     assertEquals(3, model.ranges.size)
   }
 
   @Test
   fun `test impose on border`() {
-    val model = ClosedIntRangeUnion()
-    model.union(ClosedIntRange(40, 60))
-    assertEquals(ClosedIntRange(30, 39), model.impose(ClosedIntRange(30, 40)))
+    val model = IRangeUnion()
+    model.union(IRange(40, 60))
+    assertEquals(IRange(30, 39), model.impose(IRange(30, 40)))
   }
 
   @Test
   fun `test impose on multiple ranges`() {
     val model = createTestModel()
-    assertEquals(ClosedIntRange(20, 45), model.impose(ClosedIntRange(45, 95)))
+    assertEquals(IRange(20, 45), model.impose(IRange(45, 95)))
   }
 
   @Test
   fun `test impose on containing range`() {
-    val model = ClosedIntRangeUnion()
-    model.union(ClosedIntRange(10, 100))
-    assertTrue(model.impose(ClosedIntRange(50, 60)).empty)
+    val model = IRangeUnion()
+    model.union(IRange(10, 100))
+    assertTrue(model.impose(IRange(50, 60)).empty)
   }
 
   @Test
   fun `test impose on no ranges`() {
-    val model = ClosedIntRangeUnion()
-    assertEquals(model.impose(ClosedIntRange(40, 60)), model.impose(ClosedIntRange(40, 60)))
+    val model = IRangeUnion()
+    assertEquals(model.impose(IRange(40, 60)), model.impose(IRange(40, 60)))
   }
 
   @Test
   fun `test impose on empty model results in same range`() {
-    val model = ClosedIntRangeUnion()
+    val model = IRangeUnion()
     val gen = Random(System.currentTimeMillis())
     for (i in 0..99) {
-      val rand = ClosedIntRange.from(gen.nextInt() % 300, gen.nextInt() % 300)
+      val rand = IRange.from(gen.nextInt() % 300, gen.nextInt() % 300)
       assertEquals(rand, model.impose(rand))
     }
   }
@@ -146,12 +146,12 @@ class ClosedIntRangeUnionTest {
   @Test
   fun `test impose cache`() {
     val gen = Random(System.currentTimeMillis())
-    val ranges = ArrayList<ClosedIntRange>()
+    val ranges = ArrayList<IRange>()
     for (i in 0..99) {
-      ranges.add(ClosedIntRange.from(gen.nextInt() % 300, gen.nextInt() % 300))
+      ranges.add(IRange.from(gen.nextInt() % 300, gen.nextInt() % 300))
     }
-    val resultsWithClear = ArrayList<ClosedIntRange>()
-    val resultsNoClear = ArrayList<ClosedIntRange>()
+    val resultsWithClear = ArrayList<IRange>()
+    val resultsNoClear = ArrayList<IRange>()
     for (x in ranges) {
       val model = createTestModel()
       resultsWithClear.add(model.impose(x))

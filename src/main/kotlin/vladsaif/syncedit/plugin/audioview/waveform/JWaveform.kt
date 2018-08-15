@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.audioview.waveform
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import vladsaif.syncedit.plugin.ClosedIntRange
+import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
@@ -72,7 +72,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
     selectionModel.selectedRanges.forEach { drawSelectedRange(it, usedRange) }
   }
 
-  private fun Graphics2D.drawSelectedRange(selected: ClosedIntRange, border: ClosedIntRange) {
+  private fun Graphics2D.drawSelectedRange(selected: IRange, border: IRange) {
     val selectedVisible = border.intersect(selected)
     color = Settings.currentSettings.selectionColor
     if (!selectedVisible.empty) {
@@ -103,9 +103,9 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
    */
   private fun Graphics2D.drawAveragedWaveform(data: AveragedSampleData) {
     val settings = Settings.currentSettings
-    val workRange = ClosedIntRange.from(data.skippedChunks, data.size)
+    val workRange = IRange.from(data.skippedChunks, data.size)
     val editedRanges = model.editionModel.editions.map { Pair(model.frameRangeToChunkRange(it.first), it.second) }
-    val workPieces = mutableListOf<Pair<ClosedIntRange, EditionModel.EditionType>>()
+    val workPieces = mutableListOf<Pair<IRange, EditionModel.EditionType>>()
     editedRanges.forEach {
       val x = it.first intersect workRange
       if (!x.empty) {
@@ -127,7 +127,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
     }
   }
 
-  private inline fun Graphics2D.drawWaveformPiece(workPieces: List<Pair<ClosedIntRange, EditionModel.EditionType>>,
+  private inline fun Graphics2D.drawWaveformPiece(workPieces: List<Pair<IRange, EditionModel.EditionType>>,
                                                   cutColor: Color,
                                                   noChangeColor: Color,
                                                   painter: (Int) -> Unit) {
@@ -189,7 +189,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
     drawLine(x, 0, x, height)
   }
 
-  private fun Graphics2D.drawCenteredWord(word: String, borders: ClosedIntRange) {
+  private fun Graphics2D.drawCenteredWord(word: String, borders: IRange) {
     val (x1, x2) = borders
     val stringWidth = getFontMetrics(myWordFont).stringWidth(word)
     if (stringWidth < x2.toLong() - x1) {

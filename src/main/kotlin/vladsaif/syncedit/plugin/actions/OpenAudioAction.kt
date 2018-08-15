@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.audioview.toolbar
+package vladsaif.syncedit.plugin.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -7,6 +7,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import vladsaif.syncedit.plugin.audioview.toolbar.AudioToolWindowManager
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import java.io.File
 import java.io.IOException

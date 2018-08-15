@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
-import vladsaif.syncedit.plugin.ClosedIntRange
-import vladsaif.syncedit.plugin.ClosedLongRange
+import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.LRange
 import vladsaif.syncedit.plugin.audioview.AudioSampler
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.audioview.waveform.AveragedSampleData
@@ -50,15 +50,15 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
     }
   }
 
-  override fun msRangeToFrameRange(range: ClosedIntRange): ClosedLongRange {
-    return ClosedLongRange(
+  override fun msRangeToFrameRange(range: IRange): LRange {
+    return LRange(
         (framesPerMillisecond * range.start).toLong(),
         (framesPerMillisecond * range.end).toLong()
     )
   }
 
-  override fun frameRangeToMsRange(range: ClosedLongRange): ClosedIntRange {
-    return ClosedIntRange(
+  override fun frameRangeToMsRange(range: LRange): IRange {
+    return IRange(
         (millisecondsPerFrame * range.start).toInt(),
         (millisecondsPerFrame * range.end).toInt()
     )
@@ -74,7 +74,7 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
     }
   }
 
-  override fun getAveragedSampleData(maxChunks: Int, chunkRange: ClosedIntRange, isActive: AtomicBoolean): List<AveragedSampleData> {
+  override fun getAveragedSampleData(maxChunks: Int, chunkRange: IRange, isActive: AtomicBoolean): List<AveragedSampleData> {
     val framesPerChunk = (totalFrames / maxChunks).toInt()
     AudioSystem.getAudioInputStream(myFile).use { input ->
       val decodeFormat = input.format.toDecodeFormat()
@@ -107,7 +107,7 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
                         framesPerChunk: Int,
                         data: List<AveragedSampleData>,
                         maxChunks: Int,
-                        chunkRange: ClosedIntRange,
+                        chunkRange: IRange,
                         channels: Int,
                         isActive: AtomicBoolean) {
     val peaks = List(channels) { LongArray(framesPerChunk + 1) }
@@ -136,21 +136,21 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
     }
   }
 
-  private fun getBigChunkRange(maxChunks: Int) = ClosedIntRange(0, (totalFrames % maxChunks).toInt() - 1)
+  private fun getBigChunkRange(maxChunks: Int) = IRange(0, (totalFrames % maxChunks).toInt() - 1)
 
-  private fun countReadFrames(maxChunks: Int, chunkRange: ClosedIntRange, framesPerChunk: Int): Long {
+  private fun countReadFrames(maxChunks: Int, chunkRange: IRange, framesPerChunk: Int): Long {
     var sum = 0L
     val bigChunks = getBigChunkRange(maxChunks)
     sum += chunkRange.intersect(bigChunks).length * (framesPerChunk + 1)
-    sum += chunkRange.intersect(ClosedIntRange(bigChunks.end + 1, Int.MAX_VALUE)).length * framesPerChunk
+    sum += chunkRange.intersect(IRange(bigChunks.end + 1, Int.MAX_VALUE)).length * framesPerChunk
     return sum
   }
 
-  private fun countSkippedFrames(maxChunks: Int, chunkRange: ClosedIntRange, framesPerChunk: Int): Long {
+  private fun countSkippedFrames(maxChunks: Int, chunkRange: IRange, framesPerChunk: Int): Long {
     val bigChunkRange = getBigChunkRange(maxChunks)
-    val skipRange = ClosedIntRange(0, chunkRange.start - 1)
+    val skipRange = IRange(0, chunkRange.start - 1)
     return bigChunkRange.intersect(skipRange).length * (framesPerChunk.toLong() + 1) +
-        ClosedIntRange(bigChunkRange.end + 1, chunkRange.start - 1).intersect(skipRange).length * framesPerChunk.toLong()
+        IRange(bigChunkRange.end + 1, chunkRange.start - 1).intersect(skipRange).length * framesPerChunk.toLong()
   }
 
   private fun AveragedSampleData.setChunk(counter: Int, chunk: Int, peaks: LongArray) {
