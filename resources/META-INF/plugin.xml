@@ -56,9 +56,9 @@
                     icon="ScreencastEditorIcons.SETTINGS"
                     class="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
                     text="Set cloud recognition credentials " description="Set credentials used in cloud recognition"/>
-            <action id="vladsaif.syncedit.plugin.lang.script.diff.OpenDiffAction"
+            <action id="vladsaif.syncedit.plugin.diffview.OpenDiffAction"
                     icon="ScreencastEditorIcons.SETTINGS"
-                    class="vladsaif.syncedit.plugin.lang.script.diff.OpenDiffAction"
+                    class="vladsaif.syncedit.plugin.diffview.OpenDiffAction"
                     text="Manage transcript-script relations" description="Start diff window"/>
             <action id="vladsaif.syncedit.plugin.actions.FakeOpenDiff"
                     icon="ScreencastEditorIcons.SETTINGS"

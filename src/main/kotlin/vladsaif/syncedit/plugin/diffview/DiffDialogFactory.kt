@@ -1,9 +1,11 @@
-package vladsaif.syncedit.plugin.lang.script.diff
+package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.codeStyle.CodeStyleFacade
-import com.intellij.openapi.editor.Document
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.EditorKind
+import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.ex.EditorEx
@@ -13,12 +15,12 @@ import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogBuilder
-import com.intellij.openapi.ui.Divider
-import com.intellij.openapi.ui.Splitter
+import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
-import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.KotlinLanguage
@@ -26,48 +28,94 @@ import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
-import java.awt.Graphics
-import javax.swing.JComponent
-import javax.swing.JFrame
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
+import java.awt.BorderLayout
+import java.awt.ComponentOrientation
+import java.awt.Dimension
+import javax.swing.*
 
 object DiffDialogFactory {
 
   fun createView(model: MultimediaModel) = DialogBuilder().let {
-    JFrame("Hello").apply {
-      add(JBLabel("This is the standard label"))
-      isVisible = true
-      revalidate()
-      repaint()
-    }
     it.setTitle(model.scriptFile!!.name)
-    it.setCenterPanel(createCenterPanel(model))
+    it.setCenterPanel(createSplitter(model))
     it.showAndGet()
   }
 
-  private fun createCenterPanel(model: MultimediaModel): JComponent {
-    val leftEditor = createEditorView(model.project, model.transcriptPsi!!)
-    val rightEditor = createEditorView(model.project, model.scriptPsi!!)
-    return MySplitter(
+  private fun createSplitter(model: MultimediaModel): Splitter {
+//    val leftEditor = createEditorView(model.project, model.transcriptPsi!!)
+    val leftEditor = createTranscriptView(model.transcriptPsi!!)
+    val rightEditor = createEditorPanel(model.project, model.scriptPsi!!)
+    val painter = SplitterPainter(
+        BindProvider(),
+        createTranscriptLocator(leftEditor.viewport),
+        createScriptLocator(rightEditor.editor as EditorEx)
+    )
+    val splitter = Splitter(
         leftComponent = leftEditor,
         rightComponent = rightEditor,
-        painter = createPainter()
+        painter = painter
     )
+    rightEditor.editor.scrollPane.verticalScrollBar.addAdjustmentListener {
+      splitter.divider.repaint()
+    }
+    leftEditor.verticalScrollBar.addAdjustmentListener {
+      splitter.divider.repaint()
+    }
+    Disposer.register(splitter, rightEditor)
+    return splitter
   }
 
-  private fun createPainter(): MyPainter {
-    return MyPainter()
+  private fun createTranscriptLocator(viewport: JViewport): Locator {
+    return object : Locator {
+      override fun locate(item: Int): Pair<Int, Int> {
+        val panel = viewport.view as TextItemPanel
+        val offset = viewport.viewPosition.y
+        val (top, bottom) = panel.getCoordinates(item)
+        return (top - offset) to (bottom - offset)
+      }
+    }
   }
 
-  private fun createEditorView(project: Project, psi: PsiFile): JComponent {
+  private fun createScriptLocator(editor: EditorEx): Locator {
+    return object : Locator {
+      override fun locate(item: Int): Pair<Int, Int> {
+        val offset = editor.scrollPane.viewport.viewPosition.y
+        val y = editor.logicalPositionToXY(LogicalPosition(item, 0)).y - offset
+        return y to (y + editor.lineHeight)
+      }
+    }
+  }
+
+  private fun createTranscriptView(psi: TranscriptPsiFile): JBScrollPane {
+    val panel = TextItemPanel()
+    panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+    val words = psi.model!!.data!!.words
+    for ((index, word) in words.withIndex()) {
+      panel.add(TextItem(word.filteredText))
+      if (index != words.size - 1) {
+        panel.add(Box.createRigidArea(Dimension(0, JBUI.scale(1))))
+      }
+    }
+    val pane = JBScrollPane(panel)
+    pane.componentOrientation = ComponentOrientation.RIGHT_TO_LEFT
+    pane.verticalScrollBarPolicy = JBScrollPane.VERTICAL_SCROLLBAR_ALWAYS
+    pane.border = BorderFactory.createEmptyBorder()
+    return pane
+  }
+
+  private fun createEditorPanel(project: Project, psi: PsiFile): MyEditorWrapper {
     val isScript = when (psi.language) {
       KotlinLanguage.INSTANCE -> true
       TranscriptLanguage -> false
       else -> throw IllegalArgumentException()
     }
     val transformed = transformFile(project, psi, isScript)
-    val editor = createEditor(project, transformed.viewProvider.document!!)
+    val factory = EditorFactory.getInstance()
+    val kind = EditorKind.DIFF
+    val editor = factory.createViewer(transformed.viewProvider.document!!, project, kind) as EditorEx
     configureEditor(project, editor, transformed, isScript)
-    return editor.component
+    return MyEditorWrapper(editor)
   }
 
   private fun transformFile(project: Project, psi: PsiFile, isScript: Boolean): PsiFile {
@@ -104,12 +152,6 @@ object DiffDialogFactory {
   }
 
 
-  private fun createEditor(project: Project, document: Document): EditorEx {
-    val factory = EditorFactory.getInstance()
-    val kind = EditorKind.DIFF
-    return factory.createViewer(document, project, kind) as EditorEx
-  }
-
   private fun configureEditor(project: Project, editor: EditorEx, psi: PsiFile, isScript: Boolean) {
     with(editor) {
       setFile(psi.virtualFile)
@@ -144,33 +186,16 @@ object DiffDialogFactory {
     return highlighterFactory.createEditorHighlighter(syntaxHighlighter, EditorColorsManager.getInstance().globalScheme)
   }
 
-  private class MySplitter(
-      private val leftComponent: JComponent,
-      private val rightComponent: JComponent,
-      private val painter: MyPainter
-  ) : Splitter(false, 0.5f, 0.5f, 0.5f) {
+  private class MyEditorWrapper(val editor: Editor) : JPanel(BorderLayout()), Disposable {
 
     init {
-      dividerWidth = 30
-      firstComponent = leftComponent
-      secondComponent = rightComponent
-      setHonorComponentsMinimumSize(false)
+      add(editor.component)
     }
 
-    override fun createDivider(): Divider {
-      return object : DividerImpl() {
-        override fun paint(g: Graphics) {
-          super.paint(g)
-          painter.paint(g, this)
-        }
+    override fun dispose() {
+      if (!editor.isDisposed) {
+        EditorFactory.getInstance().releaseEditor(editor)
       }
-    }
-  }
-
-  private class MyPainter {
-
-    fun paint(graphics: Graphics, component: JComponent) {
-
     }
   }
 }

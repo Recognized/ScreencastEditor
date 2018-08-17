@@ -5,7 +5,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFileFactory
 import vladsaif.syncedit.plugin.MultimediaModel
-import vladsaif.syncedit.plugin.lang.script.diff.DiffDialogFactory
+import vladsaif.syncedit.plugin.diffview.DiffDialogFactory
 import vladsaif.syncedit.plugin.lang.script.psi.UIScriptFileType
 
 class FakeOpenDiff : AnAction() {
@@ -20,6 +20,42 @@ class FakeOpenDiff : AnAction() {
         call()
         timeOffset(4000L)
       }
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
+      call()
     """.trimIndent()
 
   override fun actionPerformed(e: AnActionEvent?) {

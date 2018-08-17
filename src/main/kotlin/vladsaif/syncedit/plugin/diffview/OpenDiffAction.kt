@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.lang.script.diff
+package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
