@@ -7,7 +7,7 @@ object TextFormatter {
    *
    * @param getWidth function of transformation string into size units.
    */
-  fun splitText(text: String, lineSize: Int, getWidth: (String) -> Int): List<String> {
+  fun splitText(text: String, lineSize: Int, getWidth: (String) -> Int = { it.length }): List<String> {
     val words = text.split("\\s+".toRegex())
     return formatLines(words, lineSize, getWidth)
   }
@@ -17,7 +17,7 @@ object TextFormatter {
    *
    * @param getWidth function of transformation string into size units.
    */
-  fun createEllipsis(line: String, lineSize: Int, getWidth: (String) -> Int): String {
+  fun createEllipsis(line: String, lineSize: Int, getWidth: (String) -> Int = { it.length }): String {
     return if (getWidth(line) > lineSize) {
       var dropped = line
       while (!dropped.isEmpty() && getWidth(dropped) > lineSize) {
@@ -34,7 +34,12 @@ object TextFormatter {
     }
   }
 
-  private fun formatLines(words: List<String>, lineSize: Int, getWidth: (String) -> Int): List<String> {
+  fun formatLines(
+      words: List<String>,
+      lineSize: Int,
+      getWidth: (String) -> Int = { it.length },
+      separator: Char = ' '
+  ): List<String> {
     val lines = mutableListOf<String>()
     var builder = StringBuilder()
     for (word in words) {
@@ -47,11 +52,11 @@ object TextFormatter {
         builder = StringBuilder()
       }
       builder.append(word)
-      builder.append(" ")
+      builder.append(separator)
     }
     builder.toString().let {
       if (!it.isEmpty()) {
-        lines.add(it.trim())
+        lines.add(it.trim(separator))
       }
     }
     return lines

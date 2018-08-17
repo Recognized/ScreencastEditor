@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -40,6 +41,12 @@ class MultimediaModel(
   private val myTranscriptDataListener = object : MultimediaModel.Listener {
     override fun onTranscriptDataChanged() {
       if (myTranscriptListenerEnabled) {
+        with(UndoManager.getInstance(project)) {
+          if (!isRedoInProgress && !isUndoInProgress) {
+            // But transcript should be updated always, otherwise it will cause errors.
+            updateTranscript()
+          }
+        }
         editionModel.isNotificationSuppressed = true
         synchronizeTranscriptWithEditionModel()
         editionModel.isNotificationSuppressed = false
@@ -96,6 +103,7 @@ class MultimediaModel(
           return
         }
       }
+      // Maybe, we don't need to update xml every time, because it is not used.
       updateXml()
     }
   var transcriptFile: VirtualFile? = null
@@ -122,9 +130,6 @@ class MultimediaModel(
 
   init {
     editionModel.addChangeListener(myEditionModelListener)
-    // Synchronize edition model with transcript data if it was changed in editor.
-    // Also do not forger to reset coordinates cache.
-    addTranscriptDataListener(myTranscriptDataListener)
   }
 
   private fun onEditionModelChanged() {
@@ -180,11 +185,31 @@ class MultimediaModel(
   }
 
   fun updateXml() {
-    val xml = xmlFile ?: return
     val nonNullData = data ?: return
-    FileDocumentManager.getInstance().getDocument(xml)?.let { doc ->
-      ApplicationManager.getApplication().runWriteAction {
-        doc.setText(nonNullData.toXml())
+    xmlFile.updateDoc { doc ->
+      doc.setText(nonNullData.toXml())
+    }
+  }
+
+  fun updateTranscript() {
+    val nonNullData = data ?: return
+//    transcriptFile?.setBinaryContent(nonNullData.text.toByteArray(charset = Charset.forName("UTF-8")))
+    transcriptFile.updateDoc { doc ->
+      with(PsiDocumentManager.getInstance(project)) {
+        doPostponedOperationsAndUnblockDocument(doc)
+        doc.setText(nonNullData.text)
+        commitDocument(doc)
+      }
+    }
+  }
+
+  private fun VirtualFile?.updateDoc(action: (Document) -> Unit) {
+    val file = this ?: return
+    FileDocumentManager.getInstance().getDocument(file)?.let { doc ->
+      ApplicationManager.getApplication().invokeAndWait {
+        ApplicationManager.getApplication().runWriteAction {
+          action(doc)
+        }
       }
     }
   }
@@ -198,6 +223,9 @@ class MultimediaModel(
   }
 
   private fun fireTranscriptDataChanged() {
+    // Synchronize edition model with transcript data if it was changed in editor.
+    // Also do not forger to reset coordinates cache.
+    myTranscriptDataListener.onTranscriptDataChanged()
     for (x in myListeners) x.onTranscriptDataChanged()
   }
 

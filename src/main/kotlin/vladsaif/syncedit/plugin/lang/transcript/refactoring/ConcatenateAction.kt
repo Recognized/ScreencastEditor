@@ -4,7 +4,6 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.IRange
@@ -27,11 +26,7 @@ class ConcatenateAction : AnAction() {
         .getPsiFile(editor.document) as TranscriptPsiFile
     val selection = IRange(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd - 1)
     val model = psi.model ?: return
-    val data = model.data ?: return
     concatenateWords(model, selection, psi)
-    ApplicationManager.getApplication().runWriteAction {
-      editor.document.setText(data.text)
-    }
   }
 
   private fun concatenateWords(model: MultimediaModel, selection: IRange, psi: TranscriptPsiFile) {

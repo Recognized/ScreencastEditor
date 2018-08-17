@@ -10,7 +10,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 class TranscriptAnnotator : Annotator {
 
   override fun annotate(element: PsiElement, holder: AnnotationHolder) {
-    if (element is TranscriptWord) {
+    if (element is TranscriptWord && element.isValid) {
       when (element.data?.state) {
         EXCLUDED -> {
           val annotation = holder.createInfoAnnotation(element, "Word is excluded from transcript")

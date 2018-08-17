@@ -16,20 +16,8 @@ class TranscriptData(words: List<WordData>) {
   @field:[XmlJavaTypeAdapter(WordsAdapter::class)]
   val words = words.sorted()
   val text: String
-    get() {
-      val builder = StringBuilder()
-      var currentLineCount = 0
-      for (word in words) {
-        if (word.filteredText.length + currentLineCount > 120) {
-          currentLineCount = 0
-          builder.append('\n')
-        }
-        currentLineCount += word.filteredText.length + 1
-        builder.append(word.filteredText)
-        builder.append('\u00A0')
-      }
-      return builder.toString()
-    }
+    get() = TextFormatter.formatLines(words.map { it.filteredText }, 120, separator = '\u00A0')
+        .joinToString(separator = "\n") { it }
 
   // JAXB needs to access default constructor via reflection and add elements
   // so we may abuse fact that ArrayList can be assigned to kotlin List
