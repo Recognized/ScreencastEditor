@@ -20,18 +20,7 @@ class TranscriptData(words: List<WordData>) {
         .joinToString(separator = "\n") { it }
 
   val bindings: List<Binding>
-    get() = words.foldIndexed(mutableListOf()) { index, acc, x ->
-      when {
-        x.bindStatements.empty -> Unit
-        acc.isEmpty() || acc.last().itemRange.end + 1 != index || acc.last().lineRange != x.bindStatements -> {
-          acc.add(Binding(IRange(index, index), x.bindStatements))
-        }
-        else -> {
-          acc[acc.lastIndex] = acc.last().copy(itemRange = acc.last().itemRange.copy(end = index))
-        }
-      }
-      return@foldIndexed acc
-    }
+    get() = words.mapIndexed { index, x -> Binding(IRange(index, index), x.bindStatements) }.let(::mergeBindings)
 
   // JAXB needs to access default constructor via reflection and add elements
   // so we may abuse fact that ArrayList can be assigned to kotlin List

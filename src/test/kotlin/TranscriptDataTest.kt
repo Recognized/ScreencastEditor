@@ -54,7 +54,7 @@ class TranscriptDataTest {
   }
 
   @Test
-  fun `test bindinds`() {
+  fun `test bindings`() {
     val bindData = TranscriptData(listOf(
         WordData("_", IRange(0, 1)),
         WordData("a", IRange(1, 2), bindStatements = IRange(1, 3)),
@@ -71,5 +71,28 @@ class TranscriptDataTest {
         Binding(IRange(5, 7), IRange(6, 9))
     )
     assertEquals(expectedBindings, bindData.bindings)
+  }
+
+  @Test
+  fun `test merge bindings`() {
+    val bindings = listOf(
+        Binding(IRange(1, 3), IRange(5, 6)),
+        Binding(IRange(2, 4), IRange(5, 6)),
+        Binding(IRange(2, 7), IRange(5, 6)),
+        Binding(IRange(4, 7), IRange(5, 7)),
+        Binding(IRange(9, 10), IRange(5, 7)),
+        Binding(IRange(11, 12), IRange(5, 7)),
+        Binding(IRange(14, 15), IRange(10, 11)),
+        Binding(IRange(17, 18), IRange(10, 11))
+    )
+    val merged = mergeBindings(bindings)
+    val expected = listOf(
+        Binding(IRange(1, 7), IRange(5, 6)),
+        Binding(IRange(4, 7), IRange(5, 7)),
+        Binding(IRange(9, 12), IRange(5, 7)),
+        Binding(IRange(14, 15), IRange(10, 11)),
+        Binding(IRange(17, 18), IRange(10, 11))
+    )
+    assertEquals(expected, merged)
   }
 }
