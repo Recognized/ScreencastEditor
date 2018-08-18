@@ -7,8 +7,8 @@ import java.awt.Graphics
 import javax.swing.JComponent
 
 class Splitter(
-    private val leftComponent: JComponent,
-    private val rightComponent: JComponent,
+    leftComponent: JComponent,
+    rightComponent: JComponent,
     private val painter: SplitterPainter
 ) : Splitter(false, 0.5f, 0.2f, 0.8f), Disposable {
 

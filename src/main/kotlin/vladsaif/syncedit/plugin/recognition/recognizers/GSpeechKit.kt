@@ -44,7 +44,7 @@ private constructor(path: Path) : SpeechRecognizer {
       val word = x[0] as String
       val startTime = x[1] as Int
       val endTime = x[2] as Int
-      list.add(WordData(word, IRange(startTime, endTime), WordData.State.PRESENTED, -1))
+      list.add(WordData(word, IRange(startTime, endTime)))
     }
     return TranscriptData(list)
   }

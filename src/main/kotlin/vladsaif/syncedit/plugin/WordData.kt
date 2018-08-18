@@ -12,9 +12,9 @@ data class WordData(
     @field:XmlElement
     val range: IRange,
     @field:XmlAttribute
-    val state: State,
+    val state: State = State.PRESENTED,
     @field:XmlElement(name = "bind")
-    val bindStatementNumber: Int
+    val bindStatements: IRange = IRange.EMPTY_RANGE
 ) : Comparable<WordData> {
   /**
    * Replaces non-breaking space symbol because it is used in TranscriptView language as word separator
@@ -22,11 +22,11 @@ data class WordData(
   val filteredText: String
     get() = if (text.contains('\u00A0')) text.replace('\u00A0', ' ') else text
   val isBind: Boolean
-    get() = bindStatementNumber >= 0
+    get() = !bindStatements.empty
 
   // JAXB constructor
   @Suppress("unused")
-  private constructor() : this("", IRange.EMPTY_RANGE, State.PRESENTED, -1)
+  private constructor() : this("", IRange.EMPTY_RANGE)
 
   enum class State {
     EXCLUDED, MUTED, PRESENTED

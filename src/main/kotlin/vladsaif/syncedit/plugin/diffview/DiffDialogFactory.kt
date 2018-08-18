@@ -46,8 +46,9 @@ object DiffDialogFactory {
 //    val leftEditor = createEditorView(model.project, model.transcriptPsi!!)
     val leftEditor = createTranscriptView(model.transcriptPsi!!)
     val rightEditor = createEditorPanel(model.project, model.scriptPsi!!)
+    val ref = BindingsProvider(model.data!!.bindings)
     val painter = SplitterPainter(
-        BindProvider(),
+        BindingsProvider(),
         createTranscriptLocator(leftEditor.viewport),
         createScriptLocator(rightEditor.editor as EditorEx)
     )

@@ -19,6 +19,20 @@ class TranscriptData(words: List<WordData>) {
     get() = TextFormatter.formatLines(words.map { it.filteredText }, 120, separator = '\u00A0')
         .joinToString(separator = "\n") { it }
 
+  val bindings: List<Binding>
+    get() = words.foldIndexed(mutableListOf()) { index, acc, x ->
+      when {
+        x.bindStatements.empty -> Unit
+        acc.isEmpty() || acc.last().itemRange.end + 1 != index || acc.last().lineRange != x.bindStatements -> {
+          acc.add(Binding(IRange(index, index), x.bindStatements))
+        }
+        else -> {
+          acc[acc.lastIndex] = acc.last().copy(itemRange = acc.last().itemRange.copy(end = index))
+        }
+      }
+      return@foldIndexed acc
+    }
+
   // JAXB needs to access default constructor via reflection and add elements
   // so we may abuse fact that ArrayList can be assigned to kotlin List
   @Suppress("unused")
@@ -49,9 +63,7 @@ class TranscriptData(words: List<WordData>) {
     val concatText = concat.joinToString(separator = " ") { it.filteredText }
     val newWord = WordData(
         concatText,
-        IRange(concat.first().range.start, concat.last().range.end),
-        WordData.State.PRESENTED,
-        -1
+        IRange(concat.first().range.start, concat.last().range.end)
     )
     val newWords = mutableListOf<WordData>()
     newWords.addAll(words.subList(0, indexRange.start))

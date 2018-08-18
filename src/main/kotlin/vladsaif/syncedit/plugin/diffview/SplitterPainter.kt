@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.util.ui.GraphicsUtil
-import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.Binding
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -11,7 +11,7 @@ import java.awt.geom.Path2D
 import javax.swing.JComponent
 
 class SplitterPainter(
-    private val bindProvider: BindProvider,
+    private val bindProvider: BindingsProvider,
     private val leftItemLocator: Locator,
     private val rightItemLocator: Locator
 ) {
@@ -24,7 +24,7 @@ class SplitterPainter(
       with(component) {
         color = background
         fillRect(0, 0, width, height)
-        val bindings = bindProvider.getBindings()
+        val bindings = bindProvider.bindings
         val polygons = createShapes(bindings, width)
         val path = Path2D.Double()
         for ((top, bottom) in polygons) {
@@ -42,13 +42,13 @@ class SplitterPainter(
 
   // Create list of pair of shapes that enclose area of polygon.
   // Show bindings from transcript to script.
-  private fun createShapes(bindings: Map<IRange, IRange>, width: Int): List<Pair<Shape, Shape>> {
+  private fun createShapes(bindings: List<Binding>, width: Int): List<Pair<Shape, Shape>> {
     val newShapes = mutableListOf<Pair<Shape, Shape>>()
-    for ((key, value) in bindings) {
-      val topLeftCorner = leftItemLocator.locate(key.start).first
-      val bottomLeftCorner = leftItemLocator.locate(key.end).second
-      val topRightCorner = rightItemLocator.locate(value.start).first
-      val bottomRightCorner = rightItemLocator.locate(value.end).second
+    for ((item, line) in bindings) {
+      val topLeftCorner = leftItemLocator.locate(item.start).first
+      val bottomLeftCorner = leftItemLocator.locate(item.end).second
+      val topRightCorner = rightItemLocator.locate(line.start).first
+      val bottomRightCorner = rightItemLocator.locate(line.end).second
       val topShape = createCubicCurve(topLeftCorner, topRightCorner, width, true)
       // Should be reversed order, because then we constructing path
       val bottomShape = createCubicCurve(bottomLeftCorner, bottomRightCorner, width, false)
