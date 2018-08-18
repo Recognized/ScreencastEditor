@@ -23,7 +23,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   private var myIsPressedOverBorder: Boolean = false
   private var myWordBorderIndex: Int = -1
   private var myStartDifference: Int = -1
-  private var myTempSelectedRange = EMPTY_RANGE
+  private var myTempSelectedRange: IRange = EMPTY_RANGE
     set(value) {
       if (myTempSelectedRange != value) {
         myCacheCoherent = false

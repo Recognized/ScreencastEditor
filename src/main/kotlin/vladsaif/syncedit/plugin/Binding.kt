@@ -20,3 +20,7 @@ fun mergeBindings(bindings: List<Binding>): List<Binding> {
     acc
   }
 }
+
+fun List<Binding>.lines(): Iterable<Int> {
+  return this.flatMap { it.lineRange.toIntRange() }
+}

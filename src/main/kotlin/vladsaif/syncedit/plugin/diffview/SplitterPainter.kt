@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.util.ui.GraphicsUtil
 import vladsaif.syncedit.plugin.Binding
+import vladsaif.syncedit.plugin.Settings
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -11,12 +12,10 @@ import java.awt.geom.Path2D
 import javax.swing.JComponent
 
 class SplitterPainter(
-    private val bindProvider: BindingsProvider,
+    private val diffModel: DiffModel,
     private val leftItemLocator: Locator,
     private val rightItemLocator: Locator
 ) {
-  private val fillerColor: Color get() = Color(0, 200, 0, 30)
-  private val borderColor: Color get() = Color(0, 200, 0, 70)
 
   fun paint(graphics: Graphics, component: JComponent) {
     GraphicsUtil.setupAAPainting(graphics)
@@ -24,15 +23,15 @@ class SplitterPainter(
       with(component) {
         color = background
         fillRect(0, 0, width, height)
-        val bindings = bindProvider.bindings
+        val bindings = diffModel.bindings
         val polygons = createShapes(bindings, width)
-        val path = Path2D.Double()
         for ((top, bottom) in polygons) {
+          val path = Path2D.Double()
           path.append(top, true)
           path.append(bottom, true)
-          color = fillerColor
+          color = FILLER_COLOR
           fill(path)
-          color = borderColor
+          color = BORDER_COLOR
           draw(top)
           draw(bottom)
         }
@@ -58,6 +57,13 @@ class SplitterPainter(
   }
 
   companion object {
+    private val FILLER_COLOR_BRIGHT: Color get() = Color(0, 200, 0, 30)
+    private val FILLER_COLOR_DARK: Color get() = Color(0, 200, 0, 30)
+    private val BORDER_COLOR_BRIGHT: Color get() = Color(0, 200, 0, 70)
+    private val BRODER_COLOR_DARK: Color get() = Color(0, 200, 0, 70)
+    val FILLER_COLOR by Settings.Theme(bright = FILLER_COLOR_BRIGHT, dark = FILLER_COLOR_DARK)
+    val BORDER_COLOR by Settings.Theme(bright = BORDER_COLOR_BRIGHT, dark = BRODER_COLOR_DARK)
+
     private const val CTRL_PROXIMITY_X = 0.3
 
     private fun createCubicCurve(y1: Int, y2: Int, width: Int, forward: Boolean): CubicCurve2D.Double {

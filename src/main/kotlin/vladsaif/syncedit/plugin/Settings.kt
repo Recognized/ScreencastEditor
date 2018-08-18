@@ -93,11 +93,13 @@ data class Settings(
     operator fun getValue(thisRef: Any?, property: KProperty<*>): Float = JBUI.scale(delegate.get())
   }
 
-  class Theme(private val dark: Int, private val bright: Int) {
+  class Theme(private val dark: Color, private val bright: Color) {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): Color {
-      return if (com.intellij.util.ui.UIUtil.isUnderDarcula()) Color(dark)
-      else Color(bright)
+      return if (com.intellij.util.ui.UIUtil.isUnderDarcula()) dark
+      else bright
     }
+
+    constructor(dark: Int, bright: Int) : this(dark = Color(dark), bright = Color(bright))
   }
 }
 

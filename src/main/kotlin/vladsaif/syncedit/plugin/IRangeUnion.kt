@@ -38,6 +38,10 @@ class IRangeUnion {
     return startPos >= 0 && startPos == endPos
   }
 
+  operator fun contains(other: Int): Boolean {
+    return IRange(other, other) in this
+  }
+
   fun exclude(range: IRange) {
     if (range.empty) return
     myLastCalculated = null

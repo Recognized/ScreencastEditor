@@ -43,14 +43,13 @@ object DiffDialogFactory {
   }
 
   private fun createSplitter(model: MultimediaModel): Splitter {
-//    val leftEditor = createEditorView(model.project, model.transcriptPsi!!)
     val leftEditor = createTranscriptView(model.transcriptPsi!!)
     val rightEditor = createEditorPanel(model.project, model.scriptPsi!!)
-    val ref = BindingsProvider(model.data!!.bindings)
+    val diffModel = DiffModel(model, rightEditor.editor as EditorEx)
     val painter = SplitterPainter(
-        BindingsProvider(),
+        diffModel,
         createTranscriptLocator(leftEditor.viewport),
-        createScriptLocator(rightEditor.editor as EditorEx)
+        createScriptLocator(rightEditor.editor)
     )
     val splitter = Splitter(
         leftComponent = leftEditor,

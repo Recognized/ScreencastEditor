@@ -15,7 +15,6 @@ data class IRange(
     @field:XmlAttribute val start: Int,
     @field:XmlAttribute val end: Int
 ) : Comparable<IRange> {
-
   val length: Int
     get() = max(end - start + 1, 0)
 
@@ -30,6 +29,10 @@ data class IRange(
 
   operator fun contains(other: Int): Boolean {
     return other in start..end
+  }
+
+  fun toIntRange(): IntRange {
+    return start..end
   }
 
   infix fun shift(delta: Int): IRange {

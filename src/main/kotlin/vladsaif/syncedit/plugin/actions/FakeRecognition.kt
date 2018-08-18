@@ -16,15 +16,15 @@ class FakeRecognition : AnAction() {
     val demo = "file://C:/Users/User/IdeaProjects/empty/demo.wav"
     val waveform = OpenAudioAction.openAudio(e!!.project!!, VirtualFileManager.getInstance().findFileByUrl(demo)!!)!!
     val data = listOf(
-        WordData("one big word that maybe result of some concatenation", IRange(1000, 2000)),
-        WordData("two", IRange(2000, 3000)),
-        WordData("three", IRange(3000, 4000)),
-        WordData("four", IRange(4000, 5000)),
+        WordData("one big word that maybe result of some concatenation", IRange(1000, 2000), bindStatements = IRange(1, 3)),
+        WordData("two", IRange(2000, 3000), bindStatements = IRange(1, 3)),
+        WordData("three", IRange(3000, 4000), bindStatements = IRange(1, 3)),
+        WordData("four", IRange(4000, 5000), bindStatements = IRange(1, 3)),
         WordData("five", IRange(5000, 6000)),
-        WordData("six", IRange(6000, 7000)),
-        WordData("seven big word that maybe result of some concatenation", IRange(8000, 9000)),
+        WordData("six", IRange(6000, 7000), bindStatements = IRange(7, 10)),
+        WordData("seven big word that maybe result of some concatenation", IRange(8000, 9000), bindStatements = IRange(15, 18)),
         WordData("eight", IRange(9000, 9500)),
-        WordData("nine", IRange(10000, 11000)),
+        WordData("nine", IRange(10000, 11000), bindStatements = IRange(30, 40)),
         WordData("ten", IRange(11000, 12000)),
         WordData("eleven", IRange(12000, 13000)),
         WordData("twelve", IRange(13000, 14000))
