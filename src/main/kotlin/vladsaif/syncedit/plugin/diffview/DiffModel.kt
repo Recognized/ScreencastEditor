@@ -10,6 +10,7 @@ import vladsaif.syncedit.plugin.IRangeUnion
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
+import kotlin.coroutines.experimental.buildSequence
 
 class DiffModel(
     val origin: MultimediaModel,
@@ -21,9 +22,13 @@ class DiffModel(
     set(value) {
       if (field != value) {
         field = value
-        for ((index, x) in textItems.withIndex()) {
-          x.isSelected = index in value
+        var needRedraw = false
+        for ((item, height) in itemsWithHeights()) {
+          val before = item.isSelected
+          item.isSelected = height.intersects(value)
+          needRedraw = needRedraw or (before != item.isSelected)
         }
+        if (needRedraw) fireStateChanged()
       }
     }
   val textItems: List<TextItem> = panel.components.filterIsInstance(TextItem::class.java)
@@ -43,6 +48,16 @@ class DiffModel(
       for (item in binding.itemRange.toIntRange()) {
         textItems[item].isBind = true
       }
+    }
+  }
+
+  private fun itemsWithHeights() = buildSequence {
+    var sum = 0
+    for (component in panel.components) {
+      if (component is TextItem) {
+        yield(component to IRange(sum, sum + component.height))
+      }
+      sum += component.height
     }
   }
 

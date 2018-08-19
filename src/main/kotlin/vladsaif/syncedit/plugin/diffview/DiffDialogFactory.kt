@@ -2,6 +2,10 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.codeStyle.CodeStyleFacade
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.EditorKind
@@ -25,7 +29,9 @@ import com.intellij.util.ui.UIUtil
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
@@ -33,42 +39,64 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import java.awt.BorderLayout
 import java.awt.ComponentOrientation
 import java.awt.Dimension
+import java.awt.Point
 import javax.swing.*
 import javax.swing.event.ChangeListener
+import kotlin.math.max
+import kotlin.math.min
 
 object DiffDialogFactory {
 
-  fun createView(model: MultimediaModel) = DialogBuilder().let {
-    it.setTitle(model.scriptFile!!.name)
-    it.setCenterPanel(createSplitter(model))
-    it.showAndGet()
+  fun createView(model: MultimediaModel) = DialogBuilder().apply {
+    setTitle(model.scriptFile!!.name)
+    val splitter = createSplitter(model)
+    setCenterPanel(splitter)
+    setNorthPanel(createToolbar(splitter).component)
+    showAndGet()
+  }
+
+  private fun createToolbar(splitter: Splitter): ActionToolbar {
+    val group = DefaultActionGroup()
+
+    return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 
   private fun createSplitter(model: MultimediaModel): Splitter {
-    val leftEditor = createTranscriptView(model.transcriptPsi!!)
-    val rightEditor = createEditorPanel(model.project, model.scriptPsi!!)
-    val diffModel = DiffModel(model, rightEditor.editor as EditorEx, leftEditor.viewport.view.cast())
+    val pane = createTranscriptView(model.transcriptPsi!!)
+    val editorView = createEditorPanel(model.project, model.scriptPsi!!)
+    val diffModel = DiffModel(model, editorView.editor as EditorEx, pane.viewport.view.cast())
     diffModel.addChangeListener(ChangeListener {
-      leftEditor.revalidate()
-      leftEditor.repaint()
+      pane.revalidate()
+      pane.repaint()
     })
+    val leftDragListener = object : MouseDragListener() {
+
+      override fun onDrag(point: Point) {
+        diffModel.selectedItems = IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y))
+      }
+
+      override fun onDragFinished(point: Point) {
+      }
+    }
+    pane.viewport.view.addMouseListener(leftDragListener)
+    pane.viewport.view.addMouseMotionListener(leftDragListener)
     val painter = SplitterPainter(
         diffModel,
-        createTranscriptLocator(leftEditor.viewport),
-        createScriptLocator(rightEditor.editor)
+        createTranscriptLocator(pane.viewport),
+        createScriptLocator(editorView.editor)
     )
     val splitter = Splitter(
-        leftComponent = leftEditor,
-        rightComponent = rightEditor,
+        leftComponent = pane,
+        rightComponent = editorView,
         painter = painter
     )
-    rightEditor.editor.scrollPane.verticalScrollBar.addAdjustmentListener {
+    editorView.editor.scrollPane.verticalScrollBar.addAdjustmentListener {
       splitter.divider.repaint()
     }
-    leftEditor.verticalScrollBar.addAdjustmentListener {
+    pane.verticalScrollBar.addAdjustmentListener {
       splitter.divider.repaint()
     }
-    Disposer.register(splitter, rightEditor)
+    Disposer.register(splitter, editorView)
     return splitter
   }
 

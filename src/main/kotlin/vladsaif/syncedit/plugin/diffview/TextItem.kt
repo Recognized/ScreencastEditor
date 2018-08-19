@@ -2,7 +2,6 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.TextFormatter
 import java.awt.*
@@ -54,8 +53,8 @@ class TextItem(
       setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       color = when {
+        isSelected -> SELECTED_COLOR
         isBind -> SplitterPainter.FILLER_COLOR
-        isSelected -> UIUtil.getPanelBackground().darker()
         else -> BACKGROUND
       }
       fillRect(0, 0, width, height)
@@ -93,9 +92,13 @@ class TextItem(
     private var TEXT_COLOR_DARK: Color = Color(106, 135, 89)
     val TEXT_COLOR by Settings.Theme(bright = TEXT_COLOR_BRIGHT, dark = TEXT_COLOR_DARK)
 
-    private val BACKGROUND_DARK: Color = Color(43, 43, 43)
     private val BACKGROUND_BRIGHT: Color = Color.WHITE
+    private val BACKGROUND_DARK: Color = Color(43, 43, 43)
     val BACKGROUND by Settings.Theme(dark = BACKGROUND_DARK, bright = BACKGROUND_BRIGHT)
+
+    private val SELECTED_COLOR_BRIGHT: Color = Color(0, 100, 255, 30)
+    private val SELECTED_COLOR_DARK: Color = Color(0, 100, 255, 30)
+    val SELECTED_COLOR by Settings.Theme(dark = SELECTED_COLOR_DARK, bright = SELECTED_COLOR_BRIGHT)
 
     private const val RADIUS: Int = 10
   }

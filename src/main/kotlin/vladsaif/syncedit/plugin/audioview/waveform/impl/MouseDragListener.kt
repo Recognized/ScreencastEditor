@@ -9,11 +9,11 @@ abstract class MouseDragListener : MouseInputAdapter() {
   var dragStartEvent: MouseEvent? = null
     private set
 
-  abstract fun onDragStarted(point: Point)
+  open fun onDragStarted(point: Point) = Unit
 
-  abstract fun onDrag(point: Point)
+  open fun onDrag(point: Point) = Unit
 
-  abstract fun onDragFinished(point: Point)
+  open fun onDragFinished(point: Point) = Unit
 
   override fun mouseReleased(e: MouseEvent?) {
     doEnd(e)

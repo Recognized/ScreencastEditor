@@ -1,11 +1,14 @@
 package vladsaif.syncedit.plugin.diffview
 
+import vladsaif.syncedit.plugin.IRange
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.LayoutManager
+import java.awt.Point
 import javax.swing.JPanel
 
 class TextItemPanel(layout: LayoutManager) : JPanel(layout) {
+  private val myItemHeights: MutableList<IRange> = mutableListOf()
 
   constructor() : this(FlowLayout())
 
@@ -30,5 +33,11 @@ class TextItemPanel(layout: LayoutManager) : JPanel(layout) {
       sum += component.height
     }
     throw IndexOutOfBoundsException("Requested item: $item, total components = $componentCount")
+  }
+
+  fun findItemNumber(point: Point): Int {
+    if (point.y !in 0 until height) return -1
+    val component = findComponentAt(point) as? TextItem ?: return -1
+    return components.withIndex().first { it.value == component }.index
   }
 }
