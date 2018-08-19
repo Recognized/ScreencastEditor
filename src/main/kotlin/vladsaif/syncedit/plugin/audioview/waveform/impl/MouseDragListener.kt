@@ -32,9 +32,7 @@ abstract class MouseDragListener : MouseInputAdapter() {
     }
   }
 
-  override fun mouseEntered(e: MouseEvent?) {
-    doEnd(e)
-  }
+  override fun mouseEntered(e: MouseEvent?) = Unit
 
   override fun mouseDragged(e: MouseEvent?) {
     e ?: return
@@ -55,9 +53,7 @@ abstract class MouseDragListener : MouseInputAdapter() {
     doEnd(e)
   }
 
-  override fun mouseExited(e: MouseEvent?) {
-    doEnd(e)
-  }
+  override fun mouseExited(e: MouseEvent?) = Unit
 
   override fun mousePressed(e: MouseEvent?) {
     doEnd(e)
