@@ -40,8 +40,10 @@ import java.awt.BorderLayout
 import java.awt.ComponentOrientation
 import java.awt.Dimension
 import java.awt.Point
+import java.awt.event.MouseEvent
 import javax.swing.*
 import javax.swing.event.ChangeListener
+import javax.swing.event.MouseInputAdapter
 import kotlin.math.max
 import kotlin.math.min
 
@@ -51,6 +53,7 @@ object DiffDialogFactory {
     setTitle(model.scriptFile!!.name)
     val splitter = createSplitter(model)
     setCenterPanel(splitter)
+    addDisposable(splitter)
     setNorthPanel(createToolbar(splitter).component)
     showAndGet()
   }
@@ -64,22 +67,31 @@ object DiffDialogFactory {
   private fun createSplitter(model: MultimediaModel): Splitter {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
-    val diffModel = DiffModel(model, editorView.editor as EditorEx, pane.viewport.view.cast())
+    val textPanel = pane.viewport.view as TextItemPanel
+    val diffModel = DiffModel(model, editorView.editor as EditorEx, textPanel.cast())
     diffModel.addChangeListener(ChangeListener {
       pane.revalidate()
       pane.repaint()
     })
     val leftDragListener = object : MouseDragListener() {
-
       override fun onDrag(point: Point) {
-        diffModel.selectedItems = IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y))
-      }
-
-      override fun onDragFinished(point: Point) {
+        diffModel.selectHeightRange(IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y)))
       }
     }
-    pane.viewport.view.addMouseListener(leftDragListener)
-    pane.viewport.view.addMouseMotionListener(leftDragListener)
+    textPanel.addMouseListener(leftDragListener)
+    textPanel.addMouseMotionListener(leftDragListener)
+    val clickListener = object : MouseInputAdapter() {
+      override fun mouseClicked(e: MouseEvent?) {
+        e ?: return
+        val number = textPanel.findItemNumber(e.point)
+        if (number < 0 || !SwingUtilities.isLeftMouseButton(e)) {
+          diffModel.selectedItems = IRange.EMPTY_RANGE
+        } else {
+          diffModel.selectedItems = IRange(number, number)
+        }
+      }
+    }
+    textPanel.addMouseListener(clickListener)
     val painter = SplitterPainter(
         diffModel,
         createTranscriptLocator(pane.viewport),

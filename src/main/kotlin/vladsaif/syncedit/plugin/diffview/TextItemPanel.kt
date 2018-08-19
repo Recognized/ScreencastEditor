@@ -38,6 +38,6 @@ class TextItemPanel(layout: LayoutManager) : JPanel(layout) {
   fun findItemNumber(point: Point): Int {
     if (point.y !in 0 until height) return -1
     val component = findComponentAt(point) as? TextItem ?: return -1
-    return components.withIndex().first { it.value == component }.index
+    return components.filterIsInstance<TextItem>().withIndex().firstOrNull { it.value == component }?.index ?: -1
   }
 }

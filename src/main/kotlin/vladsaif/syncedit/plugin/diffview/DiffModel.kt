@@ -23,9 +23,9 @@ class DiffModel(
       if (field != value) {
         field = value
         var needRedraw = false
-        for ((item, height) in itemsWithHeights()) {
+        for ((index, item) in textItems.withIndex()) {
           val before = item.isSelected
-          item.isSelected = height.intersects(value)
+          item.isSelected = index in value
           needRedraw = needRedraw or (before != item.isSelected)
         }
         if (needRedraw) fireStateChanged()
@@ -41,6 +41,22 @@ class DiffModel(
         fireStateChanged()
       }
     }
+
+  fun selectHeightRange(heightRange: IRange) {
+    selectedItems = toItemRange(heightRange)
+  }
+
+  private fun toItemRange(heightRange: IRange): IRange {
+    var start = -1
+    var end = -2
+    for ((index, pair) in itemsWithHeights().withIndex()) {
+      if (pair.second.intersects(heightRange)) {
+        if (start == -1) start = index
+        end = index
+      } else if (start != -1) break
+    }
+    return IRange(start, end)
+  }
 
   private fun updateItemBind() {
     for (x in textItems) {
