@@ -24,6 +24,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.KotlinLanguage
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
@@ -33,6 +34,7 @@ import java.awt.BorderLayout
 import java.awt.ComponentOrientation
 import java.awt.Dimension
 import javax.swing.*
+import javax.swing.event.ChangeListener
 
 object DiffDialogFactory {
 
@@ -45,7 +47,11 @@ object DiffDialogFactory {
   private fun createSplitter(model: MultimediaModel): Splitter {
     val leftEditor = createTranscriptView(model.transcriptPsi!!)
     val rightEditor = createEditorPanel(model.project, model.scriptPsi!!)
-    val diffModel = DiffModel(model, rightEditor.editor as EditorEx)
+    val diffModel = DiffModel(model, rightEditor.editor as EditorEx, leftEditor.viewport.view.cast())
+    diffModel.addChangeListener(ChangeListener {
+      leftEditor.revalidate()
+      leftEditor.repaint()
+    })
     val painter = SplitterPainter(
         diffModel,
         createTranscriptLocator(leftEditor.viewport),

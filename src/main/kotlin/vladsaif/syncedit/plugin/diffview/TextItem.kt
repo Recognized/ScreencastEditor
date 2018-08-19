@@ -3,28 +3,29 @@ package vladsaif.syncedit.plugin.diffview
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.TextFormatter
 import java.awt.*
 import javax.swing.BorderFactory
 import kotlin.math.max
 import kotlin.math.min
 
-class TextItem(val text: String) : JBPanel<TextItem>() {
+class TextItem(
+    val text: String
+) : JBPanel<TextItem>() {
   private val availableWidth get() = max(width - with(insets) { left + right } - 10.scale(), 0)
-  private var textColor: Color = Color(0, 150, 0)
-  private var textColorDark: Color = Color(106, 135, 89)
   private var myCharSize: Int
-  private val myDarkBackground: Color = Color(43, 43, 43)
-  private val myBackground: Color = Color.WHITE
+  var isBind: Boolean = false
+  var isSelected: Boolean = false
 
   init {
     font = JBUI.Fonts.create(Font.MONOSPACED, 12).asBold()
     myCharSize = getFontMetrics(font).charWidth('m')
     border = BorderFactory.createEmptyBorder(
         2.scale(),
-        (TextItem.Companion.RADIUS / 2).scale(),
+        (RADIUS / 2).scale(),
         2.scale(),
-        (TextItem.Companion.RADIUS / 2).scale()
+        (RADIUS / 2).scale()
     )
   }
 
@@ -52,7 +53,11 @@ class TextItem(val text: String) : JBPanel<TextItem>() {
     with(g as Graphics2D) {
       setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-      color = if (UIUtil.isUnderDarcula()) myDarkBackground else myBackground
+      color = when {
+        isBind -> SplitterPainter.FILLER_COLOR
+        isSelected -> UIUtil.getPanelBackground().darker()
+        else -> BACKGROUND
+      }
       fillRect(0, 0, width, height)
       val metrics = getFontMetrics(font)
       myCharSize = metrics.charWidth('m')
@@ -66,7 +71,7 @@ class TextItem(val text: String) : JBPanel<TextItem>() {
       if (needDraw.size != lines.size && !needDraw.isEmpty()) {
         needDraw[needDraw.size - 1] = TextFormatter.createEllipsis(needDraw.last() + "...", availableWidth, getWidth)
       }
-      color = if (UIUtil.isUnderDarcula()) textColorDark else textColor
+      color = TEXT_COLOR
       drawLines(needDraw)
     }
   }
@@ -84,6 +89,13 @@ class TextItem(val text: String) : JBPanel<TextItem>() {
   private fun Int.scale() = JBUI.scale(this)
 
   companion object {
+    private var TEXT_COLOR_BRIGHT: Color = Color(0, 150, 0)
+    private var TEXT_COLOR_DARK: Color = Color(106, 135, 89)
+    val TEXT_COLOR by Settings.Theme(bright = TEXT_COLOR_BRIGHT, dark = TEXT_COLOR_DARK)
+
+    private val BACKGROUND_DARK: Color = Color(43, 43, 43)
+    private val BACKGROUND_BRIGHT: Color = Color.WHITE
+    val BACKGROUND by Settings.Theme(dark = BACKGROUND_DARK, bright = BACKGROUND_BRIGHT)
 
     private const val RADIUS: Int = 10
   }

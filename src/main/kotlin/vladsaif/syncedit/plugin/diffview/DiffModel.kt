@@ -13,39 +13,66 @@ import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 
 class DiffModel(
     val origin: MultimediaModel,
-    val editor: EditorEx
+    val editor: EditorEx,
+    val panel: TextItemPanel
 ) : ChangeNotifier by DefaultChangeNotifier() {
   private val activeLineHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
-  var bindings: List<Binding> = origin.data!!.bindings
+  var selectedItems: IRange = IRange.EMPTY_RANGE
     set(value) {
       if (field != value) {
-        val previouslyHighlighted = IRangeUnion()
-        val newlyHighlighted = IRangeUnion()
-        for (binding in field) {
-          previouslyHighlighted.union(binding.lineRange)
+        field = value
+        for ((index, x) in textItems.withIndex()) {
+          x.isSelected = index in value
         }
-        for (binding in value) {
-          newlyHighlighted.union(binding.lineRange)
-        }
-        for (binding in field) {
-          newlyHighlighted.exclude(binding.lineRange)
-        }
-        for (binding in value) {
-          previouslyHighlighted.exclude(binding.lineRange)
-        }
-        for ((highlighter, line) in activeLineHighlighters) {
-          if (line in previouslyHighlighted) {
-            editor.markupModel.removeHighlighter(highlighter)
-          }
-        }
-        activeLineHighlighters.removeAll { it.second in previouslyHighlighted }
-        createHighlighters(newlyHighlighted.ranges)
+      }
+    }
+  val textItems: List<TextItem> = panel.components.filterIsInstance(TextItem::class.java)
+  var bindings: List<Binding> = listOf()
+    set(value) {
+      if (field != value) {
+        updateHighlighters(field, value)
+        field = value
+        updateItemBind()
         fireStateChanged()
       }
     }
 
+  private fun updateItemBind() {
+    for (x in textItems) x.isBind = false
+    for (binding in bindings) {
+      for (item in binding.itemRange.toIntRange()) {
+        textItems[item].isBind = true
+      }
+    }
+  }
+
+  private fun updateHighlighters(oldBindings: List<Binding>, newBindings: List<Binding>) {
+    val previouslyHighlighted = IRangeUnion()
+    val newlyHighlighted = IRangeUnion()
+    for (binding in oldBindings) {
+      previouslyHighlighted.union(binding.lineRange)
+    }
+    for (binding in newBindings) {
+      newlyHighlighted.union(binding.lineRange)
+    }
+    for (binding in oldBindings) {
+      newlyHighlighted.exclude(binding.lineRange)
+    }
+    for (binding in newBindings) {
+      previouslyHighlighted.exclude(binding.lineRange)
+    }
+    for ((highlighter, line) in activeLineHighlighters) {
+      if (line in previouslyHighlighted) {
+        editor.markupModel.removeHighlighter(highlighter)
+      }
+    }
+    activeLineHighlighters.removeAll { it.second in previouslyHighlighted }
+    createHighlighters(newlyHighlighted.ranges)
+  }
+
   init {
     createHighlighters(bindings.map { it.lineRange })
+    bindings = origin.data!!.bindings
   }
 
   private fun createHighlighters(lines: List<IRange>) {
