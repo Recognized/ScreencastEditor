@@ -43,8 +43,15 @@ class DiffModel(
     }
 
   private fun updateItemBind() {
-    for (x in textItems) x.isBind = false
+    for (x in textItems) {
+      x.isBind = false
+      x.isDrawBottomBorder = false
+      x.isDrawTopBorder = false
+    }
     for (binding in bindings) {
+      val range = binding.itemRange
+      textItems[range.start].isDrawTopBorder = true
+      textItems[range.end].isDrawBottomBorder = true
       for (item in binding.itemRange.toIntRange()) {
         textItems[item].isBind = true
       }

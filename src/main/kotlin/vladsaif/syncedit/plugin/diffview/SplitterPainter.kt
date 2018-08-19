@@ -45,9 +45,9 @@ class SplitterPainter(
     val newShapes = mutableListOf<Pair<Shape, Shape>>()
     for ((item, line) in bindings) {
       val topLeftCorner = leftItemLocator.locate(item.start).first
-      val bottomLeftCorner = leftItemLocator.locate(item.end).second
+      val bottomLeftCorner = leftItemLocator.locate(item.end).second - 1
       val topRightCorner = rightItemLocator.locate(line.start).first
-      val bottomRightCorner = rightItemLocator.locate(line.end).second
+      val bottomRightCorner = rightItemLocator.locate(line.end).second - 1
       val topShape = createCubicCurve(topLeftCorner, topRightCorner, width, true)
       // Should be reversed order, because then we constructing path
       val bottomShape = createCubicCurve(bottomLeftCorner, bottomRightCorner, width, false)
@@ -60,9 +60,9 @@ class SplitterPainter(
     private val FILLER_COLOR_BRIGHT: Color get() = Color(0, 200, 0, 30)
     private val FILLER_COLOR_DARK: Color get() = Color(0, 200, 0, 30)
     private val BORDER_COLOR_BRIGHT: Color get() = Color(0, 200, 0, 70)
-    private val BRODER_COLOR_DARK: Color get() = Color(0, 200, 0, 70)
+    private val BORDER_COLOR_DARK: Color get() = Color(0, 200, 0, 70)
     val FILLER_COLOR by Settings.Theme(bright = FILLER_COLOR_BRIGHT, dark = FILLER_COLOR_DARK)
-    val BORDER_COLOR by Settings.Theme(bright = BORDER_COLOR_BRIGHT, dark = BRODER_COLOR_DARK)
+    val BORDER_COLOR by Settings.Theme(bright = BORDER_COLOR_BRIGHT, dark = BORDER_COLOR_DARK)
 
     private const val CTRL_PROXIMITY_X = 0.3
 

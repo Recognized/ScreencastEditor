@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.TextFormatter
 import java.awt.*
@@ -16,6 +17,8 @@ class TextItem(
   private var myCharSize: Int
   var isBind: Boolean = false
   var isSelected: Boolean = false
+  var isDrawTopBorder: Boolean = false
+  var isDrawBottomBorder: Boolean = false
 
   init {
     font = JBUI.Fonts.create(Font.MONOSPACED, 12).asBold()
@@ -58,6 +61,18 @@ class TextItem(
         else -> BACKGROUND
       }
       fillRect(0, 0, width, height)
+      with(create()) {
+        if (!isSelected) {
+          color = SplitterPainter.BORDER_COLOR over UIUtil.getPanelBackground()
+          stroke = BasicStroke(JBUI.scale(1.0f))
+          if (isDrawTopBorder) {
+            drawLine(0, 0, width, 0)
+          }
+          if (isDrawBottomBorder) {
+            drawLine(0, height - 1, width, height - 1)
+          }
+        }
+      }
       val metrics = getFontMetrics(font)
       myCharSize = metrics.charWidth('m')
       val getWidth = { string: String -> string.length * myCharSize }
