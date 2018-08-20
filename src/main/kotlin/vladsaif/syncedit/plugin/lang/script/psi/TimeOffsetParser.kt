@@ -58,6 +58,7 @@ object TimeOffsetParser {
       var j = searchHint
       var startIntersection = IRange.EMPTY_RANGE
       var endIntersection = IRange.EMPTY_RANGE
+      var lineLastIntersection = IRange.EMPTY_RANGE
       searchHint = offsets.size
       while (j < offsets.size) {
         val offset = offsets[j]
@@ -66,13 +67,14 @@ object TimeOffsetParser {
             searchHint = j
             startIntersection = offset.time
           }
+          lineLastIntersection = offset.lines
           endIntersection = offset.time
         } else if (!startIntersection.empty) {
           break
         }
         j++
       }
-      if (!startIntersection.empty) {
+      if (!startIntersection.empty && lineLastIntersection.end >= expr.end) {
         timedStatements.add(TimedLines(lines = expr, time = IRange(startIntersection.start, endIntersection.end)))
       } else {
         timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))

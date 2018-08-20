@@ -83,4 +83,46 @@ class ScriptOffsetsTest : ScriptTestBase() {
     )
     assertEquals(expected, actual)
   }
+
+  @Test
+  fun `test no first offset`() {
+    val text = """
+      statement()
+      call()
+      anotherCall()
+      timeOffset(3000L)
+    """.trimIndent()
+    val ktFile = createKtFile(text)
+    val actual = TimeOffsetParser.parse(ktFile)
+    val expected = listOf(
+        TimedLines(lines = IRange(0, 0), time = IRange(0, 3000)), // statement()
+        TimedLines(lines = IRange(1, 1), time = IRange(0, 3000)), // call()
+        TimedLines(lines = IRange(2, 2), time = IRange(0, 3000))  // anotherCall()
+    )
+    assertEquals(expected, actual)
+  }
+
+  @Test
+  fun `test no end time offset`() {
+    val text = """
+      timeOffset(3000L)
+      startBlock {
+        timeOffset(4000L)
+      }
+    """.trimIndent()
+    val ktFile = createKtFile(text)
+    val actual = TimeOffsetParser.parse(ktFile)
+    assertEquals(listOf(TimedLines(IRange(1, 3), IRange.EMPTY_RANGE)), actual)
+  }
+
+  @Test
+  fun `test no offsets`() {
+    val text = """
+      startBlock {
+      }
+    """.trimIndent()
+    val ktFile = createKtFile(text)
+    val actual = TimeOffsetParser.parse(ktFile)
+    assertEquals(listOf(TimedLines(IRange(0, 1), IRange.EMPTY_RANGE)), actual)
+  }
 }
