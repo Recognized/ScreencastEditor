@@ -1,46 +1,50 @@
 package vladsaif.syncedit.plugin
 
+import com.intellij.psi.PsiElement
 import org.junit.Test
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
-import kotlin.test.assertEquals
+import vladsaif.syncedit.plugin.lang.script.psi.TimedLines
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ScriptOffsetsTest {
+class ScriptOffsetsTest : ScriptTestBase() {
+
+  private fun extractPsiElement(text: String): PsiElement? {
+    val file = createKtFile(text)
+    return file.script!!.blockExpression.statements.firstOrNull()
+  }
 
   @Test
   fun `test simple offset`() {
     assertTrue {
-      TimeOffsetParser.isTimeOffset("timeOffset(10L)")
+      TimeOffsetParser.isTimeOffset(extractPsiElement("timeOffset(10L)")!!)
     }
   }
 
   @Test
   fun `test offset with named argument`() {
     assertTrue {
-      TimeOffsetParser.isTimeOffset("timeOffset(ms = 10L)")
+      TimeOffsetParser.isTimeOffset(extractPsiElement("timeOffset(ms = 10L)")!!)
     }
   }
 
   @Test
   fun `test not offset int arg`() {
     assertFalse {
-      TimeOffsetParser.isTimeOffset("timeOffset(10)")
+      TimeOffsetParser.isTimeOffset(extractPsiElement("timeOffset(10)")!!)
     }
   }
 
   @Test
   fun `test other fun`() {
     assertFalse {
-      TimeOffsetParser.isTimeOffset("listOf(10)")
+      TimeOffsetParser.isTimeOffset(extractPsiElement("listOf(10)")!!)
     }
   }
 
   @Test
   fun `test commented time offset`() {
-    assertFalse {
-      TimeOffsetParser.isTimeOffset("//timeOffset(10L)")
-    }
+    assertNull(extractPsiElement("//timeOffset(10L)"))
   }
 
   @Test
@@ -53,7 +57,9 @@ class ScriptOffsetsTest {
     assertEquals(1000, TimeOffsetParser.parseOffset("timeOffset(ms =  1000L)"))
   }
 
-  private val myText = """
+  @Test
+  fun `test correct detecting statements`() {
+    val text = """
       timeOffset(ms = 2000L)
       statement()
       call()
@@ -64,24 +70,17 @@ class ScriptOffsetsTest {
         call()
         timeOffset(4000L)
       }
+      timeOffset(5000L)
     """.trimIndent()
-
-  @Test
-  fun `test correct detecting statements`() {
-    val linesWithOffsets = listOf(0, 5, 8)
-    val actual = TimeOffsetParser.getOffsetToLineList(myText.split('\n'))
-        .map { it.second }
-        .sorted()
-    assertEquals(linesWithOffsets, actual)
-  }
-
-  @Test
-  fun `test time mapping`() {
-    val result = TimeOffsetParser.parseText(myText)
-    val expected = mapOf(
-        IRange(2000, 3000) to IRange(1, 4),
-        IRange(3000, 4000) to IRange(6, 7)
+    val ktFile = createKtFile(text)
+    val actual = TimeOffsetParser.parse(ktFile)
+    val expected = listOf(
+        TimedLines(lines = IRange(1, 1), time = IRange(2000, 3000)), // statement()
+        TimedLines(lines = IRange(2, 2), time = IRange(2000, 3000)), // call()
+        TimedLines(lines = IRange(3, 3), time = IRange(2000, 3000)), // anotherCall()
+        TimedLines(lines = IRange(6, 9), time = IRange(3000, 5000)), // block
+        TimedLines(lines = IRange(7, 7), time = IRange(3000, 4000)) // call()
     )
-    assertEquals(expected, result)
+    assertEquals(expected, actual)
   }
 }

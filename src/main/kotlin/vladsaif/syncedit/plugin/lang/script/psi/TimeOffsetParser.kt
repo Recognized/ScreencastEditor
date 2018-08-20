@@ -1,12 +1,13 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
-import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtScriptInitializer
+import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import vladsaif.syncedit.plugin.IRange
 
 object TimeOffsetParser {
-
-  private val myTimeOffsetRegex: Regex = """timeOffset\((ms=)?[0-9]+L\)""".toRegex()
 
   /**
    * Parse 'timeOffset(Long)' statements in [psiFile].
@@ -14,36 +15,84 @@ object TimeOffsetParser {
    * @param psiFile file of GUI test script.
    * @return mapping of extracted time ranges to line range that lies in it.
    */
-  fun parse(psiFile: KtFile): Map<IRange, IRange> {
-    val text = PsiDocumentManager.getInstance(psiFile.project)
-        .getDocument(psiFile)!!
-        .text
-
-    return parseText(text)
-  }
-
-  internal fun parseText(text: CharSequence): Map<IRange, IRange> {
-    val lines = text.split('\n').toMutableList()
-    val offsetsToLines = getOffsetToLineList(lines).toMutableList()
-    offsetsToLines.firstOrNull()?.let {
-      if (it.second != 0) {
-        offsetsToLines.add(0, 0 to 0)
+  fun parse(psiFile: KtFile): List<TimedLines> {
+    val expressionsLines = mutableListOf<IRange>()
+    val timeOffsets = mutableListOf<TimeOffset>()
+    val document = psiFile.viewProvider.document
+        ?: throw AssertionError("Events are not enabled for $psiFile")
+    BlockVisitor.visit(psiFile) {
+      if (isTimeOffset(it)) {
+        val line = document.getLineNumber(it.textOffset)
+        timeOffsets.add(TimeOffset(line, parseOffset(it.text)))
+      } else {
+        val start = document.getLineNumber(it.textOffset)
+        val end = document.getLineNumber(it.textOffset + it.textLength)
+        expressionsLines.add(IRange(start, end))
       }
     }
-    return offsetsToLines.zipWithNext()
-        .map { (start, end) -> IRange(start.first, end.first) to IRange(start.second + 1, end.second - 1) }
-        .filter { (_, lineRange) -> !lineRange.empty }
-        .toMap()
+    // Add initial (before whole script) timeOffset statement
+    timeOffsets.add(0, TimeOffset(-1, 0))
+    val timedLines = timeOffsets.zipWithNext()
+        .map { (current, next) ->
+          TimedLines(
+              lines = IRange(current.line + 1, next.line - 1),
+              time = IRange(current.timeOffset, next.timeOffset)
+          )
+        }
+        .filter { it -> !it.time.empty && !it.lines.empty }
+    return constructTimedStatements(expressionsLines, timedLines)
   }
 
-  internal fun getOffsetToLineList(lines: List<String>): List<Pair<Int, Int>> {
-    return lines.mapIndexed { index, str -> str to index }
-        .filter { (line, _) -> isTimeOffset(line) }
-        .map { (offset, index) -> parseOffset(offset) to index }
+  /** This operation can be implemented easily with O(expressions.size * offsets.size) complexity.
+   *
+   * But it will mostly called from EDT so it worth to write some nasty code to achieve
+   * O(min(expressions.size, offsets.size)) complexity in worst case.
+   *
+   * @param expressions sorted.
+   * @param offsets sorted.
+   **/
+  internal fun constructTimedStatements(expressions: List<IRange>, offsets: List<TimedLines>): List<TimedLines> {
+    var searchHint = 0
+    val timedStatements = mutableListOf<TimedLines>()
+    for (expr in expressions) {
+      var j = searchHint
+      var startIntersection = IRange.EMPTY_RANGE
+      var endIntersection = IRange.EMPTY_RANGE
+      searchHint = offsets.size
+      while (j < offsets.size) {
+        val offset = offsets[j]
+        if (expr.intersects(offset.lines)) {
+          if (startIntersection.empty) {
+            searchHint = j
+            startIntersection = offset.time
+          }
+          endIntersection = offset.time
+        } else if (!startIntersection.empty) {
+          break
+        }
+        j++
+      }
+      if (!startIntersection.empty) {
+        timedStatements.add(TimedLines(lines = expr, time = IRange(startIntersection.start, endIntersection.end)))
+      } else {
+        timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))
+      }
+    }
+    return timedStatements
   }
 
-  internal fun isTimeOffset(string: String): Boolean {
-    return myTimeOffsetRegex.matches(string.filter { !it.isWhitespace() })
+  private val ourTimeOffsetArgumentsRegex = "(ms=)?[0-9]+L".toRegex()
+
+  internal fun isTimeOffset(psiElement: PsiElement): Boolean {
+    val element = if (psiElement is KtScriptInitializer) psiElement.children.firstOrNull() else psiElement
+    (element as? KtCallExpression)?.let {
+      val reference = it.referenceExpression() ?: return false
+      if (reference.text != "timeOffset") return false
+      val arguments = it.valueArguments
+      return arguments.size == 1
+          && ourTimeOffsetArgumentsRegex.matches(arguments.first().text.replace("\\s+".toRegex(), ""))
+    }
+    return false
   }
 
   internal fun parseOffset(string: String): Int {

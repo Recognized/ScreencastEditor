@@ -7,6 +7,7 @@ import java.io.File
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
+import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -23,11 +24,12 @@ class LibrariesLoader : ApplicationComponent {
       }
 
     init {
-      val loadedUrls = (LibrariesLoader::class.java.classLoader as PluginClassLoader).urls
+      val loadedUrls = (LibrariesLoader::class.java.classLoader as? PluginClassLoader)?.urls
+          ?: (LibrariesLoader::class.java.classLoader as URLClassLoader).urLs.asList()
       val path = loadedUrls.first()!!.toString().substringBefore("lib/")
       val extUrl = URL(path + "ext")
       val urls = File(extUrl.toURI()).walk().map { it.toURI().toURL() }.toMutableList()
-      urls.removeAt(0)
+      if (!urls.isEmpty()) urls.removeAt(0)
       myUrls = urls
     }
 

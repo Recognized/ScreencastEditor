@@ -28,10 +28,12 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.KotlinLanguage
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
+import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
@@ -165,7 +167,7 @@ object DiffDialogFactory {
   }
 
   private fun transformFile(project: Project, psi: PsiFile, isScript: Boolean): PsiFile {
-    val text = if (isScript) transformScript(project, psi)
+    val text = if (isScript) transformScript(project, psi as KtFile)
     else transformTranscript(project, psi)
     return PsiFileFactory.getInstance(project).createFileFromText(
         psi.name,
@@ -188,13 +190,18 @@ object DiffDialogFactory {
    * and delete [org.jetbrains.kotlin.psi.KtCallExpression]'s which correspond to timeOffset(Long).
    * But for now, it is an over-complicated way of reaching the goal.
    */
-  private fun transformScript(project: Project, psi: PsiFile): String {
-    return PsiDocumentManager.getInstance(project)
-        .getDocument(psi)!!
-        .text
-        .splitToSequence('\n')
-        .filter { !TimeOffsetParser.isTimeOffset(it) }
-        .joinToString(separator = "\n")
+  private fun transformScript(project: Project, psi: KtFile): String {
+    val document = psi.viewProvider.document!!
+    val linesToDelete = mutableListOf<Int>()
+    BlockVisitor.visit(psi) {
+      if (TimeOffsetParser.isTimeOffset(it)) {
+        linesToDelete.add(document.getLineNumber(it.textOffset))
+      }
+    }
+    return document.text.split("\n")
+        .withIndex()
+        .filter { (line, _) -> line !in linesToDelete }
+        .joinToString(separator = "\n") { it.value }
   }
 
 
