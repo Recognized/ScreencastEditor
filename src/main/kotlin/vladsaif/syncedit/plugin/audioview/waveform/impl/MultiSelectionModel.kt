@@ -228,8 +228,13 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     return getBorderNumber(e) >= 0
   }
 
+  // Return number of first border that includes this point
+  // This needed for predictability of click behaviour
   private fun getBorderNumber(e: MouseEvent): Int {
-    val rangeClick = IRange.from(e.x, 1)
-    return myLocator?.wordBorders?.binarySearch(rangeClick, IRange.INTERSECTS_CMP) ?: -1
+    val borders = myLocator?.wordBorders ?: return -1
+    for ((index, border) in borders.withIndex()) {
+      if (e.x in border) return index
+    }
+    return -1
   }
 }

@@ -6,12 +6,14 @@ import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.Settings
+import vladsaif.syncedit.plugin.TextFormatter
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MultiSelectionModel
 import java.awt.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 import kotlin.math.max
+import kotlin.math.min
 
 class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), ChangeListener {
   private val myWordFont
@@ -50,6 +52,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
     with(graphics as Graphics2D) {
       background = UIUtil.getPanelBackground()
       clearRect(0, 0, width, height)
+      drawWordsBackGround()
       drawSelectedRanges()
       drawHorizontalLine()
       drawAveragedWaveform(model.audioData[0])
@@ -58,6 +61,18 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
       val position = model.playFramePosition.get()
       if (position != -1L) {
         drawPosition(position)
+      }
+    }
+  }
+
+  private fun Graphics2D.drawWordsBackGround() {
+    val usedRange = model.drawRange
+    val words = model.multimediaModel.data?.words ?: return
+    color = Settings.DIFF_FILLER_COLOR
+    for (word in words) {
+      val (x1, x2) = model.getCoordinates(word)
+      if (IRange(x1, x2).intersects(usedRange)) {
+        fillRect(x1, 0, x2 - x1, height)
       }
     }
   }
@@ -190,21 +205,16 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
 
   private fun Graphics2D.drawCenteredWord(word: String, borders: IRange) {
     val (x1, x2) = borders
-    val stringWidth = getFontMetrics(myWordFont).stringWidth(word)
+    val metrics = getFontMetrics(myWordFont)
+    val stringWidth = metrics.stringWidth(word)
+    color = Settings.WORD_COLOR
+    font = myWordFont
     if (stringWidth < x2.toLong() - x1) {
       val pos = ((x2.toLong() + x1 - stringWidth) / 2).toInt()
-      color = Settings.WORD_COLOR
-      font = myWordFont
       drawString(word, pos, height / 6)
     } else {
-      color = Settings.WORD_SEPARATOR_COLOR
-      stroke = BasicStroke(Settings.WORD_SEPARATOR_WIDTH,
-          BasicStroke.CAP_BUTT,
-          BasicStroke.JOIN_BEVEL,
-          0f,
-          FloatArray(1) { Settings.DASH_WIDTH },
-          0f)
-      drawLine(x1, height / 6, x2, height / 6)
+      val pos = min(x1 + metrics.charWidth('m') / 2, x2)
+      drawString(TextFormatter.createEllipsis(word, x2 - pos) { metrics.stringWidth(it) }, pos, height / 6)
     }
   }
 }
