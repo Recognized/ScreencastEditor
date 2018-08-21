@@ -84,24 +84,6 @@ intellij {
     instrumentCode true
 }
 
-task copyRuntime(type: Copy) {
-    from 'lib'
-    into 'build/libs/ext'
-}
-
-task copyExt(type: Copy) {
-    from 'lib'
-    into 'build/idea-sandbox/plugins/ScreencastEditor/ext'
-}
-
-task runIdePatched {
-    group 'build'
-}
-
-copyExt.shouldRunAfter prepareSandbox
-runIdePatched.dependsOn runIde
-runIdePatched.dependsOn copyExt
-
 repositories {
     mavenCentral()
 }
@@ -110,6 +92,7 @@ dependencies {
     compile group: 'javazoom', name: 'jlayer', version: '1.0.1'
     compile group: 'com.googlecode.soundlibs', name: 'tritonus-share', version: '0.3.7.4'
     compile group: 'com.googlecode.soundlibs', name: 'mp3spi', version: '1.9.5.4'
+    compile 'com.google.cloud:google-cloud-speech:0.56.0-beta'
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.2.60") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }

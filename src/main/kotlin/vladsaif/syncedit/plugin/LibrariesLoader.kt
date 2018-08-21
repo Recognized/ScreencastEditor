@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.openapi.components.ApplicationComponent
 import com.intellij.util.lang.UrlClassLoader
-import java.io.File
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
@@ -24,17 +23,16 @@ class LibrariesLoader : ApplicationComponent {
       }
 
     init {
+      // Google libraries work abnormally when loaded with default classloader
+      // It finds android.app.Application class and assumes that it is running under Android. Then it fails.
+      // So to prevent it from finding it, we should load these classes with system classloader as parent.
       val loadedUrls = (LibrariesLoader::class.java.classLoader as? PluginClassLoader)?.urls
           ?: (LibrariesLoader::class.java.classLoader as URLClassLoader).urLs.asList()
-      val path = loadedUrls.first()!!.toString().substringBefore("lib/")
-      val extUrl = URL(path + "ext")
-      val urls = File(extUrl.toURI()).walk().map { it.toURI().toURL() }.toMutableList()
-      if (!urls.isEmpty()) urls.removeAt(0)
-      myUrls = urls
+      myUrls = loadedUrls
     }
 
     fun getGSpeechKit(): Class<*> {
-      return Class.forName("vladsaif.gspeech.GSpeechKit", true, myUrlClassLoader)!!
+      return Class.forName("vladsaif.syncedit.plugin.GSpeechKit", true, myUrlClassLoader)!!
     }
 
     fun createGSpeechKitInstance(path: Path): Any {

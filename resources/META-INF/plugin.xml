@@ -21,7 +21,6 @@
         <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
         <fileTypeFactory
                 implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
-        <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.script.psi.UIScriptFileTypeFactory"/>
         <lang.parserDefinition language="TranscriptLanguage"
                                implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
         <!--<lang.parserDefinition language="GUI Script"-->
