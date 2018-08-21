@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.diffview
 import com.intellij.util.ui.GraphicsUtil
 import vladsaif.syncedit.plugin.Binding
 import vladsaif.syncedit.plugin.Settings
-import java.awt.Color
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Shape
@@ -29,9 +28,9 @@ class SplitterPainter(
           val path = Path2D.Double()
           path.append(top, true)
           path.append(bottom, true)
-          color = FILLER_COLOR
+          color = Settings.DIFF_FILLER_COLOR
           fill(path)
-          color = BORDER_COLOR
+          color = Settings.DIFF_BORDER_COLOR
           draw(top)
           draw(bottom)
         }
@@ -57,12 +56,6 @@ class SplitterPainter(
   }
 
   companion object {
-    private val FILLER_COLOR_BRIGHT: Color get() = Color(0, 200, 0, 30)
-    private val FILLER_COLOR_DARK: Color get() = Color(0, 200, 0, 30)
-    private val BORDER_COLOR_BRIGHT: Color get() = Color(0, 200, 0, 70)
-    private val BORDER_COLOR_DARK: Color get() = Color(0, 200, 0, 70)
-    val FILLER_COLOR by Settings.Theme(bright = FILLER_COLOR_BRIGHT, dark = FILLER_COLOR_DARK)
-    val BORDER_COLOR by Settings.Theme(bright = BORDER_COLOR_BRIGHT, dark = BORDER_COLOR_DARK)
 
     private const val CTRL_PROXIMITY_X = 0.3
 

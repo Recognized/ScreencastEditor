@@ -51,7 +51,7 @@ object TimeOffsetParser {
    * @param expressions sorted.
    * @param offsets sorted.
    **/
-  internal fun constructTimedStatements(expressions: List<IRange>, offsets: List<TimedLines>): List<TimedLines> {
+  private fun constructTimedStatements(expressions: List<IRange>, offsets: List<TimedLines>): List<TimedLines> {
     var searchHint = 0
     val timedStatements = mutableListOf<TimedLines>()
     for (expr in expressions) {

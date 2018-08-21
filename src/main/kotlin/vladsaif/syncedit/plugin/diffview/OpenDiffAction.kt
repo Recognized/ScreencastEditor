@@ -3,8 +3,8 @@ package vladsaif.syncedit.plugin.diffview
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import org.jetbrains.kotlin.idea.KotlinFileType
 import vladsaif.syncedit.plugin.MultimediaModel
-import vladsaif.syncedit.plugin.lang.script.psi.UIScriptFileType
 
 class OpenDiffAction : AnAction() {
   override fun actionPerformed(e: AnActionEvent?) {
@@ -20,7 +20,7 @@ class OpenDiffAction : AnAction() {
     e.presentation.isEnabledAndVisible =
         editor != null &&
         file != null &&
-        file.fileType == UIScriptFileType &&
+        file.fileType == KotlinFileType.INSTANCE &&
         MultimediaModel.get(file)?.transcriptPsi != null
   }
 

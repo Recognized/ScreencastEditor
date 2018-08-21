@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin.diffview
 
-import vladsaif.syncedit.plugin.IRange
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.LayoutManager
@@ -8,8 +7,6 @@ import java.awt.Point
 import javax.swing.JPanel
 
 class TextItemPanel(layout: LayoutManager) : JPanel(layout) {
-  private val myItemHeights: MutableList<IRange> = mutableListOf()
-
   constructor() : this(FlowLayout())
 
   override fun getPreferredSize(): Dimension {

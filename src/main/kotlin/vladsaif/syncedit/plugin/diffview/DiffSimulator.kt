@@ -2,19 +2,18 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.diff.util.TextDiffType
 import com.intellij.openapi.editor.Editor
-import com.intellij.util.ui.UIUtil
+import vladsaif.syncedit.plugin.Settings
 import java.awt.Color
 
 object DiffSimulator : TextDiffType {
-  private val FILLER_COLOR get() = SplitterPainter.FILLER_COLOR over UIUtil.getPanelBackground()
 
-  override fun getMarkerColor(editor: Editor?) = FILLER_COLOR
+  override fun getMarkerColor(editor: Editor?) = Settings.DIFF_FILLER_COLOR
 
   override fun getName() = "Screencast Editor binding highlighter"
 
-  override fun getColor(editor: Editor?) = FILLER_COLOR
+  override fun getColor(editor: Editor?) = Settings.DIFF_FILLER_COLOR
 
-  override fun getIgnoredColor(editor: Editor?) = FILLER_COLOR
+  override fun getIgnoredColor(editor: Editor?) = Settings.DIFF_FILLER_COLOR
 }
 
 infix fun Color.over(other: Color): Color {

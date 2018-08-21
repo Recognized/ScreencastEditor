@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.psi.*
 object BlockVisitor {
 
   fun visit(scriptFile: KtFile, consumer: (PsiElement) -> Unit) {
+    if (!scriptFile.isScript()) throw IllegalArgumentException("Not a script file: $scriptFile (${scriptFile.language})")
     visitStatements(scriptFile.script!!.blockExpression.statements, consumer)
   }
 

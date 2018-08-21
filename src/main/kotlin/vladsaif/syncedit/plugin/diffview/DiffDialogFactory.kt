@@ -23,6 +23,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
+import com.intellij.ui.TitledSeparator
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.audioview.toolbar.addAction
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
@@ -52,17 +54,40 @@ import kotlin.math.min
 object DiffDialogFactory {
 
   fun createView(model: MultimediaModel) = DialogBuilder().apply {
-    setTitle(model.scriptFile!!.name)
+    setTitle("Manage mapping of words from transcript to script")
     val splitter = createSplitter(model)
-    setCenterPanel(splitter)
+    val vertical = createBoxedPanel()
+    vertical.add(createTitle(model))
+    vertical.add(splitter)
+    setCenterPanel(vertical)
     addDisposable(splitter)
     setNorthPanel(createToolbar(splitter).component)
     showAndGet()
   }
 
+  private fun createBoxedPanel(isVertical: Boolean = true): JPanel {
+    val panel = JPanel()
+    val box = BoxLayout(panel, if (isVertical) BoxLayout.Y_AXIS else BoxLayout.X_AXIS)
+    panel.layout = box
+    panel.border = BorderFactory.createEmptyBorder()
+    return panel
+  }
+
+
+  private fun createTitle(model: MultimediaModel): JComponent {
+    val panel = createBoxedPanel(false)
+    panel.add(TitledSeparator(model.xmlFile!!.name))
+    val right = TitledSeparator(model.scriptFile!!.name)
+    right.componentOrientation = ComponentOrientation.RIGHT_TO_LEFT
+    panel.add(right)
+    return panel
+  }
+
+
   private fun createToolbar(splitter: Splitter): ActionToolbar {
     val group = DefaultActionGroup()
-
+    group.addAction("Bind", "Associate selected", null, {}, { true })
+    group.addAction("Unbind", "Associate selected", null, {}, { true })
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 
@@ -167,7 +192,7 @@ object DiffDialogFactory {
   }
 
   private fun transformFile(project: Project, psi: PsiFile, isScript: Boolean): PsiFile {
-    val text = if (isScript) transformScript(project, psi as KtFile)
+    val text = if (isScript) transformScript(psi as KtFile)
     else transformTranscript(project, psi)
     return PsiFileFactory.getInstance(project).createFileFromText(
         psi.name,
@@ -190,7 +215,7 @@ object DiffDialogFactory {
    * and delete [org.jetbrains.kotlin.psi.KtCallExpression]'s which correspond to timeOffset(Long).
    * But for now, it is an over-complicated way of reaching the goal.
    */
-  private fun transformScript(project: Project, psi: KtFile): String {
+  private fun transformScript(psi: KtFile): String {
     val document = psi.viewProvider.document!!
     val linesToDelete = mutableListOf<Int>()
     BlockVisitor.visit(psi) {

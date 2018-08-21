@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.diffview
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.ui.Divider
 import com.intellij.openapi.ui.Splitter
+import com.intellij.util.ui.JBUI
 import java.awt.Graphics
 import javax.swing.JComponent
 
@@ -13,7 +14,7 @@ class Splitter(
 ) : Splitter(false, 0.5f, 0.2f, 0.8f), Disposable {
 
   init {
-    dividerWidth = 30
+    dividerWidth = JBUI.scale(30)
     firstComponent = leftComponent
     secondComponent = rightComponent
     setHonorComponentsMinimumSize(false)

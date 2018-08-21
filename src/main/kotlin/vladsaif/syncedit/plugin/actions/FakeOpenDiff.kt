@@ -4,58 +4,58 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFileFactory
+import org.jetbrains.kotlin.idea.KotlinFileType
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.diffview.DiffDialogFactory
-import vladsaif.syncedit.plugin.lang.script.psi.UIScriptFileType
 
 class FakeOpenDiff : AnAction() {
   private val myText = """
       timeOffset(ms = 2000L)
-      statement()
-      call()
-      anotherCall()
+      println("1")
+      println("2")
+      typeText("text")
 
       timeOffset(3000L)
-      startBlock {
-        call()
+      mainMenu {
+        button.click()
         timeOffset(4000L)
       }
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
-      call()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
+      println()
     """.trimIndent()
 
   override fun actionPerformed(e: AnActionEvent?) {
@@ -63,8 +63,8 @@ class FakeOpenDiff : AnAction() {
     val project = e.project ?: return
     FakeRecognition().actionPerformed(e)
     val script = PsiFileFactory.getInstance(project).createFileFromText(
-        "script.guitest",
-        UIScriptFileType,
+        "script.kts",
+        KotlinFileType.INSTANCE,
         myText,
         0,
         true,

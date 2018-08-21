@@ -74,7 +74,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
 
   private fun Graphics2D.drawSelectedRange(selected: IRange, border: IRange) {
     val selectedVisible = border.intersect(selected)
-    color = Settings.currentSettings.selectionColor
+    color = Settings.SELECTION_COLOR
     if (!selectedVisible.empty) {
       fillRect(selectedVisible.start, 0, selectedVisible.length, height)
     }
@@ -82,8 +82,8 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
 
   private fun Graphics2D.drawPosition(position: Long) {
     val x = model.getChunk(position)
-    color = Settings.currentSettings.playLineColor
-    stroke = BasicStroke(Settings.currentSettings.rootMeanSquareStrokeWidth)
+    color = Settings.PLAY_LINE_COLOR
+    stroke = BasicStroke(Settings.ROOT_MEAN_SQUARE_STROKE_WIDTH)
     drawLine(x, 0, x, height)
   }
 
@@ -102,7 +102,6 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
    * @see AveragedSampleData
    */
   private fun Graphics2D.drawAveragedWaveform(data: AveragedSampleData) {
-    val settings = Settings.currentSettings
     val workRange = IRange.from(data.skippedChunks, data.size)
     val editedRanges = model.editionModel.editions.map { Pair(model.frameRangeToChunkRange(it.first), it.second) }
     val workPieces = mutableListOf<Pair<IRange, EditionModel.EditionType>>()
@@ -112,15 +111,15 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
         workPieces.add(Pair(x, it.second))
       }
     }
-    stroke = BasicStroke(settings.peakStrokeWidth)
-    drawWaveformPiece(workPieces, settings.peakCutColor, settings.peakColor) {
+    stroke = BasicStroke(Settings.PEAK_STROKE_WIDTH)
+    drawWaveformPiece(workPieces, Settings.PEAK_CUT_COLOR, Settings.PEAK_COLOR) {
       val yTop = (height - (data.highestPeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
       val yBottom = (height - (data.lowestPeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
       drawLine(it, yTop.toInt(), it, yBottom.toInt())
     }
-    stroke = BasicStroke(settings.rootMeanSquareStrokeWidth)
-    color = settings.rootMeanSquareColor
-    drawWaveformPiece(workPieces, settings.rootMeanSquareCutColor, settings.rootMeanSquareColor) {
+    stroke = BasicStroke(Settings.ROOT_MEAN_SQUARE_STROKE_WIDTH)
+    color = Settings.ROOT_MEAN_SQUARE_COLOR
+    drawWaveformPiece(workPieces, Settings.ROOT_MEAN_SQUARE_CUT_COLOR, Settings.ROOT_MEAN_SQUARE_COLOR) {
       val rmsHeight = (data.rootMeanSquare[it - data.skippedChunks] * height).toDouble() / data.maxPeak / 4
       val yAverage = (height - (data.averagePeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
       drawLine(it, (yAverage - rmsHeight).toInt(), it, (yAverage + rmsHeight).toInt())
@@ -160,12 +159,12 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
         drawCenteredWord(word.filteredText, coordinates)
       }
       val (leftBound, rightBound) = coordinates
-      color = Settings.currentSettings.wordSeparatorColor
-      stroke = BasicStroke(Settings.currentSettings.wordSeparatorWidth,
+      color = Settings.WORD_SEPARATOR_COLOR
+      stroke = BasicStroke(Settings.WORD_SEPARATOR_WIDTH,
           BasicStroke.CAP_BUTT,
           BasicStroke.JOIN_BEVEL,
           0f,
-          FloatArray(1) { Settings.currentSettings.dashWidth },
+          FloatArray(1) { Settings.DASH_WIDTH },
           0f)
       if (leftBound > usedRange.start) {
         drawLine(leftBound, 0, leftBound, height)
@@ -179,12 +178,12 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
   private fun Graphics2D.drawMovingBorder() {
     val x = selectionModel.movingBorder
     if (x == -1) return
-    color = Settings.currentSettings.wordMovingSeparatorColor
-    stroke = BasicStroke(Settings.currentSettings.wordSeparatorWidth,
+    color = Settings.WORD_MOVING_SEPARATOR_COLOR
+    stroke = BasicStroke(Settings.WORD_SEPARATOR_WIDTH,
         BasicStroke.CAP_BUTT,
         BasicStroke.JOIN_BEVEL,
         0f,
-        FloatArray(1) { Settings.currentSettings.dashWidth },
+        FloatArray(1) { Settings.DASH_WIDTH },
         0f)
     drawLine(x, 0, x, height)
   }
@@ -194,16 +193,16 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
     val stringWidth = getFontMetrics(myWordFont).stringWidth(word)
     if (stringWidth < x2.toLong() - x1) {
       val pos = ((x2.toLong() + x1 - stringWidth) / 2).toInt()
-      color = Settings.currentSettings.wordColor
+      color = Settings.WORD_COLOR
       font = myWordFont
       drawString(word, pos, height / 6)
     } else {
-      color = Settings.currentSettings.wordSeparatorColor
-      stroke = BasicStroke(Settings.currentSettings.wordSeparatorWidth,
+      color = Settings.WORD_SEPARATOR_COLOR
+      stroke = BasicStroke(Settings.WORD_SEPARATOR_WIDTH,
           BasicStroke.CAP_BUTT,
           BasicStroke.JOIN_BEVEL,
           0f,
-          FloatArray(1) { Settings.currentSettings.dashWidth },
+          FloatArray(1) { Settings.DASH_WIDTH },
           0f)
       drawLine(x1, height / 6, x2, height / 6)
     }

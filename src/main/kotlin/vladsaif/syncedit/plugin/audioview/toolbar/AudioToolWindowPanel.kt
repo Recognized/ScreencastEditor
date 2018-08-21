@@ -60,19 +60,19 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
     }
   }
 
-  private fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon, action: () -> Unit, checkAvailable: () -> Boolean) {
-    this.add(object : AnAction(what, desc, icon) {
-      override fun actionPerformed(event: AnActionEvent?) {
-        action()
-      }
-
-      override fun update(e: AnActionEvent?) {
-        e?.presentation?.isEnabled = checkAvailable()
-      }
-    })
-  }
-
   override fun dispose() {
     wave.controller.stopImmediately()
   }
+}
+
+fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon?, action: () -> Unit, checkAvailable: () -> Boolean) {
+  this.add(object : AnAction(what, desc, icon) {
+    override fun actionPerformed(event: AnActionEvent?) {
+      action()
+    }
+
+    override fun update(e: AnActionEvent?) {
+      e?.presentation?.isEnabled = checkAvailable()
+    }
+  })
 }
