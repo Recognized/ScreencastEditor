@@ -1,5 +1,7 @@
 package vladsaif.syncedit.plugin.diffview
 
+import com.intellij.codeInsight.daemon.impl.analysis.FileHighlightingSetting
+import com.intellij.codeInsight.daemon.impl.analysis.HighlightLevelUtil
 import com.intellij.codeStyle.CodeStyleFacade
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
@@ -261,6 +263,7 @@ object DiffDialogFactory {
       gutterComponentEx.revalidateMarkup()
       foldingModel.isFoldingEnabled = false
       UIUtil.removeScrollBorder(component)
+      HighlightLevelUtil.forceRootHighlighting(psi, FileHighlightingSetting.SKIP_HIGHLIGHTING)
       if (!isScript) {
         colorsScheme.setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
       }

@@ -19,9 +19,9 @@ import kotlin.math.max
 import kotlin.math.min
 
 class DiffModel(
-    val origin: MultimediaModel,
+    origin: MultimediaModel,
     val editor: EditorEx,
-    val panel: TextItemPanel
+    private val panel: TextItemPanel
 ) : ChangeNotifier by DefaultChangeNotifier() {
   private val myActiveLineHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
   private val myDefaultScheme = DefaultColorsScheme()
@@ -112,14 +112,14 @@ class DiffModel(
 
   var editorHoveredLine: Int = -1
     set(value) {
-      val newLine = myLineRange.inside(value)
+      val newLine = if (value < 0) -1 else myLineRange.inside(value)
       if (field != newLine) {
         val x = myHoveredHighlighter
         if (x != null) {
           editor.markupModel.removeHighlighter(x)
         }
         myHoveredHighlighter = null
-        if (newLine != -1 && newLine !in editorSelectionRange) {
+        if (newLine >= 0 && newLine !in editorSelectionRange) {
           val attributes = myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!
           attributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
           myHoveredHighlighter = editor.markupModel.addLineHighlighter(
@@ -248,10 +248,7 @@ class DiffModel(
     }
   }
 
-  companion object {
-
-    private fun Editor.createHighlighter(line: IRange): List<RangeHighlighter> {
-      return DiffDrawUtil.createHighlighter(this, line.start, line.end + 1, DiffSimulator, false)
-    }
+  private fun Editor.createHighlighter(line: IRange): List<RangeHighlighter> {
+    return DiffDrawUtil.createHighlighter(this, line.start, line.end + 1, DiffSimulator, false)
   }
 }
