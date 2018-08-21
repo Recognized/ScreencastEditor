@@ -29,6 +29,7 @@ class DiffModel(
   private val myEditorSelectionAttributes = TextAttributes()
   private var myHoveredHighlighter: RangeHighlighter? = null
   private var myIgnoreSelectionEvents = false
+  private val myLineRange = IRange(0, editor.document.lineCount - 1)
   private var mySelectionRangeHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
   private val myTextItems: List<TextItem> = panel.components.filterIsInstance(TextItem::class.java)
 
@@ -111,35 +112,36 @@ class DiffModel(
 
   var editorHoveredLine: Int = -1
     set(value) {
-      val newLine = max(min(editor.document.lineCount - 1, value), 0)
-      if (field != value) {
+      val newLine = myLineRange.inside(value)
+      if (field != newLine) {
         val x = myHoveredHighlighter
         if (x != null) {
           editor.markupModel.removeHighlighter(x)
         }
         myHoveredHighlighter = null
-        if (value != -1 && value !in editorSelectionRange) {
+        if (newLine != -1 && newLine !in editorSelectionRange) {
           val attributes = myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!
           attributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
           myHoveredHighlighter = editor.markupModel.addLineHighlighter(
-              value,
+              newLine,
               HighlighterLayer.SELECTION,
               myEditorHoveredAttributes
           )
         }
-        field = value
+        field = newLine
         fireStateChanged()
       }
     }
 
   var editorSelectionRange: IRange = IRange.EMPTY_RANGE
     set(value) {
-      if (field != value) {
+      val newValue = value.intersect(myLineRange)
+      if (field != newValue) {
         val removal = IRangeUnion()
         val addition = IRangeUnion()
         removal.union(field)
-        removal.exclude(value)
-        addition.union(value)
+        removal.exclude(newValue)
+        addition.union(newValue)
         addition.exclude(field)
         for ((range, line) in mySelectionRangeHighlighters) {
           if (line in removal) editor.markupModel.removeHighlighter(range)
@@ -152,7 +154,7 @@ class DiffModel(
               myEditorSelectionAttributes
           ) to line)
         }
-        field = value
+        field = newValue
         fireStateChanged()
       }
     }
