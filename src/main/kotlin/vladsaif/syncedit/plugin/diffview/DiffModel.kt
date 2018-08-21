@@ -20,6 +20,15 @@ class DiffModel(
 ) : ChangeNotifier by DefaultChangeNotifier() {
   private val myActiveLineHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
   private var mySelectionRangeHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
+  var hoveredItem = -1
+    set(value) {
+      if (field != value) {
+        if (field >= 0) textItems[field].isHovered = false
+        if (value >= 0) textItems[value].isHovered = true
+        field = value
+        fireStateChanged()
+      }
+    }
   var editorSelectionRange: IRange = IRange.EMPTY_RANGE
     set(value) {
       if (field != value) {
@@ -41,6 +50,7 @@ class DiffModel(
           ) to line)
         }
         field = value
+        fireStateChanged()
       }
     }
   var selectedItems: IRange = IRange.EMPTY_RANGE

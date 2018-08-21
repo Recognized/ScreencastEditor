@@ -76,7 +76,10 @@ object Settings : PersistentStateComponent<Settings.State> {
   private val BORDER_COLOR_DARK: Color = Color(43, 99, 47)
   val DIFF_FILLER_COLOR by Settings.Theme(bright = FILLER_COLOR_BRIGHT, dark = FILLER_COLOR_DARK)
   val DIFF_BORDER_COLOR by Settings.Theme(bright = BORDER_COLOR_BRIGHT, dark = BORDER_COLOR_DARK)
-//  val DIFF_HOVER_COLOR by Settings.Theme(bright = F)
+  val DIFF_HOVERED_COLOR by Settings.Theme(
+      bright = FILLER_COLOR_BRIGHT.darker(),
+      dark = FILLER_COLOR_DARK.brighter()
+  )
 
   val WORD_SEPARATOR_WIDTH get() = JBUI.scale(STATE.wordSeparatorWidthDp)
   val PEAK_STROKE_WIDTH get() = JBUI.scale(STATE.peakStrokeWidthDp)

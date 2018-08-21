@@ -18,6 +18,7 @@ class TextItem(
   var isSelected: Boolean = false
   var isDrawTopBorder: Boolean = false
   var isDrawBottomBorder: Boolean = false
+  var isHovered: Boolean = false
 
   init {
     font = JBUI.Fonts.create(Font.MONOSPACED, 12).asBold()
@@ -56,6 +57,7 @@ class TextItem(
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       color = when {
         isSelected -> Settings.DIFF_SELECTED_COLOR
+        isHovered -> Settings.DIFF_HOVERED_COLOR
         isBind -> Settings.DIFF_FILLER_COLOR
         else -> Settings.DIFF_BACKGROUND
       }

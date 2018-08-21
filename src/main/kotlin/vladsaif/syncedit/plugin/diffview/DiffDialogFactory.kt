@@ -119,6 +119,17 @@ object DiffDialogFactory {
       }
     }
     textPanel.addMouseListener(clickListener)
+    textPanel.addMouseMotionListener(object : MouseInputAdapter() {
+      override fun mouseExited(e: MouseEvent?) {
+        diffModel.hoveredItem = -1
+      }
+
+      override fun mouseMoved(e: MouseEvent?) {
+        e ?: return
+        val number = textPanel.findItemNumber(e.point)
+        diffModel.hoveredItem = if (number < 0) -1 else number
+      }
+    })
     val painter = SplitterPainter(
         diffModel,
         createTranscriptLocator(pane.viewport),
