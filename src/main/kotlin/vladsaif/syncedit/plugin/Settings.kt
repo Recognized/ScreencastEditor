@@ -3,20 +3,11 @@ package vladsaif.syncedit.plugin
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
-import vladsaif.syncedit.plugin.diffview.over
 import java.awt.Color
 import kotlin.reflect.KProperty
 
 @State(name = "ScreencastEditorSettings")
 object Settings : PersistentStateComponent<Settings.State> {
-
-  init {
-    val x = Color(0, 200, 0, 30) over UIUtil.getPanelBackground()
-    println(x.red)
-    println(x.green)
-    println(x.blue)
-  }
 
   private var STATE = State()
 
@@ -67,7 +58,7 @@ object Settings : PersistentStateComponent<Settings.State> {
   val DIFF_BACKGROUND by Settings.Theme(dark = BACKGROUND_DARK, bright = BACKGROUND_BRIGHT)
 
   private val SELECTED_COLOR_BRIGHT: Color = Color(225, 237, 255)
-  private val SELECTED_COLOR_DARK: Color = Color(225, 237, 255)
+  private val SELECTED_COLOR_DARK: Color = BACKGROUND_DARK.brighter().brighter()
   val DIFF_SELECTED_COLOR by Settings.Theme(dark = SELECTED_COLOR_DARK, bright = SELECTED_COLOR_BRIGHT)
 
   private val FILLER_COLOR_BRIGHT: Color = Color(225, 249, 225)
@@ -76,9 +67,10 @@ object Settings : PersistentStateComponent<Settings.State> {
   private val BORDER_COLOR_DARK: Color = Color(43, 99, 47)
   val DIFF_FILLER_COLOR by Settings.Theme(bright = FILLER_COLOR_BRIGHT, dark = FILLER_COLOR_DARK)
   val DIFF_BORDER_COLOR by Settings.Theme(bright = BORDER_COLOR_BRIGHT, dark = BORDER_COLOR_DARK)
+  private val DIFF_HOVERED_COLOR_BRIGHT: Color = Color(234, 252, 255)
   val DIFF_HOVERED_COLOR by Settings.Theme(
-      bright = FILLER_COLOR_BRIGHT.darker(),
-      dark = FILLER_COLOR_DARK.brighter()
+      bright = DIFF_HOVERED_COLOR_BRIGHT,
+      dark = BACKGROUND_DARK.brighter()
   )
 
   val WORD_SEPARATOR_WIDTH get() = JBUI.scale(STATE.wordSeparatorWidthDp)

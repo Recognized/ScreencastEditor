@@ -1,17 +1,22 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.diff.util.DiffDrawUtil
+import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.colors.impl.DefaultColorsScheme
 import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
-import java.awt.Font
+import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
+import java.awt.Point
+import java.awt.event.MouseEvent
 import kotlin.coroutines.experimental.buildSequence
+import kotlin.math.max
+import kotlin.math.min
 
 class DiffModel(
     val origin: MultimediaModel,
@@ -19,16 +24,114 @@ class DiffModel(
     val panel: TextItemPanel
 ) : ChangeNotifier by DefaultChangeNotifier() {
   private val myActiveLineHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
+  private val myDefaultScheme = DefaultColorsScheme()
+  private val myEditorHoveredAttributes = TextAttributes()
+  private val myEditorSelectionAttributes = TextAttributes()
+  private var myHoveredHighlighter: RangeHighlighter? = null
+  private var myIgnoreSelectionEvents = false
   private var mySelectionRangeHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
+  private val myTextItems: List<TextItem> = panel.components.filterIsInstance(TextItem::class.java)
+
+  private val myEditorDragListener = EditorMouseDragAdapter(object : MouseDragListener() {
+    override fun onDrag(point: Point) {
+      val event = dragStartEvent ?: return
+      val startLine = editor.xyToLogicalPosition(event.point).line
+      val endLine = editor.xyToLogicalPosition(point).line
+      val selectedRange = IRange(min(startLine, endLine), max(startLine, endLine))
+      editorHoveredLine = -1
+      editorSelectionRange = selectedRange
+    }
+
+    override fun mouseMoved(e: MouseEvent?) {
+      super.mouseMoved(e)
+      e ?: return
+      val line = editor.xyToLogicalPosition(e.point).line
+      editorHoveredLine = line
+    }
+
+    override fun mouseClicked(e: MouseEvent?) {
+      super.mouseClicked(e)
+      e ?: return
+      val line = editor.xyToLogicalPosition(e.point).line
+      editorHoveredLine = -1
+      editorSelectionRange = IRange(line, line)
+    }
+
+    override fun mousePressed(e: MouseEvent?) {
+      super.mousePressed(e)
+      mouseClicked(e)
+    }
+
+    override fun mouseExited(e: MouseEvent?) {
+      super.mouseExited(e)
+      editorHoveredLine = -1
+    }
+  })
+
+  var bindings: List<Binding> = listOf()
+    set(value) {
+      if (field != value) {
+        updateHighlighters(field, value)
+        field = value
+        updateItemBind()
+        fireStateChanged()
+      }
+    }
+
   var hoveredItem = -1
     set(value) {
       if (field != value) {
-        if (field >= 0) textItems[field].isHovered = false
-        if (value >= 0) textItems[value].isHovered = true
+        if (field >= 0) myTextItems[field].isHovered = false
+        if (value >= 0) myTextItems[value].isHovered = true
         field = value
         fireStateChanged()
       }
     }
+
+  init {
+    myEditorHoveredAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
+    myEditorHoveredAttributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
+    myEditorSelectionAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
+    myEditorSelectionAttributes.backgroundColor = Settings.DIFF_SELECTED_COLOR
+    createHighlighters(bindings.map { it.lineRange })
+    editor.selectionModel.addSelectionListener { editorSelectionUpdated() }
+    editor.addEditorMouseMotionListener(myEditorDragListener)
+    editor.addEditorMouseListener(myEditorDragListener)
+    bindings = origin.data!!.bindings
+  }
+
+  // Do not use default selection
+  private fun editorSelectionUpdated() {
+    if (myIgnoreSelectionEvents) return
+    myIgnoreSelectionEvents = true
+    editor.selectionModel.removeSelection()
+    myIgnoreSelectionEvents = false
+    return
+  }
+
+  var editorHoveredLine: Int = -1
+    set(value) {
+      val newLine = max(min(editor.document.lineCount - 1, value), 0)
+      if (field != value) {
+        val x = myHoveredHighlighter
+        if (x != null) {
+          editor.markupModel.removeHighlighter(x)
+        }
+        myHoveredHighlighter = null
+        if (value != -1 && value !in editorSelectionRange) {
+          val attributes = myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!
+          attributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
+          myHoveredHighlighter = editor.markupModel.addLineHighlighter(
+              value,
+              HighlighterLayer.SELECTION,
+              myEditorHoveredAttributes
+          )
+        }
+        field = value
+        fireStateChanged()
+      }
+    }
+
   var editorSelectionRange: IRange = IRange.EMPTY_RANGE
     set(value) {
       if (field != value) {
@@ -46,34 +149,25 @@ class DiffModel(
           mySelectionRangeHighlighters.add(editor.markupModel.addLineHighlighter(
               line,
               HighlighterLayer.SELECTION + 1,
-              TextAttributes(null, Settings.DIFF_SELECTED_COLOR, null, EffectType.BOXED, Font.TYPE1_FONT)
+              myEditorSelectionAttributes
           ) to line)
         }
         field = value
         fireStateChanged()
       }
     }
+
   var selectedItems: IRange = IRange.EMPTY_RANGE
     set(value) {
       if (field != value) {
         field = value
         var needRedraw = false
-        for ((index, item) in textItems.withIndex()) {
+        for ((index, item) in myTextItems.withIndex()) {
           val before = item.isSelected
           item.isSelected = index in value
           needRedraw = needRedraw or (before != item.isSelected)
         }
         if (needRedraw) fireStateChanged()
-      }
-    }
-  val textItems: List<TextItem> = panel.components.filterIsInstance(TextItem::class.java)
-  var bindings: List<Binding> = listOf()
-    set(value) {
-      if (field != value) {
-        updateHighlighters(field, value)
-        field = value
-        updateItemBind()
-        fireStateChanged()
       }
     }
 
@@ -94,17 +188,17 @@ class DiffModel(
   }
 
   private fun updateItemBind() {
-    for (x in textItems) {
+    for (x in myTextItems) {
       x.isBind = false
       x.isDrawBottomBorder = false
       x.isDrawTopBorder = false
     }
     for (binding in bindings) {
       val range = binding.itemRange
-      textItems[range.start].isDrawTopBorder = true
-      textItems[range.end].isDrawBottomBorder = true
+      myTextItems[range.start].isDrawTopBorder = true
+      myTextItems[range.end].isDrawBottomBorder = true
       for (item in binding.itemRange.toIntRange()) {
-        textItems[item].isBind = true
+        myTextItems[item].isBind = true
       }
     }
   }
@@ -141,19 +235,6 @@ class DiffModel(
     }
     myActiveLineHighlighters.removeAll { it.second in previouslyHighlighted }
     createHighlighters(newlyHighlighted.ranges)
-  }
-
-  init {
-    createHighlighters(bindings.map { it.lineRange })
-    editor.selectionModel.addSelectionListener { editorSelectionUpdated() }
-    bindings = origin.data!!.bindings
-  }
-
-  private fun editorSelectionUpdated() {
-    val startLine = editor.offsetToLogicalPosition(editor.selectionModel.selectionStart).line
-    val endLine = editor.offsetToLogicalPosition(editor.selectionModel.selectionEnd).line
-    val selectedRange = if (editor.selectionModel.hasSelection()) IRange(startLine, endLine) else IRange.EMPTY_RANGE
-    editorSelectionRange = selectedRange
   }
 
   private fun createHighlighters(lines: List<IRange>) {

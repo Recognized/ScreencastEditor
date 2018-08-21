@@ -256,7 +256,7 @@ object DiffDialogFactory {
       settings.isCaretRowShown = false
       settings.isShowIntentionBulb = false
       settings.isFoldingOutlineShown = false
-      (markupModel as EditorMarkupModel).isErrorStripeVisible = true
+      (markupModel as EditorMarkupModel).isErrorStripeVisible = false
       gutterComponentEx.setShowDefaultGutterPopup(false)
       gutterComponentEx.revalidateMarkup()
       foldingModel.isFoldingEnabled = false
