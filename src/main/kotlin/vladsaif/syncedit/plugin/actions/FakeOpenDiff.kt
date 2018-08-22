@@ -74,6 +74,6 @@ class FakeOpenDiff : AnAction() {
     val file = VirtualFileManager.getInstance().findFileByUrl(demo)!!
     val model = MultimediaModel.get(file)!!
     model.scriptFile = script.virtualFile
-    println(DiffDialogFactory.createView(model))
+    println(DiffDialogFactory.showWindow(model))
   }
 }

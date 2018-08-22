@@ -229,7 +229,7 @@ class MultimediaModel(
     for (x in myListeners) x.onTranscriptDataChanged()
   }
 
-  private fun replaceWords(replacements: List<Pair<Int, WordData>>) {
+  fun replaceWords(replacements: List<Pair<Int, WordData>>) {
     if (replacements.isEmpty()) return
     data = data?.replaceWords(replacements)
   }

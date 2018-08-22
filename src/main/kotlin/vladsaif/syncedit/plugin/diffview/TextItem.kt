@@ -10,7 +10,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TextItem(
-    val text: String
+    val text: String,
+    val number: Int
 ) : JBPanel<TextItem>() {
   private val availableWidth get() = max(width - with(insets) { left + right } - 10.scale(), 0)
   private var myCharSize: Int
@@ -63,15 +64,13 @@ class TextItem(
       }
       fillRect(0, 0, width, height)
       with(create()) {
-        if (!isSelected) {
-          color = Settings.DIFF_BORDER_COLOR
-          stroke = BasicStroke(JBUI.scale(1.0f))
-          if (isDrawTopBorder) {
-            drawLine(0, 0, width, 0)
-          }
-          if (isDrawBottomBorder) {
-            drawLine(0, height - 1, width, height - 1)
-          }
+        color = Settings.DIFF_BORDER_COLOR
+        stroke = BasicStroke(JBUI.scale(1.0f))
+        if (isDrawTopBorder) {
+          drawLine(0, 0, width, 0)
+        }
+        if (isDrawBottomBorder) {
+          drawLine(0, height - 1, width, height - 1)
         }
       }
       val metrics = getFontMetrics(font)

@@ -85,7 +85,7 @@ object TimeOffsetParser {
 
   private val ourTimeOffsetArgumentsRegex = "(ms=)?[0-9]+L".toRegex()
 
-  internal fun isTimeOffset(psiElement: PsiElement): Boolean {
+  fun isTimeOffset(psiElement: PsiElement): Boolean {
     val element = if (psiElement is KtScriptInitializer) psiElement.children.firstOrNull() else psiElement
     (element as? KtCallExpression)?.let {
       val reference = it.referenceExpression() ?: return false
@@ -97,7 +97,7 @@ object TimeOffsetParser {
     return false
   }
 
-  internal fun parseOffset(string: String): Int {
+  fun parseOffset(string: String): Int {
     return string.filter { it.isDigit() }.toInt()
   }
 }

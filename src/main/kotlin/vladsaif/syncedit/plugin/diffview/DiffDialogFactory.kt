@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.diffview
 import com.intellij.codeInsight.daemon.impl.analysis.FileHighlightingSetting
 import com.intellij.codeInsight.daemon.impl.analysis.HighlightLevelUtil
 import com.intellij.codeStyle.CodeStyleFacade
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
@@ -20,8 +21,10 @@ import com.intellij.openapi.editor.highlighter.EditorHighlighter
 import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogBuilder
+import com.intellij.openapi.ui.WindowWrapper
+import com.intellij.openapi.ui.WindowWrapperBuilder
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
@@ -35,6 +38,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.WordData
 import vladsaif.syncedit.plugin.audioview.toolbar.addAction
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
@@ -42,10 +46,10 @@ import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
-import java.awt.BorderLayout
-import java.awt.ComponentOrientation
-import java.awt.Dimension
-import java.awt.Point
+import java.awt.*
+import java.awt.GridBagConstraints.*
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.*
 import javax.swing.event.ChangeListener
@@ -55,16 +59,35 @@ import kotlin.math.min
 
 object DiffDialogFactory {
 
-  fun createView(model: MultimediaModel) = DialogBuilder().apply {
-    setTitle("Manage mapping of words from transcript to script")
-    val splitter = createSplitter(model)
+  fun showWindow(model: MultimediaModel) {
+    val holder = JPanel(GridBagLayout())
+    holder.border = BorderFactory.createEmptyBorder()
+    val (splitter, diffModel) = createSplitter(model)
     val vertical = createBoxedPanel()
     vertical.add(createTitle(model))
     vertical.add(splitter)
-    setCenterPanel(vertical)
-    addDisposable(splitter)
-    setNorthPanel(createToolbar(splitter).component)
-    showAndGet()
+    holder.add(
+        createToolbar(diffModel).component,
+        GridBagBuilder().anchor(WEST).fill(HORIZONTAL).gridx(0).gridy(0).weighty(0.0).weightx(1.0).done()
+    )
+    holder.add(vertical, GridBagBuilder().fill(BOTH).gridx(0).gridy(1).weightx(1.0).weighty(1.0).done())
+    val wrapper = WindowWrapperBuilder(WindowWrapper.Mode.MODAL, holder)
+        .setTitle("${model.scriptFile!!.name} (${model.scriptFile})")
+        .build()
+    wrapper.component.addKeyListener(object : KeyAdapter() {
+      override fun keyPressed(e: KeyEvent?) {
+        e ?: return
+        if (e.keyCode == KeyEvent.VK_Z && (SystemInfo.isMac && e.isMetaDown || e.isControlDown)) {
+          diffModel.undo()
+        }
+        if (e.keyCode == KeyEvent.VK_Z && e.isShiftDown && (SystemInfo.isMac && e.isMetaDown || e.isControlDown)) {
+          diffModel.redo()
+        }
+      }
+    })
+    Disposer.register(wrapper, splitter)
+    Disposer.register(wrapper, diffModel)
+    wrapper.show()
   }
 
   private fun createBoxedPanel(isVertical: Boolean = true): JPanel {
@@ -82,26 +105,50 @@ object DiffDialogFactory {
     val right = TitledSeparator(model.scriptFile!!.name)
     right.componentOrientation = ComponentOrientation.RIGHT_TO_LEFT
     panel.add(right)
+    panel.border = BorderFactory.createEmptyBorder(0, JBUI.scale(3), 0, JBUI.scale(3))
     return panel
   }
 
-
-  private fun createToolbar(splitter: Splitter): ActionToolbar {
+  private fun createToolbar(diffModel: DiffModel): ActionToolbar {
     val group = DefaultActionGroup()
-    group.addAction("Bind", "Associate selected", null, {}, { true })
-    group.addAction("Unbind", "Associate selected", null, {}, { true })
+    group.addAction(
+        "Bind",
+        "Associate selected",
+        AllIcons.General.Add,
+        { diffModel.bindSelected() },
+        { !diffModel.selectedItems.empty && !diffModel.editorSelectionRange.empty })
+    group.addAction(
+        "Unbind",
+        "Remove associations",
+        AllIcons.General.Remove,
+        { diffModel.unbindSelected() },
+        { !diffModel.selectedItems.empty })
+    group.addAction(
+        "Undo",
+        "Undo last action",
+        AllIcons.Actions.Undo,
+        { diffModel.undo() },
+        { diffModel.isUndoAvailable })
+    group.addAction(
+        "Redo",
+        "",
+        AllIcons.Actions.Redo,
+        { diffModel.redo() },
+        { diffModel.isRedoAvailable })
+    group.addAction(
+        "Reset",
+        "Reset all changes",
+        AllIcons.Actions.Reset,
+        { diffModel.resetChanges() },
+        { true })
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 
-  private fun createSplitter(model: MultimediaModel): Splitter {
+  private fun createSplitter(model: MultimediaModel): Pair<Splitter, DiffModel> {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
     val textPanel = pane.viewport.view as TextItemPanel
     val diffModel = DiffModel(model, editorView.editor as EditorEx, textPanel.cast())
-    diffModel.addChangeListener(ChangeListener {
-      pane.revalidate()
-      pane.repaint()
-    })
     val leftDragListener = object : MouseDragListener() {
       override fun onDrag(point: Point) {
         diffModel.selectHeightRange(IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y)))
@@ -142,6 +189,11 @@ object DiffDialogFactory {
         rightComponent = editorView,
         painter = painter
     )
+    diffModel.addChangeListener(ChangeListener {
+      pane.revalidate()
+      pane.repaint()
+      splitter.repaint()
+    })
     editorView.editor.scrollPane.verticalScrollBar.addAdjustmentListener {
       splitter.divider.repaint()
     }
@@ -149,7 +201,7 @@ object DiffDialogFactory {
       splitter.divider.repaint()
     }
     Disposer.register(splitter, editorView)
-    return splitter
+    return splitter to diffModel
   }
 
   private fun createTranscriptLocator(viewport: JViewport): Locator {
@@ -177,11 +229,14 @@ object DiffDialogFactory {
     val panel = TextItemPanel()
     panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
     val words = psi.model!!.data!!.words
+    var needAddSeparator = false
     for ((index, word) in words.withIndex()) {
-      panel.add(TextItem(word.filteredText))
-      if (index != words.size - 1) {
+      if (word.state == WordData.State.EXCLUDED) continue
+      if (needAddSeparator) {
         panel.add(Box.createRigidArea(Dimension(0, JBUI.scale(1))))
       }
+      panel.add(TextItem(word.filteredText, index))
+      needAddSeparator = true
     }
     val pane = JBScrollPane(panel)
     pane.componentOrientation = ComponentOrientation.RIGHT_TO_LEFT

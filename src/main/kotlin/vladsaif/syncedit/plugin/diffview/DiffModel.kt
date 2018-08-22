@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.diff.util.DiffDrawUtil
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.impl.DefaultColorsScheme
@@ -14,15 +15,16 @@ import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import java.awt.Point
 import java.awt.event.MouseEvent
+import java.util.*
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.max
 import kotlin.math.min
 
 class DiffModel(
-    origin: MultimediaModel,
+    val origin: MultimediaModel,
     val editor: EditorEx,
     private val panel: TextItemPanel
-) : ChangeNotifier by DefaultChangeNotifier() {
+) : ChangeNotifier by DefaultChangeNotifier(), Disposable {
   private val myActiveLineHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
   private val myDefaultScheme = DefaultColorsScheme()
   private val myEditorHoveredAttributes = TextAttributes()
@@ -32,6 +34,9 @@ class DiffModel(
   private val myLineRange = IRange(0, editor.document.lineCount - 1)
   private var mySelectionRangeHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
   private val myTextItems: List<TextItem> = panel.components.filterIsInstance(TextItem::class.java)
+  private val myTranscriptDataOnStart: TranscriptData = origin.data!!
+  private val myUndoStack = ArrayDeque<TranscriptData>(1)
+  private val myRedoStack = ArrayDeque<TranscriptData>(1)
 
   private val myEditorDragListener = EditorMouseDragAdapter(object : MouseDragListener() {
     override fun onDrag(point: Point) {
@@ -89,6 +94,14 @@ class DiffModel(
       }
     }
 
+  private val myDataListener = object : MultimediaModel.Listener {
+    override fun onTranscriptDataChanged() {
+      bindings = origin.data!!.bindings
+      editorSelectionRange = IRange.EMPTY_RANGE
+      selectedItems = IRange.EMPTY_RANGE
+    }
+  }
+
   init {
     myEditorHoveredAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
     myEditorHoveredAttributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
@@ -99,6 +112,7 @@ class DiffModel(
     editor.addEditorMouseMotionListener(myEditorDragListener)
     editor.addEditorMouseListener(myEditorDragListener)
     bindings = origin.data!!.bindings
+    origin.addTranscriptDataListener(myDataListener)
   }
 
   // Do not use default selection
@@ -108,6 +122,10 @@ class DiffModel(
     editor.selectionModel.removeSelection()
     myIgnoreSelectionEvents = false
     return
+  }
+
+  override fun dispose() {
+    origin.removeTranscriptDataListener(myDataListener)
   }
 
   var editorHoveredLine: Int = -1
@@ -175,6 +193,64 @@ class DiffModel(
 
   fun selectHeightRange(heightRange: IRange) {
     selectedItems = toItemRange(heightRange)
+  }
+
+  fun bindSelected() {
+    if (selectedItems.empty || editorSelectionRange.empty) return
+    bindUnbind(true)
+  }
+
+  fun unbindSelected() {
+    if (selectedItems.empty) return
+    bindUnbind(false)
+  }
+
+  fun resetChanges() {
+    if (!changesWereMade) return
+    myRedoStack.clear()
+    if (myUndoStack.size == UNDO_STACK_LIMIT) {
+      myUndoStack.removeLast()
+    }
+    myUndoStack.push(origin.data)
+    origin.data = myTranscriptDataOnStart
+    changesWereMade = false
+  }
+
+  var changesWereMade = false
+
+  fun undo() {
+    if (!myUndoStack.isEmpty()) {
+      myRedoStack.push(origin.data)
+      origin.data = myUndoStack.pop()
+    }
+  }
+
+  fun redo() {
+    if (!myRedoStack.isEmpty()) {
+      myUndoStack.push(origin.data)
+      origin.data = myRedoStack.pop()
+    }
+  }
+
+  val isUndoAvailable get() = !myUndoStack.isEmpty()
+
+  val isRedoAvailable get() = !myRedoStack.isEmpty()
+
+  private fun bindUnbind(isBind: Boolean) {
+    changesWereMade = true
+    val oldWords = origin.data!!.words
+    myRedoStack.clear()
+    if (myUndoStack.size == UNDO_STACK_LIMIT) {
+      myUndoStack.removeLast()
+    }
+    myUndoStack.push(origin.data)
+    val replacements = mutableListOf<Pair<Int, WordData>>()
+    for (index in selectedItems.toIntRange()) {
+      val item = myTextItems[index]
+      val word = oldWords[item.number].copy(bindStatements = if (isBind) editorSelectionRange else IRange.EMPTY_RANGE)
+      replacements.add(item.number to word)
+    }
+    origin.replaceWords(replacements)
   }
 
   private fun toItemRange(heightRange: IRange): IRange {
@@ -250,5 +326,9 @@ class DiffModel(
 
   private fun Editor.createHighlighter(line: IRange): List<RangeHighlighter> {
     return DiffDrawUtil.createHighlighter(this, line.start, line.end + 1, DiffSimulator, false)
+  }
+
+  companion object {
+    private const val UNDO_STACK_LIMIT = 16
   }
 }
