@@ -2,7 +2,6 @@ package vladsaif.syncedit.plugin.audioview.waveform
 
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.LRange
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.sound.sampled.AudioFormat
 
 interface AudioDataModel {
@@ -28,7 +27,7 @@ interface AudioDataModel {
    * @return Averaged audio data for each chunk in [chunkRange].
    * Chunk is a sequence of XX or XX + 1 samples, where XX = [totalFrames] / [maxChunks].
    */
-  fun getAveragedSampleData(maxChunks: Int, chunkRange: IRange, isActive: AtomicBoolean): List<AveragedSampleData>
+  fun getAveragedSampleData(maxChunks: Int, chunkRange: IRange, isActive: () -> Boolean): List<AveragedSampleData>
 
   /**
    * @return Number of chunk (if all frame were split into [maxChunks] number of chunks)

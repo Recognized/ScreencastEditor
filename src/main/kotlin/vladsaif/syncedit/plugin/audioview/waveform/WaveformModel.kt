@@ -6,7 +6,6 @@ import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import java.io.IOException
 import java.util.concurrent.CancellationException
-import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import javax.swing.event.ChangeListener
@@ -38,8 +37,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     }
   @Volatile
   private var myAudioData = listOf(AveragedSampleData())
-  private var myCurrentTask: Future<*>? = null
-  private var myCurrentTaskIsActive: AtomicBoolean? = null
+  private var myCurrentTask: LoadTask? = null
   private var myCoordinatesCacheCoherent = false
   private var myCoordinatesCache = listOf<IRange>()
   private var myVisibleChunks = 4000
@@ -146,7 +144,8 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
    * Start loading data in background for current position of sliding window.
    */
   fun updateData() {
-    if (myLastLoadedVisibleRange?.intersects(myVisibleRange) != true || myVisibleRange.length != myLastLoadedVisibleRange?.length) {
+    if (myLastLoadedVisibleRange?.intersects(myVisibleRange) != true
+        || myVisibleRange.length != myLastLoadedVisibleRange?.length) {
       myLastLoadedVisibleRange = myVisibleRange
       loadData(myMaxChunks, drawRange) {
         fireStateChanged()
@@ -154,34 +153,53 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     }
   }
 
-  private fun loadData(maxChunks: Int, drawRange: IRange, callback: () -> Unit) {
-    if (myIsBroken.get()) return
-    val model = myAudioDataProvider ?: return
-    myCurrentTaskIsActive?.set(false)
-    myCurrentTask?.cancel(true)
-    try {
-      myCurrentTask?.get()
-    } catch (_: CancellationException) {
-    }
-    val taskIsActive = AtomicBoolean(true)
-    myCurrentTaskIsActive = taskIsActive
-    myCurrentTask = ApplicationManager.getApplication().executeOnPooledThread {
+  inner class LoadTask(
+      private val maxChunks: Int,
+      private val drawRange: IRange,
+      private val callback: () -> Unit
+  ) : Runnable {
+    @Volatile
+    var isActive = true
+    private var start = 0L
+    override fun run() {
       try {
-        myAudioData = model.getAveragedSampleData(maxChunks, drawRange, taskIsActive)
+        println("Load started: $drawRange")
+        start = System.currentTimeMillis()
+        val model = myAudioDataProvider ?: return
+        val computedResult = model.getAveragedSampleData(maxChunks, drawRange) { isActive }
+        ApplicationManager.getApplication().invokeAndWait {
+          if (isActive) {
+            myAudioData = computedResult
+          }
+        }
       } catch (ex: IOException) {
         if (myIsBroken.compareAndSet(false, true)) {
           showNotification("I/O error occurred during reading ${multimediaModel.audioFile} audio file. Try reopen file.")
         }
       } catch (ex: CancellationException) {
-        return@executeOnPooledThread
+        return
       }
       ApplicationManager.getApplication().invokeLater {
         callback()
+        println("Load finished: $drawRange, time = ${System.currentTimeMillis() - start}")
       }
     }
   }
 
-  fun scale(factor: Float, position: Int = myFirstVisibleChunk + myVisibleChunks / 2, callback: () -> Unit) {
+
+  private fun loadData(maxChunks: Int, drawRange: IRange, callback: () -> Unit) {
+    if (isBroken) return
+    myCurrentTask?.isActive = false
+    val newTask = LoadTask(maxChunks, drawRange, callback)
+    myCurrentTask = newTask
+    ApplicationManager.getApplication().executeOnPooledThread(newTask)
+  }
+
+  fun scale(
+      factor: Float,
+      position: Int = myFirstVisibleChunk + myVisibleChunks / 2,
+      callback: () -> Unit
+  ) {
     val centerPosition = position / maxChunks.toFloat()
     val currentMaxChunks = maxChunks
     val currentFirstVisible = myFirstVisibleChunk

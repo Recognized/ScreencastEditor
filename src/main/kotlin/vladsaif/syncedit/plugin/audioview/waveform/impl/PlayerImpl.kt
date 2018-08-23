@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import com.intellij.openapi.application.ApplicationManager
+import vladsaif.syncedit.plugin.SoundProvider
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.Player
@@ -17,13 +18,13 @@ class PlayerImpl(private val file: Path) : Player {
   private var mySignalStopReceived = false
 
   init {
-    val fileFormat = AudioSystem.getAudioFileFormat(file.toFile())
+    val fileFormat = SoundProvider.getAudioFileFormat(file.toFile())
     mySource = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
   }
 
   override fun applyEditions(editionModel: EditionModel) {
-    AudioSystem.getAudioInputStream(file.toFile()).use { inputStream ->
-      AudioSystem.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
+    SoundProvider.getAudioInputStream(file.toFile()).use { inputStream ->
+      SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
         applyEditionImpl(it, editionModel)
       }
     }

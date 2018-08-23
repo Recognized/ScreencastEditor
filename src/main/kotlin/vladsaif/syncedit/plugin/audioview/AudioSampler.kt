@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.audioview
 
 import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
+import vladsaif.syncedit.plugin.floorToInt
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.min
@@ -28,7 +29,9 @@ class AudioSampler(
       throw UnsupportedAudioFileException("Unsupported format, sample size ($sampleSizeInBits bits) less than byte")
     }
     if (underlyingStream is DecodedMpegAudioInputStream) {
-      underlyingStream.skipFrames(skippedFrames)
+      val start = System.currentTimeMillis()
+      underlyingStream.skipFramesMpeg(skippedFrames)
+      println("Time to skip: ${System.currentTimeMillis() - start}")
     } else {
       underlyingStream.skipFrames(skippedFrames)
     }
@@ -90,6 +93,14 @@ class AudioSampler(
       skippedBytes += skip(bytesToSkip - skippedBytes)
     }
     LOG.info("Requested skip $count frames, skipped $skippedBytes bytes")
+  }
+
+  private fun DecodedMpegAudioInputStream.skipFramesMpeg(count: Long) {
+    var bytesToSkip = count * format.frameSize
+    while (bytesToSkip != 0L) {
+      val skipped = read(buffer, 0, min(bytesToSkip.floorToInt(), buffer.size))
+      bytesToSkip -= skipped
+    }
   }
 
   companion object {

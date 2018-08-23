@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.LRange
+import vladsaif.syncedit.plugin.SoundProvider
 import vladsaif.syncedit.plugin.audioview.AudioSampler
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.audioview.waveform.AveragedSampleData
@@ -9,8 +10,6 @@ import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.floorToInt
 import java.nio.file.Path
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.max
 import kotlin.math.min
@@ -34,11 +33,11 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
     private set
 
   init {
-    AudioSystem.getAudioInputStream(this.myFile).use {
-      if (!AudioSystem.isConversionSupported(it.format.toDecodeFormat(), it.format)) {
+    SoundProvider.getAudioInputStream(this.myFile).use {
+      if (!SoundProvider.isConversionSupported(it.format.toDecodeFormat(), it.format)) {
         throw UnsupportedAudioFileException("Cannot decode audio file.")
       }
-      AudioSystem.getAudioInputStream(it.format.toDecodeFormat(), it).use { stream ->
+      SoundProvider.getAudioInputStream(it.format.toDecodeFormat(), it).use { stream ->
         val audio = AudioSampler(stream)
         var sampleCount = 0L
         audio.forEachSample { _ -> sampleCount++ }
@@ -74,16 +73,18 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
     }
   }
 
-  override fun getAveragedSampleData(maxChunks: Int, chunkRange: IRange, isActive: AtomicBoolean): List<AveragedSampleData> {
+  override fun getAveragedSampleData(maxChunks: Int,
+                                     chunkRange: IRange,
+                                     isActive: () -> Boolean): List<AveragedSampleData> {
     val framesPerChunk = (totalFrames / maxChunks).toInt()
-    AudioSystem.getAudioInputStream(myFile).use { input ->
+    SoundProvider.getAudioInputStream(myFile).use { input ->
       val decodeFormat = input.format.toDecodeFormat()
       val chunks = chunkRange.length
       val ret = List(decodeFormat.channels) {
         AveragedSampleData(chunks, chunkRange.start, decodeFormat.sampleSizeInBits)
       }
       if (chunks == 0) return ret
-      AudioSampler(AudioSystem.getAudioInputStream(decodeFormat, input),
+      AudioSampler(SoundProvider.getAudioInputStream(decodeFormat, input),
           countSkippedFrames(maxChunks, chunkRange, framesPerChunk),
           countReadFrames(maxChunks, chunkRange, framesPerChunk)).use {
         countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, isActive)
@@ -109,14 +110,14 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
                         maxChunks: Int,
                         chunkRange: IRange,
                         channels: Int,
-                        isActive: AtomicBoolean) {
+                        isActive: () -> Boolean) {
     val peaks = List(channels) { LongArray(framesPerChunk + 1) }
     var restCounter = getBigChunkRange(maxChunks).intersect(chunkRange).length
     var frameCounter = 0
     var channelCounter = 0
     var chunkCounter = 0
     audio.forEachSample {
-      if (!isActive.get()) throw CancellationException()
+      if (!isActive()) throw CancellationException()
       peaks[channelCounter++][frameCounter] = it
       if (channelCounter == channels) {
         channelCounter = 0
