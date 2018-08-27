@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin.audioview
 
-import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.floorToInt
 import javax.sound.sampled.AudioInputStream
@@ -30,10 +29,14 @@ class AudioSampler(
     }
     if (underlyingStream is DecodedMpegAudioInputStream) {
       val start = System.currentTimeMillis()
-      underlyingStream.skipFramesMpeg(skippedFrames)
+      if (skippedFrames != 0L) {
+        underlyingStream.skipFramesMpeg(buffer, skippedFrames)
+      }
       println("Time to skip: ${System.currentTimeMillis() - start}")
     } else {
-      underlyingStream.skipFrames(skippedFrames)
+      if (skippedFrames != 0L) {
+        underlyingStream.skipFrames(skippedFrames)
+      }
     }
   }
 
@@ -85,25 +88,20 @@ class AudioSampler(
       leftBytes -= frameSizeBytes
     }
   }
+}
 
-  private fun AudioInputStream.skipFrames(count: Long) {
-    val bytesToSkip = count * format.frameSize
-    var skippedBytes = 0L
-    while (bytesToSkip != skippedBytes) {
-      skippedBytes += skip(bytesToSkip - skippedBytes)
-    }
-    LOG.info("Requested skip $count frames, skipped $skippedBytes bytes")
+fun AudioInputStream.skipFrames(count: Long) {
+  val bytesToSkip = count * format.frameSize
+  var skippedBytes = 0L
+  while (bytesToSkip != skippedBytes) {
+    skippedBytes += skip(bytesToSkip - skippedBytes)
   }
+}
 
-  private fun DecodedMpegAudioInputStream.skipFramesMpeg(count: Long) {
-    var bytesToSkip = count * format.frameSize
-    while (bytesToSkip != 0L) {
-      val skipped = read(buffer, 0, min(bytesToSkip.floorToInt(), buffer.size))
-      bytesToSkip -= skipped
-    }
-  }
-
-  companion object {
-    private val LOG = logger<AudioSampler>()
+fun DecodedMpegAudioInputStream.skipFramesMpeg(buffer: ByteArray, count: Long) {
+  var bytesToSkip = count * format.frameSize
+  while (bytesToSkip != 0L) {
+    val skipped = read(buffer, 0, min(bytesToSkip.floorToInt(), buffer.size))
+    bytesToSkip -= skipped
   }
 }

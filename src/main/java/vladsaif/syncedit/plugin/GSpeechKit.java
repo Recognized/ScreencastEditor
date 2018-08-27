@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 @SuppressWarnings("unused")
 public class GSpeechKit extends SpeechClient {
@@ -33,6 +35,10 @@ public class GSpeechKit extends SpeechClient {
     }
 
     private static List<List<Object>> getData(LongRunningRecognizeResponse response) {
+        System.out.println("Gettings data sdfasdf ");
+        if (response.getResultsList().isEmpty() || response.getResults(0).getAlternativesList().isEmpty()) {
+            throw new RuntimeException("Recognition result is empty.");
+        }
         List<List<Object>> data = new ArrayList<>();
         for (WordInfo each : response.getResults(0).getAlternatives(0).getWordsList()) {
             ArrayList<Object> inner = new ArrayList<>();
@@ -77,17 +83,26 @@ public class GSpeechKit extends SpeechClient {
         return completable;
     }
 
-    public List<List<Object>> recognize(InputStream inputStream) throws IOException, ExecutionException, InterruptedException {
+    public CompletableFuture<List<List<Object>>> recognize(InputStream inputStream) throws IOException {
         ByteString audioBytes = ByteString.readFrom(inputStream);
         RecognitionConfig config = RecognitionConfig.newBuilder()
                 .setEnableWordTimeOffsets(true)
                 .setModel("video")
                 .setLanguageCode("en-US")
+                .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                .setSampleRateHertz(44100)
                 .setEnableAutomaticPunctuation(true)
                 .build();
         RecognitionAudio audio = RecognitionAudio.newBuilder()
                 .setContent(audioBytes)
                 .build();
-        return getData(longRunningRecognizeAsync(config, audio).get());
+        Executor ex = Executors.newSingleThreadExecutor();
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return getData(longRunningRecognizeAsync(config, audio).get());
+            } catch (ExecutionException | InterruptedException exception) {
+                throw new RuntimeException(exception);
+            }
+        }, ex);
     }
 }

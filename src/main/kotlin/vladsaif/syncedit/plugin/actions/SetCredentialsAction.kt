@@ -9,7 +9,7 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
-import vladsaif.syncedit.plugin.recognition.CredentialProvider
+import vladsaif.syncedit.plugin.recognition.GCredentialProvider
 import java.io.File
 import java.io.IOException
 
@@ -23,7 +23,7 @@ class SetCredentialsAction : AnAction() {
     FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
       ApplicationManager.getApplication().executeOnPooledThread {
         try {
-          CredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
+          GCredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
           ApplicationManager.getApplication().invokeLater {
             Notification(
                 "Screencast Editor",

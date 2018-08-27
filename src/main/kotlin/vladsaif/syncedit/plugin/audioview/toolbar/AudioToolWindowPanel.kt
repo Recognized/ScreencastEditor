@@ -12,7 +12,6 @@ import vladsaif.syncedit.plugin.actions.RecognizeAudioAction
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
 import vladsaif.syncedit.plugin.audioview.waveform.Player
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.PLAY
-import vladsaif.syncedit.plugin.recognition.CredentialProvider
 import javax.swing.Icon
 
 class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowPanel(false), Disposable {
@@ -51,11 +50,10 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
         // updateXml()
         FileEditorManager.getInstance(project).openFile(xml, true, true)
       } else {
-        if (CredentialProvider.Instance.gSettings == null) {
-          RecognizeAudioAction.showNoCredentialsDialog(project)
-        } else {
+        if (RecognizeAudioAction.checkRequirements(project)) {
           RecognizeAudioAction.runRecognitionTask(project, this, audio)
         }
+        Unit
       }
     }
   }

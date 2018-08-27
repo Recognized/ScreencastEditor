@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader
 import java.io.File
+import java.io.InputStream
 import javax.sound.sampled.*
 
 /** This object duplicates some part of [javax.sound.sampled.AudioSystem].
@@ -15,10 +16,8 @@ object SoundProvider {
   private val MPEG_PROVIDER = MpegFormatConversionProvider()
   private val MPEG_FILE_READER = MpegAudioFileReader()
 
-  /**
-   * @throws java.io.IOException
-   * @throws UnsupportedAudioFileException
-   */
+
+  @Throws(java.io.IOException::class, UnsupportedAudioFileException::class)
   fun getAudioInputStream(file: File): AudioInputStream {
     return try {
       AudioSystem.getAudioInputStream(file)
@@ -26,6 +25,17 @@ object SoundProvider {
       MPEG_FILE_READER.getAudioInputStream(file)
     }
   }
+
+
+  @Throws(java.io.IOException::class, UnsupportedAudioFileException::class)
+  fun getAudioInputStream(inputStream: InputStream): AudioInputStream {
+    return try {
+      AudioSystem.getAudioInputStream(inputStream)
+    } catch (ex: UnsupportedAudioFileException) {
+      MPEG_FILE_READER.getAudioInputStream(inputStream)
+    }
+  }
+
 
   fun isConversionSupported(targetFormat: AudioFormat, sourceFormat: AudioFormat): Boolean {
     return AudioSystem.isConversionSupported(targetFormat, sourceFormat)
@@ -35,21 +45,30 @@ object SoundProvider {
   /**
    * @throws IllegalArgumentException if conversion is not supported.
    */
+  @Throws(IllegalArgumentException::class)
   fun getAudioInputStream(targetFormat: AudioFormat, stream: AudioInputStream): AudioInputStream {
     return if (MPEG_PROVIDER.isConversionSupported(targetFormat, stream.format)) {
       MPEG_PROVIDER.getAudioInputStream(targetFormat, stream)
     } else AudioSystem.getAudioInputStream(targetFormat, stream)
   }
 
-  /**
-   * @throws java.io.IOException
-   * @throws UnsupportedAudioFileException
-   */
+
+  @Throws(java.io.IOException::class, UnsupportedAudioFileException::class)
   fun getAudioFileFormat(file: File): AudioFileFormat {
     return try {
       AudioSystem.getAudioFileFormat(file)
     } catch (ex: UnsupportedAudioFileException) {
       MPEG_FILE_READER.getAudioFileFormat(file)
+    }
+  }
+
+
+  @Throws(java.io.IOException::class, UnsupportedAudioFileException::class)
+  fun getAudioFileFormat(inputStream: InputStream): AudioFileFormat {
+    return try {
+      AudioSystem.getAudioFileFormat(inputStream)
+    } catch (ex: UnsupportedAudioFileException) {
+      MPEG_FILE_READER.getAudioFileFormat(inputStream)
     }
   }
 }

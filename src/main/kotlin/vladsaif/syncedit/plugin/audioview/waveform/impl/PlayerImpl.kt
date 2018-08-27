@@ -1,7 +1,9 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import com.intellij.openapi.application.ApplicationManager
+import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.SoundProvider
+import vladsaif.syncedit.plugin.audioview.skipFramesMpeg
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.Player
@@ -44,10 +46,15 @@ class PlayerImpl(private val file: Path) : Player {
           totalFrames += needBytes / frameSize
           myProcessUpdater(totalFrames)
           while (needBytes != 0L && !mySignalStopReceived) {
-            val skipped = decodedStream.skip(needBytes)
-            needBytes -= skipped
-            if (skipped == 0L || mySignalStopReceived) {
-              break@outer
+            if (decodedStream is DecodedMpegAudioInputStream) {
+              decodedStream.skipFramesMpeg(buffer, edition.first.length)
+              needBytes = 0L
+            } else {
+              val skipped = decodedStream.skip(needBytes)
+              needBytes -= skipped
+              if (skipped == 0L || mySignalStopReceived) {
+                break@outer
+              }
             }
           }
         }
@@ -68,6 +75,12 @@ class PlayerImpl(private val file: Path) : Player {
               needBytes -= zeroesCount
             }
             if (needSkip != 0L) {
+              if (decodedStream is DecodedMpegAudioInputStream) {
+                decodedStream.skipFramesMpeg(buffer, edition.first.length)
+                needSkip = 0L
+                buffer.fill(0)
+                continue
+              }
               val skipped = decodedStream.skip(needSkip)
               needSkip -= skipped
               if (skipped == 0L) {
