@@ -73,12 +73,12 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
       call()
       anotherCall()
 
-      timeOffset(3000L)
+      timeOffset(1000L)
       startBlock {
         call()
-        timeOffset(4000L)
+        timeOffset(1000L)
       }
-      timeOffset(5000L)
+      timeOffset(1000L)
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
@@ -115,7 +115,7 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     val text = """
       timeOffset(3000L)
       startBlock {
-        timeOffset(4000L)
+        timeOffset(1000L)
       }
     """.trimIndent()
     val ktFile = createKtFile(text)

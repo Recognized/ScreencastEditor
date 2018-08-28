@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtScriptInitializer
@@ -16,14 +17,18 @@ object TimeOffsetParser {
    * @return mapping of extracted time ranges to line range that lies in it.
    */
   fun parse(psiFile: KtFile): List<TimedLines> {
+    if (PsiTreeUtil.hasErrorElements(psiFile)) throw IllegalArgumentException("File must not contain error elements.")
     val expressionsLines = mutableListOf<IRange>()
-    val timeOffsets = mutableListOf<TimeOffset>()
+    val absoluteTimeOffsets = mutableListOf<TimeOffset>()
     val document = psiFile.viewProvider.document
         ?: throw AssertionError("Events are not enabled for $psiFile")
+    var accumulator = 0
     BlockVisitor.visit(psiFile) {
       if (isTimeOffset(it)) {
         val line = document.getLineNumber(it.textOffset)
-        timeOffsets.add(TimeOffset(line, parseOffset(it.text)))
+        val offsetValue = parseOffset(it.text)
+        absoluteTimeOffsets.add(TimeOffset(line, offsetValue + accumulator))
+        accumulator += offsetValue
       } else {
         val start = document.getLineNumber(it.textOffset)
         val end = document.getLineNumber(it.textOffset + it.textLength)
@@ -31,8 +36,8 @@ object TimeOffsetParser {
       }
     }
     // Add initial (before whole script) timeOffset statement
-    timeOffsets.add(0, TimeOffset(-1, 0))
-    val timedLines = timeOffsets.zipWithNext()
+    absoluteTimeOffsets.add(0, TimeOffset(-1, 0))
+    val timedLines = absoluteTimeOffsets.zipWithNext()
         .map { (current, next) ->
           TimedLines(
               lines = IRange(current.line + 1, next.line - 1),
