@@ -36,10 +36,10 @@ object AudioToolWindowManager {
   }
 
   fun openAudioFile(project: Project, virtualFile: VirtualFile): WaveformModel {
-    val toolWindow = getToolWindow(project)
-    toolWindow.contentManager.removeAllContents(true)
     val model = MultimediaModel.getOrCreate(project, virtualFile)
     model.audioFile = virtualFile
+    val toolWindow = getToolWindow(project)
+    toolWindow.contentManager.removeAllContents(true)
     val audioPanel = AudioToolWindowPanel(model)
     val content = ContentFactory.SERVICE.getInstance().createContent(
         audioPanel,

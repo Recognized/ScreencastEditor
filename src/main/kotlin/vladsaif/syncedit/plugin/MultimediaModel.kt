@@ -69,11 +69,13 @@ class MultimediaModel(
     }
   var xmlFile: VirtualFile? = null
     set(value) {
+      if (value == field) return
       setDependencies(field, value)
       field = value
     }
   var audioFile: VirtualFile? = null
     set(value) {
+      if (value == field) return
       setDependencies(field, value)
       field = value
       if (value != null) {
@@ -82,6 +84,7 @@ class MultimediaModel(
     }
   var scriptFile: VirtualFile? = null
     set(value) {
+      if (value == field) return
       setDependencies(field, value)
       field = value
     }
@@ -271,6 +274,7 @@ class MultimediaModel(
     xmlFile = null
     transcriptFile = null
     audioDataModel = null
+    scriptFile = null
   }
 
   companion object {

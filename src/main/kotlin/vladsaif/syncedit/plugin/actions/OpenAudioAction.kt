@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.SoundProvider
 import vladsaif.syncedit.plugin.audioview.toolbar.AudioToolWindowManager
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
-import java.io.File
 import java.io.IOException
 import javax.sound.sampled.UnsupportedAudioFileException
 
@@ -29,12 +28,12 @@ class OpenAudioAction : AnAction() {
 
     fun openAudio(project: Project, file: VirtualFile): WaveformModel? {
       return try {
-        SoundProvider.getAudioFileFormat(File(file.path))
+        file.inputStream.use { SoundProvider.getAudioFileFormat(it) }
         AudioToolWindowManager.openAudioFile(project, file)
       } catch (ex: UnsupportedAudioFileException) {
         Messages.showErrorDialog(
             project,
-            "Audio file format is not supported. File: $file",
+            "Audio file format is not supported. File: ${file.path}",
             "Unsupported file format"
         )
         null

@@ -17,83 +17,98 @@
   <depends>org.jetbrains.kotlin</depends>
 
   <extensions defaultExtensionNs="com.intellij">
+    <annotator language="TranscriptLanguage"
+               id="transcriptAnnotator"
+               implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
     <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
     <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
-    <fileTypeFactory
-        implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
+    <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
     <lang.parserDefinition language="TranscriptLanguage"
                            implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
-    <!--<lang.parserDefinition language="GUI Script"-->
-    <!--implementationClass="vladsaif.syncedit.plugin.lang.script.parser.UIScriptParserDefinition"/>-->
-
     <lang.syntaxHighlighterFactory language="TranscriptLanguage"
                                    implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
     <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
                    order="first"/>
-    <annotator language="TranscriptLanguage" id="transcriptAnnotator"
-               implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
-    <!--<applicationConfigurable instance="vladsaif.syncedit.plugin.State"/>-->
   </extensions>
   <actions>
-    <group text="Screencast Editor" id="ScreencastEditor"
-           popup="true" compact="true">
+    <group text="Screencast Editor" id="ScreencastEditor" popup="true" compact="true">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
       <action id="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
-              text="Choose speech recognizer" description="Choose speech recognizer"/>
-      <group text="Google speech kit" id="GSpeechKit">
+              text="Choose speech recognizer"
+              description="Choose speech recognizer"/>
+      <group text="Google speech kit" id="GSpeechKit" popup="true" compact="true">
+        <add-to-group group-id="ScreencastEditor"/>
         <action id="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
                 icon="ScreencastEditorIcons.SETTINGS"
                 class="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
-                text="Set cloud recognition credentials " description="Set credentials used in cloud recognition"/>
+                text="Set cloud recognition credentials "
+                description="Set credentials used in cloud recognition">
+          <add-to-group group-id="GSpeechKit" anchor="last"/>
+        </action>
       </group>
       <separator/>
       <action id="vladsaif.syncedit.plugin.actions.OpenAudioAction"
               class="vladsaif.syncedit.plugin.actions.OpenAudioAction"
               icon="ScreencastEditorIcons.EQUALIZER"
-              text="Open audio" description="Opens audio waveform view"/>
+              text="Open audio"
+              description="Opens audio waveform view"/>
       <action id="vladsaif.syncedit.plugin.actions.RecognizeAudioAction"
               icon="ScreencastEditorIcons.EQUALIZER"
-              class="vladsaif.syncedit.plugin.actions.RecognizeAudioAction" text="Open and recognize audio"
+              class="vladsaif.syncedit.plugin.actions.RecognizeAudioAction"
+              text="Open and recognize audio"
               description="Get transcript of audio and open it"/>
+      <action id="vladsaif.syncedit.plugin.actions.BindAudioWithScript"
+              icon="ScreencastEditorIcons.SETTINGS"
+              class="vladsaif.syncedit.plugin.actions.BindAudioWithScript"
+              text="Bind audio and script file"
+              description="Associate selected audio file with script file"/>
       <action id="vladsaif.syncedit.plugin.actions.FakeRecognition"
               icon="ScreencastEditorIcons.EQUALIZER"
-              class="vladsaif.syncedit.plugin.actions.FakeRecognition" text="Fake recognition"
+              class="vladsaif.syncedit.plugin.actions.FakeRecognition"
+              text="Fake recognition"
               description="Get transcript of audio and open it"/>
       <action id="vladsaif.syncedit.plugin.diffview.OpenDiffAction"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.diffview.OpenDiffAction"
-              text="Manage transcript-script relations" description="Start diff window"/>
+              text="Manage transcript-script relations"
+              description="Start diff window"/>
       <action id="vladsaif.syncedit.plugin.actions.FakeOpenDiff"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.actions.FakeOpenDiff"
-              text="Manage transcript-script relations (FAKE)" description="Start diff window"/>
+              text="Manage transcript-script relations (FAKE)"
+              description="Start diff window"/>
       <action id="vladsaif.syncedit.plugin.actions.FakeRecording"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.actions.FakeRecording"
-              text="Record sound (FAKE)" description="Start diff window"/>
+              text="Record sound (FAKE)"
+              description="Start diff window"/>
     </group>
     <action id="vladsaif.syncedit.plugin.lang.transcript.ConcatenateAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ConcatenateAction" text="Concatenate words"
+            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ConcatenateAction"
+            text="Concatenate words"
             description="Concatenate selected words">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction" text="Exclude word"
+            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction"
+            text="Exclude word"
             description="Exclude word from transcript">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt DELETE"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction" text="Include word"
+            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
+            text="Include word"
             description="Include to transcript previously excluded word ">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt EQUALS"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction" text="Mute word"
+            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
+            text="Mute word"
             description="Mute word">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt M"/>
