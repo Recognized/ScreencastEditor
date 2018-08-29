@@ -35,7 +35,6 @@ public class GSpeechKit extends SpeechClient {
     }
 
     private static List<List<Object>> getData(LongRunningRecognizeResponse response) {
-        System.out.println("Gettings data sdfasdf ");
         if (response.getResultsList().isEmpty() || response.getResults(0).getAlternativesList().isEmpty()) {
             throw new RuntimeException("Recognition result is empty.");
         }
