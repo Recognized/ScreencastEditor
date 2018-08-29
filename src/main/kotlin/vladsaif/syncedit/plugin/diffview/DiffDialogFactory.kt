@@ -144,11 +144,42 @@ object DiffDialogFactory {
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 
+  private fun createLineConverter(model: MultimediaModel): Pair<(IRange) -> IRange, (IRange) -> IRange> {
+    val document = model.scriptDoc!!
+    val shiftedLines = IntArray(document.lineCount) { it }
+    val backwardLines = IntArray(document.lineCount)
+    BlockVisitor.visit(model.scriptPsi!!) {
+      if (TimeOffsetParser.isTimeOffset(it)) {
+        shiftedLines[document.getLineNumber(it.textOffset)] = -1
+      }
+    }
+    var accumulator = 0
+    for ((index, x) in shiftedLines.withIndex()) {
+      if (x == -1) accumulator++
+      backwardLines[index] = x - accumulator
+    }
+    var pos = 0
+    for (x in shiftedLines) {
+      if (x == -1) continue
+      shiftedLines[pos++] = x
+    }
+    return { it: IRange ->
+      IRange(shiftedLines[it.start], shiftedLines[it.end])
+    } to { it: IRange ->
+      IRange(backwardLines[it.start], backwardLines[it.end])
+    }
+  }
+
   private fun createSplitter(model: MultimediaModel): Pair<Splitter, DiffModel> {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
     val textPanel = pane.viewport.view as TextItemPanel
-    val diffModel = DiffModel(model, editorView.editor as EditorEx, textPanel.cast())
+    if (model.isNeedInitialBind) {
+      model.createDefaultBinding()
+      model.isNeedInitialBind = false
+    }
+    val (viewToScript, scriptToView) = createLineConverter(model)
+    val diffModel = DiffModel(model, editorView.editor as EditorEx, textPanel.cast(), viewToScript, scriptToView)
     val leftDragListener = object : MouseDragListener() {
       override fun onDrag(point: Point) {
         diffModel.selectHeightRange(IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y)))

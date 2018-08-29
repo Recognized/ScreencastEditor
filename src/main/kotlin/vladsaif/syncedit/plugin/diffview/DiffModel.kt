@@ -23,7 +23,9 @@ import kotlin.math.min
 class DiffModel(
     val origin: MultimediaModel,
     val editor: EditorEx,
-    private val panel: TextItemPanel
+    private val panel: TextItemPanel,
+    private val viewLinesToScriptLines: (IRange) -> IRange,
+    private val scriptLinesToViewLines: (IRange) -> IRange
 ) : ChangeNotifier by DefaultChangeNotifier(), Disposable {
   private val myActiveLineHighlighters: MutableList<Pair<RangeHighlighter, Int>> = mutableListOf()
   private val myDefaultScheme = DefaultColorsScheme()
@@ -96,7 +98,7 @@ class DiffModel(
 
   private val myDataListener = object : MultimediaModel.Listener {
     override fun onTranscriptDataChanged() {
-      bindings = origin.data!!.bindings
+      bindings = createBindings(origin.data!!.words, scriptLinesToViewLines)
       editorSelectionRange = IRange.EMPTY_RANGE
       selectedItems = IRange.EMPTY_RANGE
     }
@@ -111,7 +113,7 @@ class DiffModel(
     editor.selectionModel.addSelectionListener { editorSelectionUpdated() }
     editor.addEditorMouseMotionListener(myEditorDragListener)
     editor.addEditorMouseListener(myEditorDragListener)
-    bindings = origin.data!!.bindings
+    bindings = createBindings(origin.data!!.words, scriptLinesToViewLines)
     origin.addTranscriptDataListener(myDataListener)
   }
 
@@ -121,7 +123,6 @@ class DiffModel(
     myIgnoreSelectionEvents = true
     editor.selectionModel.removeSelection()
     myIgnoreSelectionEvents = false
-    return
   }
 
   override fun dispose() {
@@ -240,14 +241,24 @@ class DiffModel(
     changesWereMade = true
     val oldWords = origin.data!!.words
     myRedoStack.clear()
+    val convertedRange = viewLinesToScriptLines(editorSelectionRange intersect IRange(0, editor.document.lineCount - 1))
     if (myUndoStack.size == UNDO_STACK_LIMIT) {
       myUndoStack.removeLast()
     }
     myUndoStack.push(origin.data)
+    val scriptDoc = origin.scriptDoc!!
+    val newMarker = scriptDoc.createRangeMarker(
+        scriptDoc.getLineStartOffset(convertedRange.start).also { println(it) },
+        scriptDoc.getLineEndOffset(convertedRange.end).also(::println)
+    )
     val replacements = mutableListOf<Pair<Int, WordData>>()
     for (index in selectedItems.toIntRange()) {
       val item = myTextItems[index]
-      val word = oldWords[item.number].copy(bindStatements = if (isBind) editorSelectionRange else IRange.EMPTY_RANGE)
+      val word = if (!isBind) {
+        oldWords[item.number].copy(bindStatements = null)
+      } else {
+        oldWords[item.number].copy(bindStatements = if (isBind) newMarker else null)
+      }
       replacements.add(item.number to word)
     }
     origin.replaceWords(replacements)

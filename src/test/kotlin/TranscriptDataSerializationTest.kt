@@ -29,12 +29,10 @@ class TranscriptDataSerializationTest {
         <word state="PRESENTED">
             <text>first</text>
             <range start="10" end="20"/>
-            <bind start="0" end="-1" />
         </word>
         <word state="PRESENTED">
             <text>second</text>
             <range start="100" end="200"/>
-            <bind start="0" end="-1" />
         </word>
     </words>
 </transcript>""")) as TranscriptData

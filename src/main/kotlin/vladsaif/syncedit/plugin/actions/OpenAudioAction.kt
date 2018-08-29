@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.SoundProvider
 import vladsaif.syncedit.plugin.audioview.toolbar.AudioToolWindowManager
@@ -31,18 +30,10 @@ class OpenAudioAction : AnAction() {
         file.inputStream.use { SoundProvider.getAudioFileFormat(it) }
         AudioToolWindowManager.openAudioFile(project, file)
       } catch (ex: UnsupportedAudioFileException) {
-        Messages.showErrorDialog(
-            project,
-            "Audio file format is not supported. File: ${file.path}",
-            "Unsupported file format"
-        )
+        errorUnsupportedAudioFile(project, file)
         null
       } catch (ex: IOException) {
-        Messages.showErrorDialog(
-            project,
-            "I/O error occurred. ${ex.message}",
-            "I/O error"
-        )
+        errorIO(project, ex)
         null
       }
     }

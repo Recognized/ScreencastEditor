@@ -22,7 +22,7 @@ import kotlin.concurrent.thread
 class GSpeechKit : SpeechRecognizer {
 
   override val name: String
-    get() = "Google speech kit"
+    get() = "Google Speech Kit"
 
   @Suppress("unchecked_cast")
   @Throws(IOException::class)

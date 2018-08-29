@@ -1,9 +1,12 @@
 package vladsaif.syncedit.plugin
 
+import com.intellij.ide.highlighter.XmlFileType
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.RangeMarker
+import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.junit.Test
-import kotlin.test.assertEquals
 
-class TranscriptDataTest {
+class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
 
   private val myTestData = createTestData()
 
@@ -55,22 +58,23 @@ class TranscriptDataTest {
 
   @Test
   fun `test bindings`() {
+    val factory = createMarkerFactory(20)
     val bindData = TranscriptData(listOf(
         WordData("_", IRange(0, 1)),
-        WordData("a", IRange(1, 2), bindStatements = IRange(1, 3)),
-        WordData("b", IRange(2, 3), bindStatements = IRange(1, 3)),
-        WordData("c", IRange(3, 4), bindStatements = IRange(1, 4)),
+        WordData("a", IRange(1, 2), bindStatements = factory(IRange(1, 3))),
+        WordData("b", IRange(2, 3), bindStatements = factory(IRange(1, 3))),
+        WordData("c", IRange(3, 4), bindStatements = factory(IRange(1, 4))),
         WordData("d", IRange(4, 5)),
-        WordData("e", IRange(5, 6), bindStatements = IRange(6, 9)),
-        WordData("f", IRange(6, 7), bindStatements = IRange(6, 9)),
-        WordData("g", IRange(7, 8), bindStatements = IRange(6, 9))
+        WordData("e", IRange(5, 6), bindStatements = factory(IRange(6, 9))),
+        WordData("f", IRange(6, 7), bindStatements = factory(IRange(6, 9))),
+        WordData("g", IRange(7, 8), bindStatements = factory(IRange(6, 9)))
     ))
     val expectedBindings = listOf(
         Binding(IRange(1, 2), IRange(1, 3)),
         Binding(IRange(3, 3), IRange(1, 4)),
         Binding(IRange(5, 7), IRange(6, 9))
     )
-    assertEquals(expectedBindings, bindData.bindings)
+    assertEquals(expectedBindings, createBindings(bindData.words))
   }
 
   @Test
@@ -94,5 +98,18 @@ class TranscriptDataTest {
         Binding(IRange(17, 18), IRange(10, 11))
     )
     assertEquals(expected, merged)
+  }
+
+  private fun createMarkerFactory(lines: Int): (IRange) -> RangeMarker {
+    val doc = createDocument(lines)
+    return {
+      doc.createRangeMarker(doc.getLineStartOffset(it.start), doc.getLineEndOffset(it.end))
+    }
+  }
+
+  private fun createDocument(lines: Int): Document {
+    return createLightFile(XmlFileType.INSTANCE, (1..lines).map { "_" }.joinToString(separator = "\n") { it })
+        .viewProvider
+        .document!!
   }
 }

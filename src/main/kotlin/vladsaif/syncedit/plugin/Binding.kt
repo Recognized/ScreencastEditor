@@ -1,5 +1,7 @@
 package vladsaif.syncedit.plugin
 
+import com.intellij.openapi.editor.RangeMarker
+
 data class Binding(
     val itemRange: IRange,
     val lineRange: IRange
@@ -19,4 +21,16 @@ fun mergeBindings(bindings: List<Binding>): List<Binding> {
     }
     acc
   }
+}
+
+fun createBindings(words: List<WordData>, lineConverter: (IRange) -> IRange = { it }) = words.map { it.bindStatements }
+    .mapIndexed { index, x -> index to x }
+    .filter { (_, x) -> x != null }
+    .map { (index, x) -> Binding(IRange(index, index), lineConverter(x!!.toLineRange())) }
+    .let(::mergeBindings)
+
+fun RangeMarker.toLineRange(): IRange {
+  if (!isValid) return IRange.EMPTY_RANGE
+  val doc = this.document
+  return IRange(doc.getLineNumber(startOffset), doc.getLineNumber(endOffset))
 }

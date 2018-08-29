@@ -5,10 +5,12 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.util.containers.ContainerUtil
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.WordData.State.*
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
@@ -16,6 +18,7 @@ import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.impl.SimpleAudioModel
+import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import java.io.File
 import javax.swing.event.ChangeListener
@@ -59,6 +62,7 @@ class MultimediaModel(
       }
     }
   }
+  var isNeedInitialBind: Boolean = true
   val editionModel: EditionModel = DefaultEditionModel()
   var audioDataModel: AudioDataModel? = null
     private set(value) {
@@ -94,6 +98,9 @@ class MultimediaModel(
       val doc = FileDocumentManager.getInstance().getDocument(file) ?: return null
       return PsiDocumentManager.getInstance(project).getPsiFile(doc) as? KtFile
     }
+
+  val scriptDoc: Document?
+    get() = scriptPsi?.viewProvider?.document
 
   var data: TranscriptData? = null
     set(value) {
@@ -250,6 +257,10 @@ class MultimediaModel(
     data = data?.concatenateWords(indexRange)
   }
 
+  fun bindWords(bindings: List<Pair<Int, RangeMarker?>>) {
+    data = data?.bindWords(bindings)
+  }
+
   fun excludeWords(indices: IntArray) {
     data = data?.excludeWords(indices)
   }
@@ -266,6 +277,25 @@ class MultimediaModel(
     data = data?.muteWords(indices)
   }
 
+  fun createDefaultBinding() {
+    val timedLines = TimeOffsetParser.parse(scriptPsi!!)
+    val doc = scriptDoc!!
+    val oldWords = data!!.words
+    val newWords = mutableListOf<WordData>()
+    intersect(oldWords, timedLines, { a, b -> a.range.intersects(b.time) }) { word, range ->
+      val marker = if (range == null) {
+        null
+      } else {
+        val startLine = range.first.lines.start
+        val endLine = range.second.lines.end
+        doc.createRangeMarker(doc.getLineStartOffset(startLine), doc.getLineEndOffset(endLine))
+      }
+      newWords.add(word.copy(bindStatements = marker))
+    }
+    newWords.forEach(::println)
+    data!!.replaceWords(newWords.mapIndexed { index, x -> index to x })
+  }
+
   override fun dispose() {
     myListeners.clear()
     xmlFile?.let { fileModelMap.remove(it) }
@@ -279,7 +309,7 @@ class MultimediaModel(
 
   companion object {
     private val LOG = logger<MultimediaModel>()
-    private val fileModelMap = mutableMapOf<VirtualFile, MultimediaModel>()
+    private val fileModelMap = ContainerUtil.newConcurrentMap<VirtualFile, MultimediaModel>()
 
     fun getOrCreate(project: Project, xmlFile: VirtualFile): MultimediaModel {
       return fileModelMap[xmlFile] ?: MultimediaModel(project)

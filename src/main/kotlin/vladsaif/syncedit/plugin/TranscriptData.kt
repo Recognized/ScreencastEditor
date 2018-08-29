@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin
 
+import com.intellij.openapi.editor.RangeMarker
 import java.io.InputStream
 import java.io.StringReader
 import java.io.StringWriter
@@ -18,9 +19,6 @@ class TranscriptData(words: List<WordData>) {
   val text: String
     get() = TextFormatter.formatLines(words.map { it.filteredText }, 120, separator = '\u00A0')
         .joinToString(separator = "\n") { it }
-
-  val bindings: List<Binding>
-    get() = words.mapIndexed { index, x -> Binding(IRange(index, index), x.bindStatements) }.let(::mergeBindings)
 
   // JAXB needs to access default constructor via reflection and add elements
   // so we may abuse fact that ArrayList can be assigned to kotlin List
@@ -59,6 +57,10 @@ class TranscriptData(words: List<WordData>) {
     newWords.add(newWord)
     newWords.addAll(words.subList(indexRange.end + 1, words.size))
     return TranscriptData(newWords)
+  }
+
+  fun bindWords(bindings: List<Pair<Int, RangeMarker?>>): TranscriptData {
+    return replaceWords(bindings.map { it.first to words[it.first].copy(bindStatements = it.second) })
   }
 
   fun excludeWords(indices: IntArray): TranscriptData {

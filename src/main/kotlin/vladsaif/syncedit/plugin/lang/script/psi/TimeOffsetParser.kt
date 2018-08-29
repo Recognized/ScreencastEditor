@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtScriptInitializer
 import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.intersect
 
 object TimeOffsetParser {
 
@@ -57,30 +58,39 @@ object TimeOffsetParser {
    * @param offsets sorted.
    **/
   private fun constructTimedStatements(expressions: List<IRange>, offsets: List<TimedLines>): List<TimedLines> {
-    var searchHint = 0
+//    var searchHint = 0
+//    val timedStatements = mutableListOf<TimedLines>()
+//    for (expr in expressions) {
+//      var j = searchHint
+//      var startIntersection = IRange.EMPTY_RANGE
+//      var endIntersection = IRange.EMPTY_RANGE
+//      var lineLastIntersection = IRange.EMPTY_RANGE
+//      searchHint = offsets.size
+//      while (j < offsets.size) {
+//        val offset = offsets[j]
+//        if (expr.intersects(offset.lines)) {
+//          if (startIntersection.empty) {
+//            searchHint = j
+//            startIntersection = offset.time
+//          }
+//          lineLastIntersection = offset.lines
+//          endIntersection = offset.time
+//        } else if (!startIntersection.empty) {
+//          break
+//        }
+//        j++
+//      }
+//      if (!startIntersection.empty && lineLastIntersection.end >= expr.end) {
+//        timedStatements.add(TimedLines(lines = expr, time = IRange(startIntersection.start, endIntersection.end)))
+//      } else {
+//        timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))
+//      }
+//    }
+//    return timedStatements
     val timedStatements = mutableListOf<TimedLines>()
-    for (expr in expressions) {
-      var j = searchHint
-      var startIntersection = IRange.EMPTY_RANGE
-      var endIntersection = IRange.EMPTY_RANGE
-      var lineLastIntersection = IRange.EMPTY_RANGE
-      searchHint = offsets.size
-      while (j < offsets.size) {
-        val offset = offsets[j]
-        if (expr.intersects(offset.lines)) {
-          if (startIntersection.empty) {
-            searchHint = j
-            startIntersection = offset.time
-          }
-          lineLastIntersection = offset.lines
-          endIntersection = offset.time
-        } else if (!startIntersection.empty) {
-          break
-        }
-        j++
-      }
-      if (!startIntersection.empty && lineLastIntersection.end >= expr.end) {
-        timedStatements.add(TimedLines(lines = expr, time = IRange(startIntersection.start, endIntersection.end)))
+    intersect(expressions, offsets, { a, b -> a.intersects(b.lines) }) { expr, pair ->
+      if (pair != null && pair.second.lines.end >= expr.end) {
+        timedStatements.add(TimedLines(lines = expr, time = IRange(pair.first.time.start, pair.second.time.end)))
       } else {
         timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))
       }

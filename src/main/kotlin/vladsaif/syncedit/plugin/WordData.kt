@@ -1,9 +1,7 @@
 package vladsaif.syncedit.plugin
 
-import javax.xml.bind.annotation.XmlAccessType
-import javax.xml.bind.annotation.XmlAccessorType
-import javax.xml.bind.annotation.XmlAttribute
-import javax.xml.bind.annotation.XmlElement
+import com.intellij.openapi.editor.RangeMarker
+import javax.xml.bind.annotation.*
 
 @XmlAccessorType(XmlAccessType.FIELD)
 data class WordData(
@@ -13,8 +11,8 @@ data class WordData(
     val range: IRange,
     @field:XmlAttribute
     val state: State = State.PRESENTED,
-    @field:XmlElement(name = "bind")
-    val bindStatements: IRange = IRange.EMPTY_RANGE
+    @field:XmlTransient
+    val bindStatements: RangeMarker? = null
 ) : Comparable<WordData> {
   /**
    * Replaces non-breaking space symbol because it is used in TranscriptView language as word separator
@@ -22,7 +20,7 @@ data class WordData(
   val filteredText: String
     get() = if (text.contains('\u00A0')) text.replace('\u00A0', ' ') else text
   val isBind: Boolean
-    get() = !bindStatements.empty
+    get() = bindStatements != null
 
   // JAXB constructor
   @Suppress("unused")

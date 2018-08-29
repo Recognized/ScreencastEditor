@@ -31,24 +31,13 @@
                    order="first"/>
   </extensions>
   <actions>
-    <group text="Screencast Editor" id="ScreencastEditor" popup="true" compact="true">
+    <group text="Screencast Editor" id="ScreencastEditor" popup="true" compact="false">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
       <action id="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
               text="Choose speech recognizer"
               description="Choose speech recognizer"/>
-      <group text="Google speech kit" id="GSpeechKit" popup="true" compact="true">
-        <add-to-group group-id="ScreencastEditor"/>
-        <action id="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
-                icon="ScreencastEditorIcons.SETTINGS"
-                class="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
-                text="Set cloud recognition credentials "
-                description="Set credentials used in cloud recognition">
-          <add-to-group group-id="GSpeechKit" anchor="last"/>
-        </action>
-      </group>
-      <separator/>
       <action id="vladsaif.syncedit.plugin.actions.OpenAudioAction"
               class="vladsaif.syncedit.plugin.actions.OpenAudioAction"
               icon="ScreencastEditorIcons.EQUALIZER"
@@ -69,22 +58,28 @@
               class="vladsaif.syncedit.plugin.actions.FakeRecognition"
               text="Fake recognition"
               description="Get transcript of audio and open it"/>
-      <action id="vladsaif.syncedit.plugin.diffview.OpenDiffAction"
+      <action id="vladsaif.syncedit.plugin.actions.ManageScriptTranscriptRelations"
               icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.diffview.OpenDiffAction"
+              class="vladsaif.syncedit.plugin.actions.ManageScriptTranscriptRelations"
               text="Manage transcript-script relations"
-              description="Start diff window"/>
-      <action id="vladsaif.syncedit.plugin.actions.FakeOpenDiff"
-              icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.actions.FakeOpenDiff"
-              text="Manage transcript-script relations (FAKE)"
-              description="Start diff window"/>
+              description="Open associations window"/>
       <action id="vladsaif.syncedit.plugin.actions.FakeRecording"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.actions.FakeRecording"
               text="Record sound (FAKE)"
               description="Start diff window"/>
+      <separator/>
+      <group id="SpeechRecognizers" popup="false" compact="true">
+        <group text="Google Speech Kit" id="GSpeechKit" popup="true" compact="true"/>
+      </group>
     </group>
+    <action id="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
+            icon="ScreencastEditorIcons.SETTINGS"
+            class="vladsaif.syncedit.plugin.actions.SetCredentialsAction"
+            text="Set cloud recognition credentials "
+            description="Set credentials used in cloud recognition">
+      <add-to-group group-id="GSpeechKit" anchor="last"/>
+    </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.ConcatenateAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ConcatenateAction"
             text="Concatenate words"
@@ -113,6 +108,11 @@
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt M"/>
     </action>
+    <!--<action id="vladsaif.syncedit.plugin.actions.ManageScriptTranscriptRelations"-->
+    <!--class="vladsaif.syncedit.plugin.actions.sdf"-->
+    <!--text="sdfsd">-->
+    <!--<add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="SynchronizeCurrentFile"/>-->
+    <!--</action>-->
   </actions>
   <application-components>
     <component>

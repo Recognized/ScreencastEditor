@@ -1,13 +1,10 @@
 package vladsaif.syncedit.plugin.actions
 
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.recognition.GCredentialProvider
 import java.io.File
@@ -25,20 +22,11 @@ class SetCredentialsAction : AnAction() {
         try {
           GCredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
           ApplicationManager.getApplication().invokeLater {
-            Notification(
-                "Screencast Editor",
-                "Credentials",
-                "Credentials are successfully installed: \"${file.path}\"",
-                NotificationType.INFORMATION
-            ).notify(e.project)
+            infoCredentialsOK(e.project, file)
           }
         } catch (ex: IOException) {
           ApplicationManager.getApplication().invokeLater {
-            Messages.showErrorDialog(
-                e.project,
-                "Not valid credentials file: \"${file.path}\"",
-                "Corrupted credentials"
-            )
+            errorCredentials(e.project, file)
           }
         }
       }

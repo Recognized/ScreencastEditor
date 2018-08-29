@@ -13,7 +13,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFileFactory
@@ -109,27 +108,19 @@ class RecognizeAudioAction : AnAction() {
         ChooseRecognizerAction.currentRecognizer.checkRequirements()
         return true
       } catch (ex: IOException) {
-        Messages.showWarningDialog(
-            project,
-            ex.message ?: "Unknown error.",
-            "Requirements not satisfied"
-        )
+        errorRequirementsNotSatisfied(project, ex)
       }
       return false
     }
 
     fun runRecognitionTask(project: Project, model: MultimediaModel, audio: VirtualFile) {
-      try {
-        val recognizeTask = RecognizeTask(
-            project,
-            "Getting transcript for $audio",
-            File(audio.path).toPath(),
-            model
-        )
-        ProgressManager.getInstance().run(recognizeTask)
-      } catch (ex: IOException) {
-        Messages.showErrorDialog(project, ex.message, "I/O error occurred")
-      }
+      val recognizeTask = RecognizeTask(
+          project,
+          "Getting transcript for $audio",
+          File(audio.path).toPath(),
+          model
+      )
+      ProgressManager.getInstance().run(recognizeTask)
     }
 
   }
