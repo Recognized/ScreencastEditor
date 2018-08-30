@@ -109,11 +109,10 @@ class DiffModel(
     myEditorHoveredAttributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
     myEditorSelectionAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
     myEditorSelectionAttributes.backgroundColor = Settings.DIFF_SELECTED_COLOR
-    createHighlighters(bindings.map { it.lineRange })
+    bindings = createBindings(origin.data!!.words, scriptLinesToViewLines)
     editor.selectionModel.addSelectionListener { editorSelectionUpdated() }
     editor.addEditorMouseMotionListener(myEditorDragListener)
     editor.addEditorMouseListener(myEditorDragListener)
-    bindings = createBindings(origin.data!!.words, scriptLinesToViewLines)
     origin.addTranscriptDataListener(myDataListener)
   }
 

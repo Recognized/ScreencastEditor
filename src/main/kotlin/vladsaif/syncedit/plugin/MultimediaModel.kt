@@ -279,21 +279,32 @@ class MultimediaModel(
 
   fun createDefaultBinding() {
     val timedLines = TimeOffsetParser.parse(scriptPsi!!)
+    println(timedLines)
     val doc = scriptDoc!!
     val oldWords = data!!.words
     val newWords = mutableListOf<WordData>()
-    intersect(oldWords, timedLines, { a, b -> a.range.intersects(b.time) }) { word, range ->
-      val marker = if (range == null) {
+    val sorted = timedLines.sortedBy { it.time.length }
+    for (word in oldWords) {
+      var intersection = IRange.EMPTY_RANGE
+      var timeExtent = IRange.EMPTY_RANGE
+      if (!word.range.empty) {
+        for (x in sorted) {
+          if (word.range.intersects(x.time)) {
+            intersection += x.lines
+            timeExtent += x.time
+          }
+          if (word.range in timeExtent) break
+        }
+      }
+      val marker = if (word.range !in timeExtent || intersection.empty) {
         null
       } else {
-        val startLine = range.first.lines.start
-        val endLine = range.second.lines.end
-        doc.createRangeMarker(doc.getLineStartOffset(startLine), doc.getLineEndOffset(endLine))
+        doc.createRangeMarker(doc.getLineStartOffset(intersection.start), doc.getLineEndOffset(intersection.end))
       }
       newWords.add(word.copy(bindStatements = marker))
     }
     newWords.forEach(::println)
-    data!!.replaceWords(newWords.mapIndexed { index, x -> index to x })
+    data = data!!.replaceWords(newWords.mapIndexed { index, x -> index to x })
   }
 
   override fun dispose() {

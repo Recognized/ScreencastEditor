@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtScriptInitializer
 import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
 import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.intersect
 
 object TimeOffsetParser {
 
@@ -38,15 +37,7 @@ object TimeOffsetParser {
     }
     // Add initial (before whole script) timeOffset statement
     absoluteTimeOffsets.add(0, TimeOffset(-1, 0))
-    val timedLines = absoluteTimeOffsets.zipWithNext()
-        .map { (current, next) ->
-          TimedLines(
-              lines = IRange(current.line + 1, next.line - 1),
-              time = IRange(current.timeOffset, next.timeOffset)
-          )
-        }
-        .filter { it -> !it.time.empty && !it.lines.empty }
-    return constructTimedStatements(expressionsLines, timedLines)
+    return constructTimedStatements(expressionsLines, absoluteTimeOffsets)
   }
 
   /** This operation can be implemented easily with O(expressions.size * offsets.size) complexity.
@@ -57,43 +48,31 @@ object TimeOffsetParser {
    * @param expressions sorted.
    * @param offsets sorted.
    **/
-  private fun constructTimedStatements(expressions: List<IRange>, offsets: List<TimedLines>): List<TimedLines> {
-//    var searchHint = 0
-//    val timedStatements = mutableListOf<TimedLines>()
-//    for (expr in expressions) {
-//      var j = searchHint
-//      var startIntersection = IRange.EMPTY_RANGE
-//      var endIntersection = IRange.EMPTY_RANGE
-//      var lineLastIntersection = IRange.EMPTY_RANGE
-//      searchHint = offsets.size
-//      while (j < offsets.size) {
-//        val offset = offsets[j]
-//        if (expr.intersects(offset.lines)) {
-//          if (startIntersection.empty) {
-//            searchHint = j
-//            startIntersection = offset.time
-//          }
-//          lineLastIntersection = offset.lines
-//          endIntersection = offset.time
-//        } else if (!startIntersection.empty) {
-//          break
-//        }
-//        j++
-//      }
-//      if (!startIntersection.empty && lineLastIntersection.end >= expr.end) {
-//        timedStatements.add(TimedLines(lines = expr, time = IRange(startIntersection.start, endIntersection.end)))
-//      } else {
-//        timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))
-//      }
-//    }
-//    return timedStatements
+  private fun constructTimedStatements(expressions: List<IRange>, offsets: List<TimeOffset>): List<TimedLines> {
     val timedStatements = mutableListOf<TimedLines>()
-    intersect(expressions, offsets, { a, b -> a.intersects(b.lines) }) { expr, pair ->
-      if (pair != null && pair.second.lines.end >= expr.end) {
-        timedStatements.add(TimedLines(lines = expr, time = IRange(pair.first.time.start, pair.second.time.end)))
-      } else {
-        timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))
+    val intervals = offsets.sortedBy { it.line }
+    var j = 0
+    out@ for (expr in expressions) {
+      while (j < intervals.size) {
+        val interval = intervals[j]
+        if (interval.line <= expr.start) {
+          while (j < intervals.size && intervals[j].line <= expr.start) j++
+          j--
+          var i = j + 1
+          while (i < intervals.size) {
+            if (expr.end <= intervals[i].line) {
+              timedStatements.add(
+                  TimedLines(lines = expr, time = IRange(intervals[j].timeOffset, intervals[i].timeOffset))
+              )
+              continue@out
+            }
+            i++
+          }
+          break
+        }
+        j++
       }
+      timedStatements.add(TimedLines(lines = expr, time = IRange.EMPTY_RANGE))
     }
     return timedStatements
   }

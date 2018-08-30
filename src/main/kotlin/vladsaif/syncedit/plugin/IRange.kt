@@ -1,9 +1,9 @@
 package vladsaif.syncedit.plugin
 
-import java.util.*
 import javax.xml.bind.annotation.XmlAccessType
 import javax.xml.bind.annotation.XmlAccessorType
 import javax.xml.bind.annotation.XmlAttribute
+import kotlin.Comparator
 import kotlin.math.max
 import kotlin.math.min
 
@@ -63,6 +63,12 @@ data class IRange(
     else -> end
   }
 
+  operator fun plus(other: IRange): IRange {
+    if (empty || this in other) return other
+    if (other.empty || other in this) return this
+    return IRange(min(start, other.start), max(end, other.end))
+  }
+
   override fun compareTo(other: IRange): Int {
     return start - other.start
   }
@@ -98,56 +104,51 @@ data class IRange(
 }
 
 /**
- * @param Left type that has full order
- * @param Right type that has full order
- * @param left sorted in ascending order
- * @param right sorted in ascending order
- * @param isIntersects function that says if both it arguments are intersecting
+ * @param left sorted in ascending order by key extracted with [leftExtractor]
+ * @param right sorted in ascending order by key extracted with [rightExtractor]
  * @param consumer takes element from [left] list and most intersecting range of elements from right
  */
-fun <Left : Comparable<Left>, Right : Comparable<Right>> intersect(
-    left: List<Left>,
-    right: List<Right>,
-    isIntersects: (Left, Right) -> Boolean,
-    consumer: (Left, Pair<Right, Right>?) -> Unit
-) {
-  assert(left.zipWithNext().all { (first, next) -> first <= next })
-  assert(right.zipWithNext().all { (first, next) -> first <= next })
-  var searchHint = 0
-  for (element in left) {
-    var j = searchHint
-    var startIntersection: Right? = null
-    var endIntersection: Right? = null
-    searchHint = right.size
-    while (j < right.size) {
-      val arg = right[j]
-      if (isIntersects(element, arg)) {
-        if (startIntersection == null) {
-          searchHint = j
-          startIntersection = arg
-        }
-        endIntersection = arg
-      } else if (startIntersection != null) {
-        break
-      }
-      j++
-    }
-    consumer(
-        element,
-        if (startIntersection == null || endIntersection == null) null
-        else startIntersection to endIntersection
-    )
-  }
-}
-
-fun <Left : Comparable<Left>, Right : Comparable<Right>> intersect(
-    left: List<Left>,
-    right: List<Right>,
-    isIntersects: (Left, Right) -> Boolean
-): Map<Left, Pair<Right, Right>> {
-  val map = mutableMapOf<Left, Pair<Right, Right>>()
-  intersect(left, right, isIntersects) { x, y ->
-    if (y != null) map[x] = y
-  }
-  return map
-}
+//fun intersect(
+//    left: List<IRange>,
+//    right: List<IRange>,
+//    consumer: (IRange, IRange) -> Unit
+//) {
+//  assert(left.zipWithNext().all { (prev, next) -> prev <= next })
+//  assert(right.zipWithNext().all { (prev, next) -> prev <= next })
+//  var searchHint = 0
+//  for (element in left) {
+//    var j = searchHint
+//    var intersection = IRange.EMPTY_RANGE
+//    out@ while (j < right.size) {
+//      val arg = right[j]
+//      val cmp = IRange.INTERSECTS_CMP.compare(element, arg)
+//      when {
+//        cmp == 0 -> {
+//          if (intersection.empty) {
+//            searchHint = j
+//          }
+//          intersection += arg
+//        }
+//        cmp < 0 -> {
+//          if (intersection.empty) {
+//            searchHint = j
+//          }
+//          break@out
+//        }
+//        cmp > 0 -> {
+//          searchHint = j
+//        }
+//      }
+//      j++
+//    }
+//    consumer(element, intersection)
+//  }
+//}
+//
+//fun intersect(left: List<IRange>, right: List<IRange>): Map<IRange, IRange> {
+//  val map = mutableMapOf<IRange, IRange>()
+//  intersect(left, right) { a, b ->
+//    if (!b.empty) map[a] = b
+//  }
+//  return map
+//}
