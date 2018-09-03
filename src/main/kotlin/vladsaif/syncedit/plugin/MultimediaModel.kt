@@ -318,6 +318,21 @@ class MultimediaModel(
     scriptFile = null
   }
 
+  override fun toString(): String {
+    return """
+      MultimediaModel(
+      project=$project,
+      xmlFile=$xmlFile,
+      transcriptFile=$transcriptFile,
+      transcriptPsi=${if (transcriptPsi != null) "OK" else "null"},
+      scriptFile=$scriptFile,
+      scriptPsi=${if (scriptPsi != null) "OK" else "null"},
+      audioFile=$audioFile
+      data=$data
+    """.trimIndent()
+  }
+
+
   companion object {
     private val LOG = logger<MultimediaModel>()
     private val fileModelMap = ContainerUtil.newConcurrentMap<VirtualFile, MultimediaModel>()
@@ -328,6 +343,10 @@ class MultimediaModel(
 
     fun get(virtualFile: VirtualFile): MultimediaModel? {
       return fileModelMap[virtualFile]
+    }
+
+    fun getAll(): List<MultimediaModel> {
+      return fileModelMap.values.toList()
     }
   }
 }

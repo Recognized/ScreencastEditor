@@ -10,8 +10,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TextItem(
-    val text: String,
-    val number: Int
+    val text: String
 ) : JBPanel<TextItem>() {
   private val availableWidth get() = max(width - with(insets) { left + right } - 10.scale(), 0)
   private var myCharSize: Int

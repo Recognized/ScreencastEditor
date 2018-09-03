@@ -9,7 +9,7 @@ import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.SoundProvider
 import javax.sound.sampled.UnsupportedAudioFileException
 
-class BindAudioWithScript : AnAction() {
+class BindAction : AnAction() {
   override fun actionPerformed(e: AnActionEvent?) {
     val project = e?.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()

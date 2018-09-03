@@ -7,14 +7,20 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFileFactory
 import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.TranscriptData
 import vladsaif.syncedit.plugin.WordData
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
+import vladsaif.syncedit.plugin.recognition.GCredentialProvider
+import java.io.File
 
 class FakeRecognition : AnAction() {
   override fun actionPerformed(e: AnActionEvent?) {
     val demo = "file://C:/Users/User/IdeaProjects/empty/demo.wav"
-    val waveform = OpenAudioAction.openAudio(e!!.project!!, VirtualFileManager.getInstance().findFileByUrl(demo)!!)!!
+    val script = "file://C:/Users/User/IdeaProjects/empty/src/script.kts"
+    val audioFile = VirtualFileManager.getInstance().findFileByUrl(demo)!!
+    val scriptFile = VirtualFileManager.getInstance().findFileByUrl(script)!!
+    val waveform = OpenAudioAction.openAudio(e!!.project!!, audioFile)!!
     val data = listOf(
         WordData("one big word that maybe result of some concatenation", IRange(1000, 2000)),
         WordData("two", IRange(2000, 3000)),
@@ -41,6 +47,12 @@ class FakeRecognition : AnAction() {
         )
         waveform.multimediaModel.setAndReadXml(xml.virtualFile)
         FileEditorManager.getInstance(e.project!!).openFile(xml.virtualFile, true)
+        GCredentialProvider.Instance.setGCredentialsFile(File("C:\\Speech Recognition-6c95bfc37ca2.json").toPath())
+        val modelAudio = MultimediaModel.get(audioFile)
+        val modelScript = MultimediaModel.get(scriptFile)
+        val newModel = modelAudio ?: modelScript ?: MultimediaModel(e.project!!)
+        newModel.audioFile = audioFile
+        newModel.scriptFile = scriptFile
       }
     }
   }

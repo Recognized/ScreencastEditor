@@ -60,12 +60,20 @@ import kotlin.math.min
 object DiffDialogFactory {
 
   fun showWindow(model: MultimediaModel) {
+    println(model)
+    println(MultimediaModel.getAll())
     val holder = JPanel(GridBagLayout())
     holder.border = BorderFactory.createEmptyBorder()
     val (splitter, diffModel) = createSplitter(model)
-    val vertical = createBoxedPanel()
-    vertical.add(createTitle(model))
-    vertical.add(splitter)
+    val vertical = JPanel(GridBagLayout())
+    vertical.add(
+        createTitle(model),
+        GridBagBuilder().fill(HORIZONTAL).gridx(0).gridy(0).weightx(1.0).weighty(0.0).done()
+    )
+    vertical.add(
+        splitter,
+        GridBagBuilder().fill(BOTH).gridx(0).gridy(1).weightx(1.0).weighty(1.0).done()
+    )
     holder.add(
         createToolbar(diffModel).component,
         GridBagBuilder().anchor(WEST).fill(HORIZONTAL).gridx(0).gridy(0).weighty(0.0).weightx(1.0).done()
@@ -109,68 +117,43 @@ object DiffDialogFactory {
     return panel
   }
 
-  private fun createToolbar(diffModel: DiffModel): ActionToolbar {
+  private fun createToolbar(diffViewModel: DiffViewModel): ActionToolbar {
     val group = DefaultActionGroup()
     group.addAction(
         "Bind",
         "Associate selected",
         AllIcons.General.Add,
-        { diffModel.bindSelected() },
-        { !diffModel.selectedItems.empty && !diffModel.editorSelectionRange.empty })
+        { diffViewModel.bindSelected() },
+        { !diffViewModel.selectedItems.empty && !diffViewModel.editorSelectionRange.empty })
     group.addAction(
         "Unbind",
         "Remove associations",
         AllIcons.General.Remove,
-        { diffModel.unbindSelected() },
-        { !diffModel.selectedItems.empty })
+        { diffViewModel.unbindSelected() },
+        { !diffViewModel.selectedItems.empty })
     group.addAction(
         "Undo",
         "Undo last action",
         AllIcons.Actions.Undo,
-        { diffModel.undo() },
-        { diffModel.isUndoAvailable })
+        { diffViewModel.undo() },
+        { diffViewModel.isUndoAvailable })
     group.addAction(
         "Redo",
         "",
         AllIcons.Actions.Redo,
-        { diffModel.redo() },
-        { diffModel.isRedoAvailable })
+        { diffViewModel.redo() },
+        { diffViewModel.isRedoAvailable })
     group.addAction(
         "Reset",
         "Reset all changes",
         AllIcons.Actions.Reset,
-        { diffModel.resetChanges() },
+        { diffViewModel.resetChanges() },
         { true })
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 
-  private fun createLineConverter(model: MultimediaModel): Pair<(IRange) -> IRange, (IRange) -> IRange> {
-    val document = model.scriptDoc!!
-    val shiftedLines = IntArray(document.lineCount) { it }
-    val backwardLines = IntArray(document.lineCount)
-    BlockVisitor.visit(model.scriptPsi!!) {
-      if (TimeOffsetParser.isTimeOffset(it)) {
-        shiftedLines[document.getLineNumber(it.textOffset)] = -1
-      }
-    }
-    var accumulator = 0
-    for ((index, x) in shiftedLines.withIndex()) {
-      if (x == -1) accumulator++
-      backwardLines[index] = x - accumulator
-    }
-    var pos = 0
-    for (x in shiftedLines) {
-      if (x == -1) continue
-      shiftedLines[pos++] = x
-    }
-    return { it: IRange ->
-      IRange(shiftedLines[it.start], shiftedLines[it.end])
-    } to { it: IRange ->
-      IRange(backwardLines[it.start], backwardLines[it.end])
-    }
-  }
 
-  private fun createSplitter(model: MultimediaModel): Pair<Splitter, DiffModel> {
+  private fun createSplitter(model: MultimediaModel): Pair<Splitter, DiffViewModel> {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
     val textPanel = pane.viewport.view as TextItemPanel
@@ -178,8 +161,7 @@ object DiffDialogFactory {
       model.createDefaultBinding()
       model.isNeedInitialBind = false
     }
-    val (viewToScript, scriptToView) = createLineConverter(model)
-    val diffModel = DiffModel(model, editorView.editor as EditorEx, textPanel.cast(), viewToScript, scriptToView)
+    val diffModel = DiffViewModel(DiffModel(model), editorView.editor as EditorEx, textPanel.cast())
     val leftDragListener = object : MouseDragListener() {
       override fun onDrag(point: Point) {
         diffModel.selectHeightRange(IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y)))
@@ -261,12 +243,12 @@ object DiffDialogFactory {
     panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
     val words = psi.model!!.data!!.words
     var needAddSeparator = false
-    for ((index, word) in words.withIndex()) {
+    for (word in words) {
       if (word.state == WordData.State.EXCLUDED) continue
       if (needAddSeparator) {
         panel.add(Box.createRigidArea(Dimension(0, JBUI.scale(1))))
       }
-      panel.add(TextItem(word.filteredText, index))
+      panel.add(TextItem(word.filteredText))
       needAddSeparator = true
     }
     val pane = JBScrollPane(panel)

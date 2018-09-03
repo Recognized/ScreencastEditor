@@ -48,9 +48,9 @@
               class="vladsaif.syncedit.plugin.actions.RecognizeAudioAction"
               text="Open and recognize audio"
               description="Get transcript of audio and open it"/>
-      <action id="vladsaif.syncedit.plugin.actions.BindAudioWithScript"
+      <action id="vladsaif.syncedit.plugin.actions.BindAction"
               icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.actions.BindAudioWithScript"
+              class="vladsaif.syncedit.plugin.actions.BindAction"
               text="Bind audio and script file"
               description="Associate selected audio file with script file"/>
       <action id="vladsaif.syncedit.plugin.actions.FakeRecognition"
