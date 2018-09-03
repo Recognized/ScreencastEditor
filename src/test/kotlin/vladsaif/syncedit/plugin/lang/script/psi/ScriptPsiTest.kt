@@ -1,10 +1,9 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.lang.script.psi
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import java.util.*
 
 open class ScriptPsiTest : LightCodeInsightFixtureTestCase() {

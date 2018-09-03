@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.lang.script.psi
 
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
@@ -6,8 +6,7 @@ import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.junit.Test
-import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
-import vladsaif.syncedit.plugin.lang.script.psi.TimedLines
+import vladsaif.syncedit.plugin.IRange
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 

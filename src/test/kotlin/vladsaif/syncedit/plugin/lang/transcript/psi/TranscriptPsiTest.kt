@@ -1,10 +1,7 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.lang.transcript.psi
 
 import com.intellij.psi.AbstractReparseTestCase
 import com.intellij.psi.util.PsiTreeUtil
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import java.util.*
 
 class TranscriptPsiTest : AbstractReparseTestCase() {
