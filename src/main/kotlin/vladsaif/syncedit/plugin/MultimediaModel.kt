@@ -131,10 +131,10 @@ class MultimediaModel(
 
   private fun setDependencies(oldValue: VirtualFile?, value: VirtualFile?) {
     if (oldValue != null) {
-      fileModelMap.remove(oldValue)
+      FILE_MODEL_MAP.remove(oldValue)
     }
     if (value != null) {
-      fileModelMap[value] = this
+      FILE_MODEL_MAP[value] = this
     }
   }
 
@@ -203,7 +203,6 @@ class MultimediaModel(
 
   fun updateTranscript() {
     val nonNullData = data ?: return
-//    transcriptFile?.setBinaryContent(nonNullData.text.toByteArray(charset = Charset.forName("UTF-8")))
     transcriptFile.updateDoc { doc ->
       with(PsiDocumentManager.getInstance(project)) {
         doPostponedOperationsAndUnblockDocument(doc)
@@ -279,7 +278,6 @@ class MultimediaModel(
 
   fun createDefaultBinding() {
     val timedLines = TimeOffsetParser.parse(scriptPsi!!)
-    println(timedLines)
     val doc = scriptDoc!!
     val oldWords = data!!.words
     val newWords = mutableListOf<WordData>()
@@ -303,14 +301,14 @@ class MultimediaModel(
       }
       newWords.add(word.copy(bindStatements = marker))
     }
-    newWords.forEach(::println)
     data = data!!.replaceWords(newWords.mapIndexed { index, x -> index to x })
   }
 
   override fun dispose() {
     myListeners.clear()
-    xmlFile?.let { fileModelMap.remove(it) }
-    transcriptFile?.let { fileModelMap.remove(it) }
+    xmlFile?.let { FILE_MODEL_MAP.remove(it) }
+    transcriptFile?.let { FILE_MODEL_MAP.remove(it) }
+    scriptFile?.let { FILE_MODEL_MAP.remove(it) }
     data = null
     xmlFile = null
     transcriptFile = null
@@ -335,18 +333,18 @@ class MultimediaModel(
 
   companion object {
     private val LOG = logger<MultimediaModel>()
-    private val fileModelMap = ContainerUtil.newConcurrentMap<VirtualFile, MultimediaModel>()
+    private val FILE_MODEL_MAP = ContainerUtil.newConcurrentMap<VirtualFile, MultimediaModel>()
 
     fun getOrCreate(project: Project, xmlFile: VirtualFile): MultimediaModel {
-      return fileModelMap[xmlFile] ?: MultimediaModel(project)
+      return FILE_MODEL_MAP[xmlFile] ?: MultimediaModel(project)
     }
 
     fun get(virtualFile: VirtualFile): MultimediaModel? {
-      return fileModelMap[virtualFile]
+      return FILE_MODEL_MAP[virtualFile]
     }
 
     fun getAll(): List<MultimediaModel> {
-      return fileModelMap.values.toList()
+      return FILE_MODEL_MAP.values.toList()
     }
   }
 }
