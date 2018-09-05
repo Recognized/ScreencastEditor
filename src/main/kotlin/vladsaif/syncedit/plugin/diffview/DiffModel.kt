@@ -30,10 +30,13 @@ class DiffModel(
   private val myRedoStack = ArrayDeque<TranscriptData>(1)
   private val myShiftedLines: IntArray
   private val myBackwardLines: IntArray
+  private var myChangesWereMade = false
+
   private val myListeners = mutableSetOf<(List<Binding>, List<Binding>) -> Unit>()
 
   private val myDataListener = object : MultimediaModel.Listener {
     override fun onTranscriptDataChanged() {
+      myChangesWereMade = origin.data != myTranscriptDataOnStart
       bindings = createBindings(origin.data!!.words, this@DiffModel::scriptLinesToVisibleLines)
     }
   }
@@ -45,8 +48,6 @@ class DiffModel(
   override fun dispose() {
     origin.removeTranscriptDataListener(myDataListener)
   }
-
-  var changesWereMade = false
 
   fun addBindingsListener(listener: (List<Binding>, List<Binding>) -> Unit) {
     myListeners.add(listener)
@@ -88,15 +89,16 @@ class DiffModel(
   private fun scriptLinesToVisibleLines(line: IRange) = IRange(myBackwardLines[line.start], myBackwardLines[line.end])
 
   fun resetChanges() {
-    if (!changesWereMade) return
+    if (!myChangesWereMade) return
     myRedoStack.clear()
     if (myUndoStack.size == UNDO_STACK_LIMIT) {
       myUndoStack.removeLast()
     }
     myUndoStack.push(origin.data)
     origin.data = myTranscriptDataOnStart
-    changesWereMade = false
   }
+
+  val isResetAvailable get() = myChangesWereMade
 
   val isUndoAvailable get() = !myUndoStack.isEmpty()
 
@@ -125,7 +127,6 @@ class DiffModel(
   }
 
   private fun bindUnbind(isBind: Boolean, itemRange: IRange, editorLines: IRange) {
-    changesWereMade = true
     val oldWords = origin.data!!.words
     myRedoStack.clear()
     val convertedRange = visibleLinesToScriptLines(editorLines)
