@@ -31,7 +31,6 @@ class DiffModel(
   private val myShiftedLines: IntArray
   private val myBackwardLines: IntArray
   private var myChangesWereMade = false
-
   private val myListeners = mutableSetOf<(List<Binding>, List<Binding>) -> Unit>()
 
   private val myDataListener = object : MultimediaModel.Listener {
