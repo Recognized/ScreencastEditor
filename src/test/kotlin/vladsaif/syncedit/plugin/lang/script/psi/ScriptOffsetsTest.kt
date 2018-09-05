@@ -2,19 +2,13 @@ package vladsaif.syncedit.plugin.lang.script.psi
 
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import org.jetbrains.kotlin.idea.KotlinLanguage
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.junit.Test
 import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.createKtFile
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
-
-  private fun createKtFile(text: String): KtFile {
-    return createLightFile("file.kts", KotlinLanguage.INSTANCE, text).cast()
-  }
 
   private fun extractPsiElement(text: String): PsiElement? {
     val file = createKtFile(text)

@@ -22,7 +22,6 @@ class TextFormatterTest {
     }
   }
 
-
   @Test
   fun `test very short line`() {
     val split = TextFormatter.splitText(myText, 0)
