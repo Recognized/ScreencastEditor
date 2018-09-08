@@ -9,8 +9,7 @@ import vladsaif.syncedit.plugin.diffview.DiffDialogFactory
 
 class ManageScriptTranscriptRelations : AnAction() {
 
-  override fun actionPerformed(e: AnActionEvent?) {
-    e ?: return
+  override fun actionPerformed(e: AnActionEvent) {
     val project = e.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     FileChooser.chooseFile(descriptor, project, project.baseDir) {

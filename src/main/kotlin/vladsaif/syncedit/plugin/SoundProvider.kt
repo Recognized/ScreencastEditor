@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin
 import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader
-import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
 import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
@@ -19,7 +18,7 @@ import kotlin.concurrent.thread
  * but only to load them from reading specially formatted files in META-INF/services directory.
  */
 object SoundProvider {
-  private val LOG = logger<GSpeechKit>()
+  private val LOG = logger<SoundProvider>()
   private val MPEG_PROVIDER = MpegFormatConversionProvider()
   private val MPEG_FILE_READER = MpegAudioFileReader()
 

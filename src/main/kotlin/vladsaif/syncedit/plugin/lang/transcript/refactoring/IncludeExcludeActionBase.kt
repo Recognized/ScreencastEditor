@@ -17,8 +17,7 @@ abstract class IncludeExcludeActionBase : AnAction() {
 
   abstract fun doAction(model: MultimediaModel, words: List<TranscriptWord>)
 
-  override fun actionPerformed(e: AnActionEvent?) {
-    e ?: return
+  override fun actionPerformed(e: AnActionEvent) {
     val project = e.getRequiredData(CommonDataKeys.PROJECT)
     val editor = e.getRequiredData(CommonDataKeys.EDITOR)
     val psi = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as TranscriptPsiFile
@@ -36,8 +35,7 @@ abstract class IncludeExcludeActionBase : AnAction() {
     }, this.javaClass.simpleName, "ScreencastEditor", editor.document)
   }
 
-  override fun update(e: AnActionEvent?) {
-    e ?: return
+  override fun update(e: AnActionEvent) {
     val context = e.dataContext
     val project = context.getData(CommonDataKeys.PROJECT)
     val editor = context.getData(CommonDataKeys.EDITOR)

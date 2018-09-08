@@ -30,8 +30,7 @@ import java.nio.file.Path
 
 class RecognizeAudioAction : AnAction() {
 
-  override fun actionPerformed(e: AnActionEvent?) {
-    e ?: return
+  override fun actionPerformed(e: AnActionEvent) {
     val project = e.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     if (!checkRequirements(project)) return

@@ -10,8 +10,8 @@ import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
 class FakeRecording : AnAction() {
-  override fun actionPerformed(e: AnActionEvent?) {
-    val path = Paths.get(e!!.project!!.basePath, "heheh.wav")
+  override fun actionPerformed(e: AnActionEvent) {
+    val path = Paths.get(e.project!!.basePath, "heheh.wav")
     println(path.toAbsolutePath())
     SoundRecorder.startRecording(path)
     launch {

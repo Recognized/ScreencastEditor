@@ -15,12 +15,12 @@ import vladsaif.syncedit.plugin.recognition.GCredentialProvider
 import java.io.File
 
 class FakeRecognition : AnAction() {
-  override fun actionPerformed(e: AnActionEvent?) {
+  override fun actionPerformed(e: AnActionEvent) {
     val demo = "file://C:/Users/User/IdeaProjects/empty/demo.wav"
     val script = "file://C:/Users/User/IdeaProjects/empty/src/script.kts"
     val audioFile = VirtualFileManager.getInstance().findFileByUrl(demo)!!
     val scriptFile = VirtualFileManager.getInstance().findFileByUrl(script)!!
-    val waveform = OpenAudioAction.openAudio(e!!.project!!, audioFile)!!
+    val waveform = OpenAudioAction.openAudio(e.project!!, audioFile)!!
     val data = listOf(
         WordData("one big word that maybe result of some concatenation", IRange(1000, 2000)),
         WordData("two", IRange(2000, 3000)),

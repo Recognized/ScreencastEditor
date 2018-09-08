@@ -113,7 +113,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
         val template = buildTemplate(word)
 
         TemplateManager.getInstance(project).startTemplate(editor, template, object : TemplateEditingAdapter() {
-          override fun templateFinished(template: Template?, brokenOff: Boolean) {
+          override fun templateFinished(template: Template, brokenOff: Boolean) {
             acceptTemplate()
           }
 

@@ -14,8 +14,7 @@ import javax.sound.sampled.UnsupportedAudioFileException
 
 class OpenAudioAction : AnAction() {
 
-  override fun actionPerformed(e: AnActionEvent?) {
-    e ?: return
+  override fun actionPerformed(e: AnActionEvent) {
     val project = e.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     FileChooser.chooseFile(descriptor, project, project.projectFile) {

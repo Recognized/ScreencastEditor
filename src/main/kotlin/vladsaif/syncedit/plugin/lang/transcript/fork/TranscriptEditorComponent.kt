@@ -238,7 +238,7 @@ class TranscriptEditorComponent(
       }
     }
 
-    override fun documentChanged(e: DocumentEvent?) {
+    override fun documentChanged(e: DocumentEvent) {
       if (!myUpdateScheduled) {
         // document's timestamp is changed later on undo or PSI changes
         ApplicationManager.getApplication().invokeLater(myUpdateRunnable)

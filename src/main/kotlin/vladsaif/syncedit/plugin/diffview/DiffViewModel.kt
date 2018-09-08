@@ -5,6 +5,8 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.impl.DefaultColorsScheme
+import com.intellij.openapi.editor.event.SelectionEvent
+import com.intellij.openapi.editor.event.SelectionListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
@@ -175,7 +177,11 @@ class DiffViewModel(
     myEditorHoveredAttributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
     myEditorSelectionAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
     myEditorSelectionAttributes.backgroundColor = Settings.DIFF_SELECTED_COLOR
-    editor.selectionModel.addSelectionListener { editorSelectionUpdated() }
+    editor.selectionModel.addSelectionListener(object : SelectionListener {
+      override fun selectionChanged(e: SelectionEvent) {
+        editorSelectionUpdated()
+      }
+    })
     editor.addEditorMouseMotionListener(myEditorDragListener)
     editor.addEditorMouseListener(myEditorDragListener)
     onBindingsUpdate(listOf(), diffModel.bindings)

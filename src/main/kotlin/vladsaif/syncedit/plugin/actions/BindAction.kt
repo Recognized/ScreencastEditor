@@ -10,8 +10,8 @@ import vladsaif.syncedit.plugin.SoundProvider
 import javax.sound.sampled.UnsupportedAudioFileException
 
 class BindAction : AnAction() {
-  override fun actionPerformed(e: AnActionEvent?) {
-    val project = e?.project ?: return
+  override fun actionPerformed(e: AnActionEvent) {
+    val project = e.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     descriptor.description = "Choose audio file"
     descriptor.title = "Bind audio and script"

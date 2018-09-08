@@ -41,8 +41,7 @@ class ConcatenateAction : AnAction() {
     model.concatenateWords(IRange(first, last))
   }
 
-  override fun update(e: AnActionEvent?) {
-    e ?: return
+  override fun update(e: AnActionEvent) {
     val state = getStateContext(e.dataContext)
     e.presentation.isEnabled = state == State.ENABLED
     e.presentation.isVisible = state != State.HIDDEN

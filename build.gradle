@@ -87,15 +87,24 @@ repositories {
 }
 
 project.afterEvaluate {
-    def unwantedArtifacts = ["kotlinx-coroutines-core-0.20.jar", "kotlinx-coroutines-jdk8-0.20.jar"]
+    def unwantedArtifacts = [
+            "kotlinx-coroutines-core-0.20.jar",
+            "kotlinx-coroutines-jdk8-0.20.jar",
+            "kotlinx-coroutines-core-0.22.5.jar",
+            "kotlinx-coroutines-jdk8-0.22.5.jar"
+    ]
 
     def excludedFiles = configurations.compileOnly.resolvedConfiguration.resolvedArtifacts.findAll {
+        println(it.file.absolutePath)
         it.file.name in unwantedArtifacts
     }*.file
-
+    println(excludedFiles)
     sourceSets {
         main {
             compileClasspath -= files(excludedFiles)
+            compileClasspath.files.forEach {
+                println(it)
+            }
         }
         test {
             compileClasspath -= files(excludedFiles)

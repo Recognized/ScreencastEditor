@@ -20,13 +20,13 @@ object AudioToolWindowManager {
     val toolWindow = manager.getToolWindow(myToolWindowId)
         ?: manager.registerToolWindow(myToolWindowId, true, ToolWindowAnchor.BOTTOM).also {
           it.contentManager.addContentManagerListener(object : ContentManagerListener {
-            override fun contentAdded(event: ContentManagerEvent?) = Unit
+            override fun contentAdded(event: ContentManagerEvent) = Unit
 
-            override fun contentRemoveQuery(event: ContentManagerEvent?) = Unit
+            override fun contentRemoveQuery(event: ContentManagerEvent) = Unit
 
-            override fun selectionChanged(event: ContentManagerEvent?) = Unit
+            override fun selectionChanged(event: ContentManagerEvent) = Unit
 
-            override fun contentRemoved(event: ContentManagerEvent?) {
+            override fun contentRemoved(event: ContentManagerEvent) {
               it.setAvailable(false, null)
             }
           })

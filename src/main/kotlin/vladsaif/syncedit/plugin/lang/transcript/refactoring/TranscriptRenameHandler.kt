@@ -12,10 +12,9 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
 import vladsaif.syncedit.plugin.lang.transcript.psi.getWord
 
 class TranscriptRenameHandler : RenameHandler {
-  override fun isRenaming(dataContext: DataContext?) = isAvailableOnDataContext(dataContext)
+  override fun isRenaming(dataContext: DataContext) = isAvailableOnDataContext(dataContext)
 
-  override fun isAvailableOnDataContext(dataContext: DataContext?): Boolean {
-    dataContext ?: return false
+  override fun isAvailableOnDataContext(dataContext: DataContext): Boolean {
     val editor = getEditor(dataContext) ?: return false
     val file = CommonDataKeys.PSI_FILE.getData(dataContext) as? TranscriptPsiFile ?: return false
     return getWord(editor, file) != null || getSelectedWords(editor, file).any()
@@ -24,6 +23,7 @@ class TranscriptRenameHandler : RenameHandler {
   override fun invoke(project: Project, editor: Editor?, file: PsiFile?, dataContext: DataContext?) {
     editor ?: return
     file as? TranscriptPsiFile ?: return
+    dataContext ?: return
     if (!isRenaming(dataContext)) return
     val word = getWord(editor, file)
     if (word != null) {

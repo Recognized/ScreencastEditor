@@ -65,12 +65,12 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
 
 fun DefaultActionGroup.addAction(what: String, desc: String?, icon: Icon?, action: () -> Unit, checkAvailable: () -> Boolean) {
   this.add(object : AnAction(what, desc, icon) {
-    override fun actionPerformed(event: AnActionEvent?) {
+    override fun actionPerformed(event: AnActionEvent) {
       action()
     }
 
-    override fun update(e: AnActionEvent?) {
-      e?.presentation?.isEnabled = checkAvailable()
+    override fun update(e: AnActionEvent) {
+      e.presentation.isEnabled = checkAvailable()
     }
   })
 }

@@ -10,7 +10,7 @@ import javax.swing.JSpinner
 import javax.swing.SpinnerListModel
 
 class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecognizerAction.State> {
-  override fun actionPerformed(e: AnActionEvent?) {
+  override fun actionPerformed(e: AnActionEvent) {
     val builder = DialogBuilder()
     with(builder) {
       val spinner = JSpinner()
