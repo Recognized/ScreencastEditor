@@ -95,16 +95,12 @@ project.afterEvaluate {
     ]
 
     def excludedFiles = configurations.compileOnly.resolvedConfiguration.resolvedArtifacts.findAll {
-        println(it.file.absolutePath)
         it.file.name in unwantedArtifacts
     }*.file
-    println(excludedFiles)
+
     sourceSets {
         main {
             compileClasspath -= files(excludedFiles)
-            compileClasspath.files.forEach {
-                println(it)
-            }
         }
         test {
             compileClasspath -= files(excludedFiles)

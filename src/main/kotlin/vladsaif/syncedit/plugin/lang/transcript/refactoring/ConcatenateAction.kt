@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin.lang.transcript.refactoring
 
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
@@ -9,36 +8,19 @@ import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
-import vladsaif.syncedit.plugin.lang.transcript.psi.getElementBounds
-import vladsaif.syncedit.plugin.lang.transcript.psi.wordsBetween
+import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
 /**
  * Concatenates selected words into one big word.
  * Activated only if editor has selection.
  */
-class ConcatenateAction : AnAction() {
+class ConcatenateAction : TranscriptRefactoringAction() {
 
-  override fun actionPerformed(e: AnActionEvent) {
-    if (getStateContext(e.dataContext) != State.ENABLED) return
-    val editor = e.getRequiredData(CommonDataKeys.EDITOR)
-    val psi = PsiDocumentManager
-        .getInstance(e.project!!)
-        .getPsiFile(editor.document) as TranscriptPsiFile
-    val selection = IRange(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd - 1)
-    val model = psi.model ?: return
-    concatenateWords(model, selection, psi)
-  }
-
-  private fun concatenateWords(model: MultimediaModel, selection: IRange, psi: TranscriptPsiFile) {
-    val bounds = getElementBounds(selection, psi) ?: return
-    var first = -1
-    var last = -1
-    for (word in wordsBetween(bounds.first, bounds.second)) {
-      if (first == -1) first = word.number
-      last = word.number
-    }
-    if (first == -1) return
-    model.concatenateWords(IRange(first, last))
+  override fun doAction(model: MultimediaModel, words: List<TranscriptWord>) {
+    val first = words.firstOrNull() ?: return
+    val last = words.last()
+    LOG.info("Concatenating: ${words.map { it.text }}")
+    model.concatenateWords(IRange(first.number, last.number))
   }
 
   override fun update(e: AnActionEvent) {

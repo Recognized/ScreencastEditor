@@ -13,7 +13,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
 
-abstract class IncludeExcludeActionBase : AnAction() {
+abstract class TranscriptRefactoringAction : AnAction() {
 
   abstract fun doAction(model: MultimediaModel, words: List<TranscriptWord>)
 
