@@ -175,6 +175,7 @@ class MultimediaModel(
   private fun synchronizeTranscriptWithEditionModel() {
     val words = data?.words ?: return
     val audio = audioDataModel ?: return
+    editionModel.reset()
     for (word in words) {
       when (word.state) {
         EXCLUDED -> editionModel.cut(audio.msRangeToFrameRange(word.range))

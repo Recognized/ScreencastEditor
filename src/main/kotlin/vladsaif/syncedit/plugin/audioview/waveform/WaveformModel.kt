@@ -163,7 +163,6 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     private var start = 0L
     override fun run() {
       try {
-        println("Load started: $drawRange")
         start = System.currentTimeMillis()
         val model = myAudioDataProvider ?: return
         val computedResult = model.getAveragedSampleData(maxChunks, drawRange) { isActive }
@@ -181,7 +180,6 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
       }
       ApplicationManager.getApplication().invokeLater {
         callback()
-        println("Load finished: $drawRange, time = ${System.currentTimeMillis() - start}")
       }
     }
   }

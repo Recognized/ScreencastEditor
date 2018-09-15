@@ -46,4 +46,12 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
     myNoChangesRanges.union(frameRange)
     fireStateChanged()
   }
+
+  override fun reset() {
+    val infinity = LRange(0, Long.MAX_VALUE / 256)
+    myCutRanges.exclude(infinity)
+    myMuteRanges.exclude(infinity)
+    myNoChangesRanges.union(infinity)
+    fireStateChanged()
+  }
 }

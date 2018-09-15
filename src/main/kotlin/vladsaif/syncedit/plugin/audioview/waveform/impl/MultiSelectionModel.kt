@@ -68,7 +68,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     override fun mouseMoved(e: MouseEvent?) {
       e ?: return
       super.mouseMoved(e)
-      if (isOverBorder(e)) {
+      if (isOverBorder(e) && !e.isControlKeyDown) {
         e.component?.cursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
       } else {
         e.component?.cursor = Cursor.getDefaultCursor()
@@ -78,7 +78,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     override fun mouseClicked(e: MouseEvent?) {
       e ?: return
       super.mouseClicked(e)
-      if (!e.isLeftMousedButton) return
+      if (!e.isLeftMouseButton) return
       val model = myLocator ?: return
       val rangeUnderClick = model.getContainingWordRange(e.x)
       if (rangeUnderClick.empty) return
@@ -110,7 +110,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
         resetSelection()
         fireStateChanged()
       }
-      myIsPressedOverBorder = isOverBorder(start)
+      myIsPressedOverBorder = isOverBorder(start) && JBSwingUtilities.isRightMouseButton(start)
       if (myIsPressedOverBorder) {
         val number = getBorderNumber(start)
         myStartDifference = point.x - getBorder(number)
@@ -130,18 +130,18 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     override fun onDrag(point: Point) {
       val start = dragStartEvent ?: return
       when {
-        start.isControlKeyDown -> dragControlSelection(start.point, point)
+        start.isControlKeyDown && start.isLeftMouseButton -> dragControlSelection(start.point, point)
         myIsPressedOverBorder -> dragBorder(point)
-        else -> dragSelection(start.point, point)
+        start.isLeftMouseButton -> dragSelection(start.point, point)
       }
     }
 
     override fun onDragFinished(point: Point) {
       val start = dragStartEvent ?: return
       when {
-        start.isControlKeyDown -> dragSelectionFinished()
+        start.isControlKeyDown && start.isLeftMouseButton -> dragSelectionFinished()
         myIsPressedOverBorder -> dragBorderFinished()
-        else -> dragSelectionFinished()
+        start.isLeftMouseButton -> dragSelectionFinished()
       }
     }
   }
@@ -222,7 +222,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private val MouseEvent.isControlKeyDown get() = UIUtil.isControlKeyDown(this)
-  private val MouseEvent.isLeftMousedButton get() = JBSwingUtilities.isLeftMouseButton(this)
+  private val MouseEvent.isLeftMouseButton get() = JBSwingUtilities.isLeftMouseButton(this)
 
   private fun isOverBorder(e: MouseEvent): Boolean {
     return getBorderNumber(e) >= 0

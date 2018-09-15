@@ -32,7 +32,6 @@ class AudioSampler(
       if (skippedFrames != 0L) {
         underlyingStream.skipFramesMpeg(buffer, skippedFrames)
       }
-      println("Time to skip: ${System.currentTimeMillis() - start}")
     } else {
       if (skippedFrames != 0L) {
         underlyingStream.skipFrames(skippedFrames)

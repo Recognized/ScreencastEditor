@@ -30,12 +30,9 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
    * enable popup balloon with word text when hovering over a word.
    */
   fun installListeners() {
-    val mover = WordRangeMover(this)
     addMouseListener(selectionModel.dragListener)
-    addMouseListener(mover)
     addMouseMotionListener(selectionModel.dragListener)
     addMouseMotionListener(WordHintBalloonListener(this, model))
-    addMouseMotionListener(mover)
     selectionModel.enableWordSelection(model)
     selectionModel.addChangeListener(this)
     model.addChangeListener(this)

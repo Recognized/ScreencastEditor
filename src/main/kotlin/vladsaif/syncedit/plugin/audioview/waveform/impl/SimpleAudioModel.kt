@@ -132,7 +132,6 @@ class SimpleAudioModel(file: Path) : AudioDataModel {
       }
     }
     if (frameCounter != 0) {
-      println(frameCounter)
       data.forEachIndexed { index, x -> x.setChunk(frameCounter, chunkCounter, peaks[index]) }
     }
   }

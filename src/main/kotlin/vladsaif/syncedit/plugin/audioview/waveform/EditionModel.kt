@@ -31,4 +31,10 @@ interface EditionModel : ChangeNotifier {
    */
   fun undo(frameRange: LRange)
 
+
+  /**
+   * Reset all changes.
+   */
+  fun reset()
+
 }
