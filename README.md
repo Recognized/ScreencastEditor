@@ -78,6 +78,18 @@ to select range precisely (not by words).
 
 Editions made to an audio are synchronously applied to the script according to bindings.
 
+### Recognition
+
+In order to use speech recognition you need to obtain key to Service Account in Google Cloud Platform.
+
+Visit this [page](https://cloud.google.com/speech-to-text/docs/quickstart-client-libraries) and do the first step 
+(_Set up a GCP Console Project_).
+
+Before using recognition in plugin you will need to set this key.
+
+**Setting key**:
+_Tools_ menu → _Screencast Editor_ -> _Google Speech Kit_ -> _Set credentials_ (choose downloaded JSON key)
+
 ### Edit script
 
 // TODO: controls and logic
