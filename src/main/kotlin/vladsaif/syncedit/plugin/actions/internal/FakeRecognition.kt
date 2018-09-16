@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.actions
+package vladsaif.syncedit.plugin.actions.internal
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -11,6 +11,7 @@ import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.TranscriptData
 import vladsaif.syncedit.plugin.WordData
+import vladsaif.syncedit.plugin.actions.tools.OpenAudioAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
 import vladsaif.syncedit.plugin.recognition.GCredentialProvider
 import java.io.File
@@ -56,5 +57,9 @@ class FakeRecognition : AnAction() {
         newModel.scriptFile = scriptFile
       }
     }
+  }
+
+  override fun update(e: AnActionEvent) {
+    e.presentation.isEnabledAndVisible = ApplicationManager.getApplication().isInternal
   }
 }

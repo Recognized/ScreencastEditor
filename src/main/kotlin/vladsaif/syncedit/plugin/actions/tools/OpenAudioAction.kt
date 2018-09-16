@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.actions
+package vladsaif.syncedit.plugin.actions.tools
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -10,12 +10,14 @@ import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.withContext
 import vladsaif.syncedit.plugin.ExEDT
 import vladsaif.syncedit.plugin.SoundProvider
+import vladsaif.syncedit.plugin.actions.errorIO
+import vladsaif.syncedit.plugin.actions.errorUnsupportedAudioFile
 import vladsaif.syncedit.plugin.audioview.toolbar.AudioToolWindowManager
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 import java.io.IOException
 import javax.sound.sampled.UnsupportedAudioFileException
 
-class OpenAudioAction : AnAction() {
+open class OpenAudioAction : AnAction() {
 
   override fun actionPerformed(e: AnActionEvent) {
     val project = e.project ?: return

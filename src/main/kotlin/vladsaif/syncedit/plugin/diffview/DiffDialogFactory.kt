@@ -60,8 +60,6 @@ import kotlin.math.min
 object DiffDialogFactory {
 
   fun showWindow(model: MultimediaModel) {
-    println(model)
-    println(MultimediaModel.getAll())
     val holder = JPanel(GridBagLayout())
     holder.border = BorderFactory.createEmptyBorder()
     val (splitter, diffModel) = createSplitter(model)

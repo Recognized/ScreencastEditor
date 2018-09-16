@@ -8,10 +8,10 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import icons.ScreencastEditorIcons
 import icons.ScreencastEditorIcons.*
 import vladsaif.syncedit.plugin.MultimediaModel
-import vladsaif.syncedit.plugin.actions.RecognizeAudioAction
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
 import vladsaif.syncedit.plugin.audioview.waveform.Player
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.PLAY
+import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import javax.swing.Icon
 
 class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowPanel(false), Disposable {
@@ -50,10 +50,12 @@ class AudioToolWindowPanel(multimediaModel: MultimediaModel) : SimpleToolWindowP
         // updateXml()
         FileEditorManager.getInstance(project).openFile(xml, true, true)
       } else {
-        if (RecognizeAudioAction.checkRequirements(project)) {
-          RecognizeAudioAction.runRecognitionTask(project, this, audio)
+        if (SpeechRecognizer.checkRequirements(project)) {
+          if (SpeechRecognizer.RECOGNITION_IN_PROGRESS) {
+            return@with
+          }
+          SpeechRecognizer.runRecognitionTask(project, this, audio)
         }
-        Unit
       }
     }
   }

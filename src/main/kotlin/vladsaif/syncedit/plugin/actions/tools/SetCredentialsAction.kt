@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.actions
+package vladsaif.syncedit.plugin.actions.tools
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -6,6 +6,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.vfs.VirtualFile
+import vladsaif.syncedit.plugin.actions.errorCredentials
+import vladsaif.syncedit.plugin.actions.infoCredentialsOK
 import vladsaif.syncedit.plugin.recognition.GCredentialProvider
 import java.io.File
 import java.io.IOException

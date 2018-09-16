@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.actions
+package vladsaif.syncedit.plugin.actions.internal
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -20,5 +20,9 @@ class FakeRecording : AnAction() {
         SoundRecorder.stopRecording()
       }
     }
+  }
+
+  override fun update(e: AnActionEvent) {
+    e.presentation.isEnabledAndVisible = ApplicationManager.getApplication().isInternal
   }
 }

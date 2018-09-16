@@ -17,19 +17,19 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
       val elements = Extensions.getExtensions(SpeechRecognizer.EP_NAME).map { ElementWrapper(it) }
       println(elements)
       spinner.model = SpinnerListModel(elements)
-      spinner.value = ElementWrapper(currentRecognizer)
+      spinner.value = ElementWrapper(CURRENT_RECOGNIZER)
       setTitle("Choose recognizer")
       setCenterPanel(spinner)
       resizable(false)
       setOkOperation {
-        currentRecognizer = (spinner.value as ElementWrapper).src
+        CURRENT_RECOGNIZER = (spinner.value as ElementWrapper).src
         builder.dialogWrapper.close(0, true)
       }
       show()
     }
   }
 
-  class State(val recognizerName: String = currentRecognizer.name)
+  class State(val recognizerName: String = CURRENT_RECOGNIZER.name)
 
   override fun getState(): State? {
     return State()
@@ -38,7 +38,7 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
   override fun loadState(state: State) {
     for (recognizer in Extensions.getExtensions(SpeechRecognizer.EP_NAME)) {
       if (recognizer.name == state.recognizerName) {
-        currentRecognizer = recognizer
+        CURRENT_RECOGNIZER = recognizer
       }
     }
   }
@@ -56,7 +56,7 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
   }
 
   companion object {
-    internal var currentRecognizer: SpeechRecognizer = GSpeechKit()
+    internal var CURRENT_RECOGNIZER: SpeechRecognizer = GSpeechKit()
       private set
   }
 }
