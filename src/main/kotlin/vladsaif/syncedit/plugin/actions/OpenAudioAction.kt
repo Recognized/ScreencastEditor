@@ -6,6 +6,9 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.withContext
+import vladsaif.syncedit.plugin.ExEDT
 import vladsaif.syncedit.plugin.SoundProvider
 import vladsaif.syncedit.plugin.audioview.toolbar.AudioToolWindowManager
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
@@ -18,23 +21,40 @@ class OpenAudioAction : AnAction() {
     val project = e.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     FileChooser.chooseFile(descriptor, project, project.projectFile) {
-      openAudio(project, it)
+      ACTION_IN_PROGRESS = true
+      launch {
+        openAudio(project, it)
+      }
     }
   }
 
-  companion object {
+  override fun update(e: AnActionEvent) {
+    e.presentation.isEnabled = !ACTION_IN_PROGRESS
+  }
 
-    fun openAudio(project: Project, file: VirtualFile): WaveformModel? {
+  companion object {
+    @Volatile
+    private var ACTION_IN_PROGRESS = false
+
+    suspend fun openAudio(project: Project, file: VirtualFile): WaveformModel? {
+      ACTION_IN_PROGRESS = true
       return try {
         file.inputStream.use { SoundProvider.getAudioFileFormat(it) }
         AudioToolWindowManager.openAudioFile(project, file)
       } catch (ex: UnsupportedAudioFileException) {
-        errorUnsupportedAudioFile(project, file)
+        withContext(ExEDT) {
+          errorUnsupportedAudioFile(project, file)
+        }
         null
       } catch (ex: IOException) {
-        errorIO(project, ex)
+        withContext(ExEDT) {
+          errorIO(project, ex)
+        }
         null
+      } finally {
+        ACTION_IN_PROGRESS = false
       }
     }
   }
 }
+

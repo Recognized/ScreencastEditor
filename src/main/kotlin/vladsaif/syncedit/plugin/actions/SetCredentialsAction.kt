@@ -17,6 +17,7 @@ class SetCredentialsAction : AnAction() {
     descriptor.title = "Choose file with credentials"
     descriptor.description = "Choose file with credentials that are used in cloud recognition service."
     FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
+      ACTION_IN_PROGRESS = true
       ApplicationManager.getApplication().executeOnPooledThread {
         try {
           GCredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
@@ -27,8 +28,15 @@ class SetCredentialsAction : AnAction() {
           ApplicationManager.getApplication().invokeLater {
             errorCredentials(e.project, file)
           }
+        } finally {
+          ACTION_IN_PROGRESS = false
         }
       }
     }
+  }
+
+  companion object {
+    @Volatile
+    private var ACTION_IN_PROGRESS = false
   }
 }

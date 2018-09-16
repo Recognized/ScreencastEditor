@@ -6,6 +6,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFileFactory
+import kotlinx.coroutines.experimental.runBlocking
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.TranscriptData
@@ -20,7 +21,7 @@ class FakeRecognition : AnAction() {
     val script = "file://C:/Users/User/IdeaProjects/empty/src/script.kts"
     val audioFile = VirtualFileManager.getInstance().findFileByUrl(demo)!!
     val scriptFile = VirtualFileManager.getInstance().findFileByUrl(script)!!
-    val waveform = OpenAudioAction.openAudio(e.project!!, audioFile)!!
+    val waveform = runBlocking { OpenAudioAction.openAudio(e.project!!, audioFile)!! }
     val data = listOf(
         WordData("one big word that maybe result of some concatenation", IRange(1000, 2000)),
         WordData("two", IRange(2000, 3000)),

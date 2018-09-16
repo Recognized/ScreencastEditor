@@ -9,6 +9,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -16,17 +17,19 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFileFactory
-import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.future.await
+import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
 import vladsaif.syncedit.plugin.LibrariesLoader
 import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.TranscriptData
 import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
 import vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import java.io.File
 import java.io.IOException
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 
 class RecognizeAudioAction : AnAction() {
 
@@ -37,9 +40,16 @@ class RecognizeAudioAction : AnAction() {
     descriptor.title = "Choose audio file"
     descriptor.description = "Choose audio file for cloud recognition"
     FileChooser.chooseFile(descriptor, e.project, e.project?.projectFile) { file: VirtualFile ->
-      val waveform = OpenAudioAction.openAudio(project, file) ?: return@chooseFile
-      runRecognitionTask(project, waveform.multimediaModel, file)
+      ACTION_IN_PROGRESS = true
+      launch {
+        val waveform = OpenAudioAction.openAudio(project, file) ?: return@launch
+        runRecognitionTask(project, waveform.multimediaModel, file)
+      }
     }
+  }
+
+  override fun update(e: AnActionEvent) {
+    e.presentation.isEnabled = !ACTION_IN_PROGRESS
   }
 
   private class RecognizeTask(
@@ -49,32 +59,40 @@ class RecognizeAudioAction : AnAction() {
       private val multimedia: MultimediaModel
   ) : Task.Backgroundable(project, title, true) {
 
-    private var myJob: Job? = null
+    private var myFuture: CompletableFuture<TranscriptData>? = null
 
     override fun run(indicator: ProgressIndicator) {
       indicator.isIndeterminate = true
       try {
-        val job = Job()
-        myJob = job
-        runBlocking(job) {
-          val data = SpeechRecognizer.getRecognizer().recognize(path).await()
-          // Probably, after recognition, library won't be used again
+        val data = try {
+          indicator.checkCanceled()
+          val future = SpeechRecognizer.getRecognizer().recognize(path)
+          myFuture = future
+          indicator.checkCanceled()
+          runBlocking {
+            future.await()
+          }
+        } finally {
+          // Probably, library won't be used again after recognition
           LibrariesLoader.releaseClassloader()
-          ApplicationManager.getApplication().invokeAndWait {
-            ApplicationManager.getApplication().runWriteAction {
-              val xml = PsiFileFactory.getInstance(project).createFileFromText(
-                  "${FileUtil.getNameWithoutExtension(path.toFile())}.${InternalFileType.defaultExtension}",
-                  InternalFileType,
-                  data.toXml(),
-                  0L,
-                  true
-              )
-              multimedia.setAndReadXml(xml.virtualFile)
-              FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
-              indicator.stop()
-            }
+        }
+        indicator.checkCanceled()
+        ApplicationManager.getApplication().invokeAndWait {
+          ApplicationManager.getApplication().runWriteAction {
+            val xml = PsiFileFactory.getInstance(project).createFileFromText(
+                "${FileUtil.getNameWithoutExtension(path.toFile())}.${InternalFileType.defaultExtension}",
+                InternalFileType,
+                data.toXml(),
+                0L,
+                true
+            )
+            multimedia.setAndReadXml(xml.virtualFile)
+            FileEditorManager.getInstance(project).openFile(xml.virtualFile, true)
+            indicator.stop()
           }
         }
+      } catch (_: ProcessCanceledException) {
+        // ignore
       } catch (ex: Throwable) {
         LOG.info(ex)
         val cause = getCause(ex)
@@ -86,6 +104,8 @@ class RecognizeAudioAction : AnAction() {
               NotificationType.ERROR
           ).notify(project)
         }
+      } finally {
+        ACTION_IN_PROGRESS = false
       }
     }
 
@@ -94,14 +114,16 @@ class RecognizeAudioAction : AnAction() {
     }
 
     override fun onCancel() {
-      myJob?.cancel()
-      LibrariesLoader.releaseClassloader()
+      myFuture?.cancel(true)
       super.onCancel()
     }
   }
 
   companion object {
     private val LOG = logger<RecognizeAudioAction>()
+    @Volatile
+    private var ACTION_IN_PROGRESS = false
+
     fun checkRequirements(project: Project): Boolean {
       try {
         ChooseRecognizerAction.currentRecognizer.checkRequirements()
@@ -121,6 +143,5 @@ class RecognizeAudioAction : AnAction() {
       )
       ProgressManager.getInstance().run(recognizeTask)
     }
-
   }
 }

@@ -58,7 +58,7 @@ Using this script and recorded audio we can reproduce screencast in IDE.
 - Hold **Control/Meta** and drag mouse with pressed **Left Mouse Button** 
 to select range precisely (not by words). 
 - Hold **Shift** to prevent resetting current selection.
-- You may also drag word borders.
+- You may also drag word borders holding **Right Mouse Button**.
 
 ![audio-editor2](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/audio_editor2.png)
 

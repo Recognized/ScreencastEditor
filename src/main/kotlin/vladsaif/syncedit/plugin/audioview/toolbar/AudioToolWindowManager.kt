@@ -9,6 +9,9 @@ import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import icons.ScreencastEditorIcons
+import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.withContext
+import vladsaif.syncedit.plugin.ExEDT
 import vladsaif.syncedit.plugin.MultimediaModel
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
 
@@ -35,20 +38,26 @@ object AudioToolWindowManager {
     return toolWindow
   }
 
-  fun openAudioFile(project: Project, virtualFile: VirtualFile): WaveformModel {
-    val model = MultimediaModel.getOrCreate(project, virtualFile)
-    model.audioFile = virtualFile
-    val toolWindow = getToolWindow(project)
-    toolWindow.contentManager.removeAllContents(true)
-    val audioPanel = AudioToolWindowPanel(model)
-    val content = ContentFactory.SERVICE.getInstance().createContent(
-        audioPanel,
-        virtualFile.nameWithoutExtension,
-        false
-    )
-    toolWindow.contentManager.addContent(content)
-    toolWindow.setAvailable(true, null)
-    toolWindow.activate(null)
-    return audioPanel.wave.waveform.model
+  suspend fun openAudioFile(project: Project, virtualFile: VirtualFile): WaveformModel {
+    val model = withContext(ExEDT) {
+      MultimediaModel.getOrCreate(project, virtualFile)
+    }
+    withContext(CommonPool) {
+      model.audioFile = virtualFile
+    }
+    return withContext(ExEDT) {
+      val audioPanel = AudioToolWindowPanel(model)
+      val content = ContentFactory.SERVICE.getInstance().createContent(
+          audioPanel,
+          virtualFile.nameWithoutExtension,
+          false
+      )
+      val toolWindow = getToolWindow(project)
+      toolWindow.contentManager.removeAllContents(true)
+      toolWindow.contentManager.addContent(content)
+      toolWindow.setAvailable(true, null)
+      toolWindow.activate(null)
+      audioPanel.wave.waveform.model
+    }
   }
 }
