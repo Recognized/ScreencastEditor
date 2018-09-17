@@ -75,6 +75,8 @@ sourceSets {
     }
 }
 
+test.systemProperty "google.credentials", project.properties["google.credentials"]
+
 intellij {
     pluginName "ScreencastEditor"
     plugins "Kotlin"

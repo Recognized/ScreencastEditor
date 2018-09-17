@@ -14,4 +14,4 @@ fun LightCodeInsightFixtureTestCase.createKtFile(text: String): KtFile {
   return createLightFile("file.kts", KotlinLanguage.INSTANCE, text).cast()
 }
 
-val CREDENTIALS_PATH: Path? = System.getenv("GOOGLE_CREDENTIALS")?.let { File(it).toPath() }
+val CREDENTIALS_PATH: Path? = System.getProperty("google.credentials")?.let { File(it).toPath() }

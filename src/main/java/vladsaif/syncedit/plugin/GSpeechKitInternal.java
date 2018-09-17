@@ -18,9 +18,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 @SuppressWarnings("unused")
-public class GSpeechKit extends SpeechClient {
+public class GSpeechKitInternal extends SpeechClient {
 
-    public GSpeechKit(InputStream stream) throws IOException {
+    public GSpeechKitInternal(InputStream stream) throws IOException {
         super(getSettingsX(stream));
     }
 

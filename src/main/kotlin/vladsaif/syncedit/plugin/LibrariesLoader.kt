@@ -32,7 +32,7 @@ class LibrariesLoader : ApplicationComponent {
     }
 
     fun getGSpeechKit(): Class<*> {
-      return Class.forName("vladsaif.syncedit.plugin.GSpeechKit", true, myUrlClassLoader)!!
+      return Class.forName("vladsaif.syncedit.plugin.GSpeechKitInternal", true, myUrlClassLoader)!!
     }
 
     fun createGSpeechKitInstance(path: Path): Any {
