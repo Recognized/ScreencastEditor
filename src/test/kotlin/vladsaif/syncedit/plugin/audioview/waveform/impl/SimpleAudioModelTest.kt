@@ -1,17 +1,22 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.RESOURCES_PATH
+import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-abstract class SimpleAudioModelTestBase {
+@RunWith(Parameterized::class)
+class SimpleAudioModelTest(path: Path) {
 
-  protected abstract val audio: SimpleAudioModel
-  private val chunks get() = if (audio.totalFrames % 4000 == 0L) 3999 else 4000
-  private val framePerChunk get() = audio.totalFrames / chunks
-  private val framePerBigChunk get() = framePerChunk + 1
-  private val excess get() = (audio.totalFrames % chunks).toInt()
+  private val audio = SimpleAudioModel(path)
+  private val chunks = if (audio.totalFrames % 4000 == 0L) 3999 else 4000
+  private val framePerChunk = audio.totalFrames / chunks
+  private val framePerBigChunk = framePerChunk + 1
+  private val excess = (audio.totalFrames % chunks).toInt()
 
   @Test
   fun `test frames are known`() {
@@ -55,5 +60,12 @@ abstract class SimpleAudioModelTestBase {
   fun `test frame range to milliseconds range`() {
     val range = IRange(500, 1500)
     assertEquals(range, audio.frameRangeToMsRange(audio.msRangeToFrameRange(range)))
+  }
+
+  companion object {
+
+    @Parameterized.Parameters
+    @JvmStatic
+    fun files() = listOf("demo.mp3", "demo.wav").map { RESOURCES_PATH.resolve(it) }
   }
 }
