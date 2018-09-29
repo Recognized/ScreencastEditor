@@ -10,7 +10,6 @@ import vladsaif.syncedit.plugin.LRange
 import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import java.awt.Dimension
-import java.io.File
 import java.io.IOException
 import javax.swing.JScrollPane
 import javax.swing.event.ChangeEvent
@@ -86,8 +85,11 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     if (myPlayState == PLAY) return
     if (myPlayState == STOP) {
       myPlayState = PLAY
-      val file = waveform.model.multimediaModel.audioFile ?: return
-      val player = Player.create(File(file.path).toPath()).also { this.myPlayer = it }
+      waveform.model.screencast.audioName ?: return
+      val player = Player.create {
+        waveform.model.screencast.audioInputStream!!
+      }
+      myPlayer = player
       player.setProcessUpdater(this::positionUpdater)
       player.play()
       ApplicationManager.getApplication().executeOnPooledThread {
@@ -117,7 +119,7 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
 
   private fun SelectionModel.toEditionModel(): EditionModel {
     val editionModel = DefaultEditionModel()
-    val audioModel = waveform.model.multimediaModel.audioDataModel ?: return editionModel
+    val audioModel = waveform.model.screencast.audioDataModel ?: return editionModel
     editionModel.cut(LRange(0, audioModel.totalFrames))
     for (selected in selectedRanges) {
       editionModel.undo(waveform.model.chunkRangeToFrameRange(selected))
@@ -133,7 +135,7 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
   }
 
   private fun timeTicks() {
-    val audio = waveform.model.multimediaModel.audioDataModel ?: return
+    val audio = waveform.model.screencast.audioDataModel ?: return
     val pos = waveform.model.playFramePosition.get()
     if (pos == -1L) return
     waveform.model.playFramePosition.compareAndSet(pos, pos + (audio.framesPerMillisecond * 32).toLong())

@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.WordData
 import vladsaif.syncedit.plugin.audioview.toolbar.addAction
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
@@ -59,7 +59,7 @@ import kotlin.math.min
 
 object DiffDialogFactory {
 
-  fun showWindow(model: MultimediaModel) {
+  fun showWindow(model: ScreencastFile) {
     val holder = JPanel(GridBagLayout())
     holder.border = BorderFactory.createEmptyBorder()
     val (splitter, diffModel) = createSplitter(model)
@@ -105,7 +105,7 @@ object DiffDialogFactory {
   }
 
 
-  private fun createTitle(model: MultimediaModel): JComponent {
+  private fun createTitle(model: ScreencastFile): JComponent {
     val panel = createBoxedPanel(false)
     panel.add(TitledSeparator(model.xmlFile!!.name))
     val right = TitledSeparator(model.scriptFile!!.name)
@@ -151,7 +151,7 @@ object DiffDialogFactory {
   }
 
 
-  private fun createSplitter(model: MultimediaModel): Pair<Splitter, DiffViewModel> {
+  private fun createSplitter(model: ScreencastFile): Pair<Splitter, DiffViewModel> {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
     val textPanel = pane.viewport.view as TextItemPanel

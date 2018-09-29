@@ -6,7 +6,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
@@ -16,7 +16,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
  */
 class ConcatenateAction : TranscriptRefactoringAction() {
 
-  override fun doAction(model: MultimediaModel, words: List<TranscriptWord>) {
+  override fun doAction(model: ScreencastFile, words: List<TranscriptWord>) {
     val first = words.firstOrNull() ?: return
     val last = words.last()
     LOG.info("Concatenating: ${words.map { it.text }}")

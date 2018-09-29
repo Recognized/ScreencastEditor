@@ -1,20 +1,16 @@
 package vladsaif.syncedit.plugin
 
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFileFactory
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
+import kotlinx.coroutines.experimental.runBlocking
 import org.jetbrains.kotlin.idea.KotlinFileType
+import org.junit.Before
 import org.junit.Test
-import vladsaif.syncedit.plugin.lang.transcript.psi.InternalFileType
+import vladsaif.syncedit.plugin.format.ScreencastFileType
 
-class MultimediaModelTest : LightCodeInsightFixtureTestCase() {
-
-  private fun withModel(block: MultimediaModel.() -> Unit) {
-    val model = MultimediaModel(project)
-    model.block()
-  }
-
-  private val testTranscriptData = TranscriptData(listOf(
+class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
+  private val screencastPath = RESOURCES_PATH.resolve(this.javaClass.name + ScreencastFileType.defaultExtension)
+  private val transcriptData = TranscriptData(listOf(
       WordData("first", IRange(1000, 2000)),
       WordData("two", IRange(2000, 3000)),
       WordData("three", IRange(3000, 4000)),
@@ -28,8 +24,8 @@ class MultimediaModelTest : LightCodeInsightFixtureTestCase() {
       WordData("eleven", IRange(12000, 13000)),
       WordData("twelve", IRange(13000, 14000))
   ))
-
-  private val testScript by lazy {
+  private val audioPath = RESOURCES_PATH.resolve("demo.wav")
+  private val script by lazy {
     PsiFileFactory.getInstance(project).createFileFromText(
         "demo.kts",
         KotlinFileType.INSTANCE,
@@ -62,24 +58,21 @@ class MultimediaModelTest : LightCodeInsightFixtureTestCase() {
     )
   }
 
-  private val testXml by lazy {
-    PsiFileFactory.getInstance(project).createFileFromText(
-        "demo.${InternalFileType.defaultExtension}",
-        InternalFileType,
-        testTranscriptData.toXml(),
-        0L,
-        true
-    )
+  @Before
+  fun before() {
+    prepareTestScreencast(project, screencastPath, audioPath, script.text, transcriptData)
   }
 
-  private val testAudio by lazy {
-    VirtualFileManager.getInstance().findFileByUrl(RESOURCES_PATH.resolve("demo.wav").toUri().toASCIIString())!!
+  private fun withModel(block: ScreencastFile.() -> Unit) {
+    val model = runBlocking {
+      ScreencastFile.create(project, screencastPath)
+    }
+    model.block()
   }
 
   @Test
   fun `test audio model set`() {
     withModel {
-      audioFile = testAudio
       assertNotNull(audioDataModel)
     }
   }
@@ -87,31 +80,24 @@ class MultimediaModelTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test psi files available`() {
     withModel {
-      setAndReadXml(testXml.virtualFile)
-      scriptFile = testScript.virtualFile!!
-
-      assertNotNull(xmlFile)
       assertNotNull(scriptPsi)
-      assertNotNull(scriptDoc)
+      assertNotNull(scriptDocument)
     }
   }
 
   @Test
   fun `test changes applied during recognition`() {
     withModel {
-      audioFile = testAudio
       editionModel.cut(audioDataModel!!.msRangeToFrameRange(IRange(900, 2100)))
       editionModel.mute(audioDataModel!!.msRangeToFrameRange(IRange(2900, 4100)))
-      setAndReadXml(testXml.virtualFile)
-      assertEquals(data!!, testTranscriptData.excludeWord(0).muteWords(IntArray(1) { 2 }))
+      assertEquals(data!!, transcriptData.excludeWord(0).muteWords(IntArray(1) { 2 }))
     }
   }
 
   @Test
   fun `test default binding`() {
     withModel {
-      data = testTranscriptData
-      scriptFile = testScript.virtualFile
+      data = transcriptData
       createDefaultBinding()
       data!!.words.forEach(::println)
       // TODO

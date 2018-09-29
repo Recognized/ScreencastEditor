@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import java.io.IOException
+import java.nio.file.Path
 
 fun errorNoModelForFile(project: Project, file: VirtualFile) {
   Messages.showErrorDialog(
@@ -60,10 +61,10 @@ fun notifySuccessfullyBound(project: Project, script: VirtualFile, audio: Virtua
   ).notify(project)
 }
 
-fun errorUnsupportedAudioFile(project: Project, audio: VirtualFile) {
+fun errorUnsupportedAudioFile(project: Project, path: Path) {
   Messages.showErrorDialog(
       project,
-      "Audio file format is not supported. File: ${audio.path}",
+      "Audio file format is not supported. File: $path",
       "Unsupported file format"
   )
 }

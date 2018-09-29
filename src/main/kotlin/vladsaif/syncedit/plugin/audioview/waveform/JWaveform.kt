@@ -4,7 +4,7 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.TextFormatter
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
@@ -15,7 +15,7 @@ import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
 
-class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), ChangeListener {
+class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeListener {
   private val myWordFont
     get() = JBUI.Fonts.label()
   val model = WaveformModel(multimediaModel)
@@ -64,7 +64,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
 
   private fun Graphics2D.drawWordsBackGround() {
     val usedRange = model.drawRange
-    val words = model.multimediaModel.data?.words ?: return
+    val words = model.screencast.data?.words ?: return
     color = Settings.DIFF_FILLER_COLOR
     for (word in words) {
       val (x1, x2) = model.getCoordinates(word)
@@ -164,7 +164,7 @@ class JWaveform(multimediaModel: MultimediaModel) : JBPanel<JWaveform>(), Change
    */
   private fun Graphics2D.drawWords() {
     val usedRange = model.drawRange
-    val words = model.multimediaModel.data?.words ?: return
+    val words = model.screencast.data?.words ?: return
     for (word in words) {
       val coordinates = model.getCoordinates(word)
       if (coordinates.intersects(usedRange)) {

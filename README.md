@@ -76,7 +76,7 @@ to select range precisely (not by words).
 12. Selected range.
 13. Recognized word.
 
-Editions made to an audio are synchronously applied to the script according to bindings.
+Editions that are made to an audio are synchronously applied to the script according to bindings.
 
 ### Recognition
 
@@ -106,7 +106,7 @@ associated with this audio.
 
 Element in list from the left is word (or concatenation of multiple words done by user).
 
-Bindings highlighted with green.
+Bindings are highlighted with green.
 
 ![bindings-editor](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/bindings2.png)
 

@@ -182,7 +182,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
 
   private fun dragBorderFinished() {
     val locator = myLocator ?: return
-    val model = myLocator?.multimediaModel ?: return
+    val model = myLocator?.screencast ?: return
     val audioModel = model.audioDataModel ?: return
     val data = model.data ?: return
 

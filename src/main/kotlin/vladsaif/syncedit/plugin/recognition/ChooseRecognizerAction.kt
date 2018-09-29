@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.ui.DialogBuilder
-import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
 import javax.swing.JSpinner
 import javax.swing.SpinnerListModel
 
@@ -17,19 +16,19 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
       val elements = Extensions.getExtensions(SpeechRecognizer.EP_NAME).map { ElementWrapper(it) }
       println(elements)
       spinner.model = SpinnerListModel(elements)
-      spinner.value = ElementWrapper(CURRENT_RECOGNIZER)
+      spinner.value = ElementWrapper(SpeechRecognizer.getCurrentRecognizer())
       setTitle("Choose recognizer")
       setCenterPanel(spinner)
       resizable(false)
       setOkOperation {
-        CURRENT_RECOGNIZER = (spinner.value as ElementWrapper).src
+        SpeechRecognizer.setCurrentRecognizer((spinner.value as ElementWrapper).src)
         builder.dialogWrapper.close(0, true)
       }
       show()
     }
   }
 
-  class State(val recognizerName: String = CURRENT_RECOGNIZER.name)
+  class State(val recognizerName: String = SpeechRecognizer.getCurrentRecognizer().name)
 
   override fun getState(): State? {
     return State()
@@ -38,7 +37,7 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
   override fun loadState(state: State) {
     for (recognizer in Extensions.getExtensions(SpeechRecognizer.EP_NAME)) {
       if (recognizer.name == state.recognizerName) {
-        CURRENT_RECOGNIZER = recognizer
+        SpeechRecognizer.setCurrentRecognizer(recognizer)
       }
     }
   }
@@ -53,10 +52,5 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
     override fun hashCode(): Int {
       return src.name.hashCode()
     }
-  }
-
-  companion object {
-    internal var CURRENT_RECOGNIZER: SpeechRecognizer = GSpeechKit()
-      private set
   }
 }

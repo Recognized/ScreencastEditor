@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin
 
-import com.intellij.openapi.editor.RangeMarker
 import java.io.InputStream
 import java.io.StringReader
 import java.io.StringWriter
@@ -59,10 +58,6 @@ class TranscriptData(words: List<WordData>) {
     return TranscriptData(newWords)
   }
 
-  fun bindWords(bindings: List<Pair<Int, RangeMarker?>>): TranscriptData {
-    return replaceWords(bindings.map { it.first to words[it.first].copy(bindStatements = it.second) })
-  }
-
   fun excludeWords(indices: IntArray): TranscriptData {
     return replaceWords(indices.map { it to words[it].copy(state = WordData.State.EXCLUDED) })
   }
@@ -90,11 +85,8 @@ class TranscriptData(words: List<WordData>) {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
-
     other as TranscriptData
-
     if (words != other.words) return false
-
     return true
   }
 

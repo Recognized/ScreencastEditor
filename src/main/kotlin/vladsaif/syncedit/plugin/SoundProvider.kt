@@ -8,6 +8,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
+import java.util.function.Supplier
 import javax.sound.sampled.*
 import kotlin.concurrent.thread
 
@@ -73,15 +74,19 @@ object SoundProvider {
     }
   }
 
-  fun <T> withWavFileStream(file: Path, block: (InputStream) -> T): T {
-    val (stream, lock) = convertAudioLazy(file)
-    LOG.info("Audio is converting: $file")
+  fun <T> withWavFileStream(path: Path, block: (InputStream) -> T): T {
+    return withWavFileStream(Supplier { Files.newInputStream(path) }, block)
+  }
+
+  fun <T> withWavFileStream(supplier: Supplier<InputStream>, block: (InputStream) -> T): T {
+    val (stream, lock) = convertAudioLazy(supplier)
+    LOG.info("Audio is converting.")
     stream.use {
       try {
         return block(it)
       } finally {
         lock.unlock()
-        LOG.info("Audio converted: $file")
+        LOG.info("Audio converted.")
       }
     }
   }
@@ -111,14 +116,14 @@ object SoundProvider {
   // and without storing whole decoded file in RAM, because it can be very big.
   // Idea of this code is just to convert and send audio stream on the fly,
   // but there are several tricks are needed to implement it.
-  private fun convertAudioLazy(file: Path): Pair<InputStream, Lock> {
-    val length = countFrames(file)
+  private fun convertAudioLazy(supplier: Supplier<InputStream>): Pair<InputStream, Lock> {
+    val length = countFrames(supplier)
     val pipeIn = PipedInputStream(1 shl 14)
     val pipeOut = PipedOutputStream(pipeIn)
     val keepAlive = ReentrantLock()
     keepAlive.lock()
     thread {
-      Files.newInputStream(file).use { source ->
+      supplier.get().use { source ->
         // This is needed because of lack of transitive closure in audio system conversions.
         // We need to manually convert audio through intermediate formats.
         withMonoPcmStream(source) { mono ->
@@ -153,9 +158,9 @@ object SoundProvider {
     }
   }
 
-  private fun countFrames(file: Path): Long {
+  private fun countFrames(supplier: Supplier<InputStream>): Long {
     var length = 0L
-    Files.newInputStream(file).use { inputStream ->
+    supplier.get().use { inputStream ->
       withMonoPcmStream(inputStream) { mono ->
         var x = 0
         val buffer = ByteArray(1 shl 14)

@@ -8,24 +8,24 @@ import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.Player
 import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
-import java.nio.file.Path
+import java.io.InputStream
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.SourceDataLine
 import kotlin.math.min
 
-class PlayerImpl(private val file: Path) : Player {
+class PlayerImpl(private val getAudioStream: () -> InputStream) : Player {
   private val mySource: SourceDataLine
   private var myProcessUpdater: (Long) -> Unit = {}
   private var mySignalStopReceived = false
 
   init {
-    val fileFormat = SoundProvider.getAudioFileFormat(file.toFile())
+    val fileFormat = SoundProvider.getAudioFileFormat(getAudioStream().buffered())
     mySource = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
   }
 
   override fun applyEditions(editionModel: EditionModel) {
-    SoundProvider.getAudioInputStream(file.toFile()).use { inputStream ->
+    SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { inputStream ->
       SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
         applyEditionImpl(it, editionModel)
       }

@@ -59,22 +59,20 @@ class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test bindings`() {
     val factory = createMarkerFactory(20)
-    val bindData = TranscriptData(listOf(
-        WordData("_", IRange(0, 1)),
-        WordData("a", IRange(1, 2), bindStatements = factory(IRange(1, 3))),
-        WordData("b", IRange(2, 3), bindStatements = factory(IRange(1, 3))),
-        WordData("c", IRange(3, 4), bindStatements = factory(IRange(1, 4))),
-        WordData("d", IRange(4, 5)),
-        WordData("e", IRange(5, 6), bindStatements = factory(IRange(6, 9))),
-        WordData("f", IRange(6, 7), bindStatements = factory(IRange(6, 9))),
-        WordData("g", IRange(7, 8), bindStatements = factory(IRange(6, 9)))
-    ))
+    val bindData = mapOf(
+        1 to factory(IRange(1, 3)),
+        2 to factory(IRange(1, 3)),
+        3 to factory(IRange(1, 4)),
+        5 to factory(IRange(6, 9)),
+        6 to factory(IRange(6, 9)),
+        7 to factory(IRange(6, 9))
+    )
     val expectedBindings = listOf(
         Binding(IRange(1, 2), IRange(1, 3)),
         Binding(IRange(3, 3), IRange(1, 4)),
         Binding(IRange(5, 7), IRange(6, 9))
     )
-    assertEquals(expectedBindings, createBindings(bindData.words))
+    assertEquals(expectedBindings, createBindings(bindData))
   }
 
   @Test

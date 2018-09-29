@@ -7,9 +7,9 @@ import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import java.io.IOException
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException
-import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
+import java.util.function.Supplier
 
 class GSpeechKit : SpeechRecognizer {
 
@@ -18,14 +18,14 @@ class GSpeechKit : SpeechRecognizer {
 
   @Suppress("unchecked_cast")
   @Throws(IOException::class)
-  override fun recognize(file: Path): CompletableFuture<TranscriptData> {
+  override fun recognize(supplier: Supplier<InputStream>): CompletableFuture<TranscriptData> {
     val speechKitClass = LibrariesLoader.getGSpeechKit()
     val instance = LibrariesLoader.createGSpeechKitInstance(GCredentialProvider.Instance.gSettings!!)
     val method = speechKitClass.getMethod("recognize", InputStream::class.java)
     try {
       // Google mostly accept PCM encoded audio
       // But we can decode it to PCM, if it is in other encoding
-      return SoundProvider.withWavFileStream(file) { stream ->
+      return SoundProvider.withWavFileStream(supplier) { stream ->
         val result = method.invoke(instance, stream) as CompletableFuture<List<List<Any>>>
         result.thenApply(this::parseResponse)
       }

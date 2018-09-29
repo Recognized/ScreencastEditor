@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import vladsaif.syncedit.plugin.audioview.waveform.impl.PlayerImpl
-import java.nio.file.Path
+import java.io.InputStream
 
 interface Player : AutoCloseable {
 
@@ -28,11 +28,12 @@ interface Player : AutoCloseable {
 
   fun stopImmediately()
 
-  companion object {
-    fun create(file: Path): Player = PlayerImpl(file)
+  enum class PlayState {
+
+    PAUSE, STOP, PLAY
   }
 
-  enum class PlayState {
-    PAUSE, STOP, PLAY
+  companion object {
+    fun create(getStream: () -> InputStream): Player = PlayerImpl(getStream)
   }
 }

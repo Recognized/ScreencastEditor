@@ -7,7 +7,7 @@ import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import java.util.*
 
 class DiffModel(
-    val origin: MultimediaModel
+    val origin: ScreencastFile
 ) : Disposable {
 
   init {
@@ -20,7 +20,7 @@ class DiffModel(
     if (origin.scriptPsi == null) {
       throw AssertionError("Script psi file is accidentally null.")
     }
-    if (origin.scriptDoc == null) {
+    if (origin.scriptDocument == null) {
       throw AssertionError("Script document is accidentally null.")
     }
   }
@@ -33,7 +33,7 @@ class DiffModel(
   private var myChangesWereMade = false
   private val myListeners = mutableSetOf<(List<Binding>, List<Binding>) -> Unit>()
 
-  private val myDataListener = object : MultimediaModel.Listener {
+  private val myDataListener = object : ScreencastFile.Listener {
     override fun onTranscriptDataChanged() {
       myChangesWereMade = origin.data != myTranscriptDataOnStart
       bindings = createBindings(origin.data!!.words, this@DiffModel::scriptLinesToVisibleLines)
@@ -63,7 +63,7 @@ class DiffModel(
   }
 
   init {
-    val document = origin.scriptDoc!!
+    val document = origin.scriptDocument!!
     myShiftedLines = IntArray(document.lineCount) { it }
     myBackwardLines = IntArray(document.lineCount)
     BlockVisitor.visit(origin.scriptPsi!!) {
@@ -133,7 +133,7 @@ class DiffModel(
       myUndoStack.removeLast()
     }
     myUndoStack.push(origin.data)
-    val scriptDoc = origin.scriptDoc!!
+    val scriptDoc = origin.scriptDocument!!
     val newMarker by lazy {
       scriptDoc.createRangeMarker(
           scriptDoc.getLineStartOffset(convertedRange.start).also { println(it) },

@@ -12,9 +12,9 @@ import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
 
-class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by DefaultChangeNotifier() {
+class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultChangeNotifier() {
   private val myAudioDataProvider
-    get() = multimediaModel.audioDataModel
+    get() = screencast.audioDataModel
   /**
    * Waveform presented using sliding window and this is the visible part of it.
    */
@@ -27,7 +27,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   private val myCoordinates: List<IRange>
     get() = if (myCoordinatesCacheCoherent) myCoordinatesCache
     else {
-      val xx = multimediaModel.data?.words?.map { getCoordinates(it) }
+      val xx = screencast.data?.words?.map { getCoordinates(it) }
       if (xx != null) {
         myCoordinatesCacheCoherent = true
         myCoordinatesCache = xx
@@ -67,7 +67,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
     get() = IRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
         min(myFirstVisibleChunk + myVisibleChunks * 3, myMaxChunks - 1))
   val editionModel: EditionModel
-    get() = multimediaModel.editionModel
+    get() = screencast.editionModel
   private var myWordBorders: List<IRange> = listOf()
   val wordBorders: List<IRange>
     get() {
@@ -102,10 +102,10 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   }
 
   init {
-    multimediaModel.editionModel.addChangeListener(ChangeListener {
+    screencast.editionModel.addChangeListener(ChangeListener {
       fireStateChanged()
     })
-    multimediaModel.addTranscriptDataListener(object : MultimediaModel.Listener {
+    screencast.addTranscriptDataListener(object : ScreencastFile.Listener {
       override fun onTranscriptDataChanged() {
         myCoordinatesCacheCoherent = false
         fireStateChanged()
@@ -137,7 +137,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
   fun getEnclosingWord(coordinate: Int): WordData? {
     val index = myCoordinates.binarySearch(IRange(coordinate, coordinate), IRange.INTERSECTS_CMP)
     return if (index < 0) null
-    else multimediaModel.data?.words?.get(index)
+    else screencast.data?.words?.get(index)
   }
 
   /**
@@ -173,7 +173,7 @@ class WaveformModel(val multimediaModel: MultimediaModel) : ChangeNotifier by De
         }
       } catch (ex: IOException) {
         if (myIsBroken.compareAndSet(false, true)) {
-          showNotification("I/O error occurred during reading ${multimediaModel.audioFile} audio file. Try reopen file.")
+          showNotification("I/O error occurred during reading ${screencast.audioName} audio file. Try reopen file.")
         }
       } catch (ex: CancellationException) {
         return

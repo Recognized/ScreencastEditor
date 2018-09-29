@@ -12,7 +12,7 @@ import vladsaif.syncedit.plugin.recognition.GCredentialProvider
 import java.io.File
 import java.io.IOException
 
-class SetCredentialsAction : AnAction() {
+class SetCredentials : AnAction() {
 
   override fun actionPerformed(e: AnActionEvent) {
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()

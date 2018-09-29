@@ -4,10 +4,9 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.CommandProcessor
-import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.psi.PsiDocumentManager
-import vladsaif.syncedit.plugin.MultimediaModel
+import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.TranscriptModelUndoableAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
@@ -15,7 +14,7 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
 
 abstract class TranscriptRefactoringAction : AnAction() {
 
-  abstract fun doAction(model: MultimediaModel, words: List<TranscriptWord>)
+  abstract fun doAction(model: ScreencastFile, words: List<TranscriptWord>)
 
   override fun actionPerformed(e: AnActionEvent) {
     val project = e.getRequiredData(CommonDataKeys.PROJECT)
@@ -27,10 +26,6 @@ abstract class TranscriptRefactoringAction : AnAction() {
       doAction(model, getSelectedWords(editor, psi))
       val newData = model.data ?: return@executeCommand
       val undo = TranscriptModelUndoableAction(model, data, newData)
-      undo.addAffectedDocuments(DocumentReferenceManager.getInstance().create(editor.document))
-      model.xmlFile?.let {
-        undo.addAffectedDocuments(DocumentReferenceManager.getInstance().create(it))
-      }
       UndoManager.getInstance(project).undoableActionPerformed(undo)
     }, this.javaClass.simpleName, "ScreencastEditor", editor.document)
   }

@@ -21,6 +21,7 @@
     <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
     <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
     <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
+    <fileTypeFactory implementation="vladsaif.syncedit.plugin.format.ScreencastFileTypeFactory"/>
     <lang.parserDefinition language="TranscriptLanguage"
                            implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
     <lang.syntaxHighlighterFactory language="TranscriptLanguage"
@@ -31,16 +32,11 @@
   <actions>
     <group text="Screencast Editor" id="ScreencastEditor" popup="true" compact="false">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
-      <action id="vladsaif.syncedit.plugin.actions.tools.OpenAudioAction"
-              class="vladsaif.syncedit.plugin.actions.tools.OpenAudioAction"
-              icon="ScreencastEditorIcons.EQUALIZER"
+      <action id="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
+              class="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
+              icon="ScreencastEditorIcons.SCREENCAST"
               text="Open audio"
               description="Opens audio waveform view"/>
-      <action id="vladsaif.syncedit.plugin.actions.tools.BindAction"
-              icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.actions.tools.BindAction"
-              text="Bind audio and script file"
-              description="Associate selected audio file with script file"/>
       <action id="vladsaif.syncedit.plugin.actions.tools.ManageScriptTranscriptRelations"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.actions.tools.ManageScriptTranscriptRelations"
@@ -51,11 +47,6 @@
               class="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
               text="Choose speech recognizer"
               description="Choose speech recognizer"/>
-      <action id="vladsaif.syncedit.plugin.actions.internal.FakeRecognition"
-              icon="ScreencastEditorIcons.EQUALIZER"
-              class="vladsaif.syncedit.plugin.actions.internal.FakeRecognition"
-              text="Fake recognition"
-              description="Get transcript of audio and open it"/>
       <action id="vladsaif.syncedit.plugin.actions.internal.FakeRecording"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.actions.internal.FakeRecording"
@@ -66,9 +57,9 @@
         <group text="Google Speech Kit" id="GSpeechKit" popup="true" compact="true"/>
       </group>
     </group>
-    <action id="vladsaif.syncedit.plugin.actions.tools.SetCredentialsAction"
+    <action id="vladsaif.syncedit.plugin.actions.tools.SetCredentials"
             icon="ScreencastEditorIcons.SETTINGS"
-            class="vladsaif.syncedit.plugin.actions.tools.SetCredentialsAction"
+            class="vladsaif.syncedit.plugin.actions.tools.SetCredentials"
             text="Set cloud recognition credentials "
             description="Set credentials used in cloud recognition">
       <add-to-group group-id="GSpeechKit" anchor="last"/>
@@ -106,17 +97,11 @@
            popup="true"
            compact="true">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="ProjectViewPopupMenuRunGroup"/>
-      <action id="vladsaif.syncedit.plugin.actions.project.OpenAudioProjectTreeAction"
-              class="vladsaif.syncedit.plugin.actions.project.OpenAudioProjectTreeAction"
+      <action id="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
+              class="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
               text="Open in Screencast Audio Editor"
               description="Open in Screencast Audio Editor"
               icon="ScreencastEditorIcons.EQUALIZER">
-      </action>
-      <action id="vladsaif.syncedit.plugin.actions.project.BindAudioWithScriptAction"
-              class="vladsaif.syncedit.plugin.actions.project.BindAudioWithScriptAction"
-              text="Bind with script"
-              description="Bind this audio with script"
-              icon="ScreencastEditorIcons.SETTINGS">
       </action>
     </group>
   </actions>

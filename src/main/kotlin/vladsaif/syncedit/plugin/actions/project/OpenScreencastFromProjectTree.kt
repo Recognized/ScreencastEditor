@@ -2,22 +2,20 @@ package vladsaif.syncedit.plugin.actions.project
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import kotlinx.coroutines.experimental.launch
-import vladsaif.syncedit.plugin.actions.tools.OpenAudioAction
+import vladsaif.syncedit.plugin.actions.tools.OpenScreencast
+import vladsaif.syncedit.plugin.format.ScreencastFileType
 
-class OpenAudioProjectTreeAction : OpenAudioAction() {
+class OpenScreencastFromProjectTree : OpenScreencast() {
 
   override fun actionPerformed(e: AnActionEvent) {
     val file = e.getRequiredData(CommonDataKeys.VIRTUAL_FILE)
-    launch {
-      OpenAudioAction.openAudio(e.project!!, file)
-    }
+    open(e.project!!, file)
   }
 
   override fun update(e: AnActionEvent) {
     super.update(e)
-    e.presentation.isEnabled = e.presentation.isEnabled
-        && e.getData(CommonDataKeys.VIRTUAL_FILE) != null
+    e.presentation.isEnabledAndVisible = e.presentation.isEnabledAndVisible
         && e.project != null
+        && e.getData(CommonDataKeys.VIRTUAL_FILE)?.fileType == ScreencastFileType
   }
 }

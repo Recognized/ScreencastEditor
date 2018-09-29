@@ -42,10 +42,6 @@ class TranscriptParserDefinition : ParserDefinition {
     return TranscriptPsiFile(viewProvider)
   }
 
-  override fun spaceExistanceTypeBetweenTokens(left: ASTNode, right: ASTNode): ParserDefinition.SpaceRequirements {
-    return ParserDefinition.SpaceRequirements.MAY
-  }
-
   override fun createElement(node: ASTNode): PsiElement {
     return TranscriptWordImpl(node)
   }
