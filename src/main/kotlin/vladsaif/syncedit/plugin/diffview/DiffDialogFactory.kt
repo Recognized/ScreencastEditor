@@ -78,7 +78,7 @@ object DiffDialogFactory {
     )
     holder.add(vertical, GridBagBuilder().fill(BOTH).gridx(0).gridy(1).weightx(1.0).weighty(1.0).done())
     val wrapper = WindowWrapperBuilder(WindowWrapper.Mode.MODAL, holder)
-        .setTitle("${model.scriptFile!!.name} (${model.scriptFile})")
+        .setTitle("Script (${model.file})")
         .build()
     wrapper.component.addKeyListener(object : KeyAdapter() {
       override fun keyPressed(e: KeyEvent?) {
@@ -107,8 +107,8 @@ object DiffDialogFactory {
 
   private fun createTitle(model: ScreencastFile): JComponent {
     val panel = createBoxedPanel(false)
-    panel.add(TitledSeparator(model.xmlFile!!.name))
-    val right = TitledSeparator(model.scriptFile!!.name)
+    panel.add(TitledSeparator("Transcript"))
+    val right = TitledSeparator("Script")
     right.componentOrientation = ComponentOrientation.RIGHT_TO_LEFT
     panel.add(right)
     panel.border = BorderFactory.createEmptyBorder(0, JBUI.scale(3), 0, JBUI.scale(3))
@@ -155,10 +155,6 @@ object DiffDialogFactory {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
     val textPanel = pane.viewport.view as TextItemPanel
-    if (model.isNeedInitialBind) {
-      model.createDefaultBinding()
-      model.isNeedInitialBind = false
-    }
     val diffModel = DiffViewModel(DiffModel(model), editorView.editor as EditorEx, textPanel.cast())
     val leftDragListener = object : MouseDragListener() {
       override fun onDrag(point: Point) {

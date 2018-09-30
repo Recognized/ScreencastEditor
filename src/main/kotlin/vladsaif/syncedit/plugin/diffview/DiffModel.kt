@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.editor.RangeMarker
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
@@ -14,11 +15,8 @@ class DiffModel(
     if (origin.data == null) {
       throw IllegalStateException("Cannot create DiffModel from model without transcript data.")
     }
-    if (origin.scriptFile == null) {
-      throw IllegalStateException("Cannot create DiffModel from model without script file.")
-    }
     if (origin.scriptPsi == null) {
-      throw AssertionError("Script psi file is accidentally null.")
+      throw IllegalStateException("Cannot create DiffModel from model without script file.")
     }
     if (origin.scriptDocument == null) {
       throw AssertionError("Script document is accidentally null.")
@@ -36,7 +34,7 @@ class DiffModel(
   private val myDataListener = object : ScreencastFile.Listener {
     override fun onTranscriptDataChanged() {
       myChangesWereMade = origin.data != myTranscriptDataOnStart
-      bindings = createBindings(origin.data!!.words, this@DiffModel::scriptLinesToVisibleLines)
+      bindings = createBindings(origin.bindings, this@DiffModel::scriptLinesToVisibleLines)
     }
   }
 
@@ -126,7 +124,6 @@ class DiffModel(
   }
 
   private fun bindUnbind(isBind: Boolean, itemRange: IRange, editorLines: IRange) {
-    val oldWords = origin.data!!.words
     myRedoStack.clear()
     val convertedRange = visibleLinesToScriptLines(editorLines)
     if (myUndoStack.size == UNDO_STACK_LIMIT) {
@@ -140,19 +137,20 @@ class DiffModel(
           scriptDoc.getLineEndOffset(convertedRange.end).also(::println)
       )
     }
-    val replacements = mutableListOf<Pair<Int, WordData>>()
+    val replacements = mutableMapOf<Int, RangeMarker?>()
     for (index in itemRange.toIntRange()) {
-      val word = if (!isBind) {
-        oldWords[index].copy(bindStatements = null)
-      } else {
-        oldWords[index].copy(bindStatements = if (isBind) newMarker else null)
-      }
-      replacements.add(index to word)
+      replacements[index] = if (isBind) newMarker else null
     }
-    origin.replaceWords(replacements)
+    for ((key, value) in replacements) {
+      if (value == null) {
+        origin.bindings.remove(key)
+      } else {
+        origin.bindings[key] = value
+      }
+    }
   }
 
-  var bindings: List<Binding> = createBindings(origin.data!!.words, this@DiffModel::scriptLinesToVisibleLines)
+  var bindings: List<Binding> = createBindings(origin.bindings, this@DiffModel::scriptLinesToVisibleLines)
     set(newValue) {
       if (field != newValue) {
         val oldValue = field

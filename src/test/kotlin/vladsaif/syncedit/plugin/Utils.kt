@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import com.intellij.util.io.exists
+import kotlinx.coroutines.experimental.runBlocking
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -47,7 +48,7 @@ fun prepareTestScreencast(project: Project, out: Path, audio: Path?, script: Str
   if (data != null) {
     builder.addTranscriptData(data)
   }
-  if (!out.exists() || !builder.consistentWith(ScreencastFile(project, out))) {
+  if (!out.exists() || !builder.consistentWith(ScreencastFile(project, out).also { runBlocking { it.initialize() } })) {
     println("Cache is not consistent. Recreating: $out")
     builder.zip()
   }

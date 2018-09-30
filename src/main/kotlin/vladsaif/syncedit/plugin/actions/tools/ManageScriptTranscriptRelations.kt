@@ -14,7 +14,7 @@ class ManageScriptTranscriptRelations : AnAction() {
     val project = e.project ?: return
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     FileChooser.chooseFile(descriptor, project, null) {
-      val model = ScreencastFile.get(it)
+      val model = ScreencastFile.get(it.toPath())
       if (model == null) {
         errorNoModelForFile(project, it)
       } else {

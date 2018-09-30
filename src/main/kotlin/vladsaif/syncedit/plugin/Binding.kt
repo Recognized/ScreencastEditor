@@ -23,8 +23,7 @@ fun mergeBindings(bindings: List<Binding>): List<Binding> {
   }
 }
 
-fun createBindings(wordMapping: Map<Int, RangeMarker>, lineConverter: (IRange) -> IRange = { it }) = wordMapping.values
-    .mapIndexed { index, x -> index to x }
+fun createBindings(wordMapping: Map<Int, RangeMarker>, lineConverter: (IRange) -> IRange = { it }) = wordMapping.entries
     .map { (index, x) -> Binding(IRange(index, index), lineConverter(x.toLineRange())) }
     .let(::mergeBindings)
 

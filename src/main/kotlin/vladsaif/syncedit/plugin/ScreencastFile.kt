@@ -14,6 +14,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.util.containers.ContainerUtil
+import com.intellij.util.io.exists
 import com.intellij.util.io.isFile
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.withContext
@@ -85,10 +86,16 @@ class ScreencastFile(
       }
     }
 
-  private fun readZip() {
-    if (!file.isFile() || !file.endsWith(ScreencastFileType.defaultExtension)) {
+  init {
+    if (!file.exists()) {
+      throw IOException("File ($file) does not exist.")
+    }
+    if (!file.isFile() || !file.toString().endsWith(ScreencastFileType.defaultExtension)) {
       throw IOException("Supplied file ($file) is not screencast.")
     }
+  }
+
+  private fun readZip() {
     var audioName: String? = null
     var transcriptName: String? = null
     var scriptName: String? = null
@@ -166,11 +173,28 @@ class ScreencastFile(
   }
 
   private fun getInputStreamByType(type: EntryType): InputStream? {
-    ZipFile(file.toFile()).use { file ->
-      return file.entries()
+    val exists = ZipFile(file.toFile()).use { file ->
+      file.entries().asSequence().forEach { println(it.name + ":" + it.comment) }
+      file.entries()
           .asSequence()
-          .firstOrNull { it.comment == type.name }
-          ?.let { file.getInputStream(it) }
+          .any { it.comment == type.name }
+    }
+    return if (exists) ZipEntryInputStream(ZipFile(file.toFile()), type.name) else null
+  }
+
+  private class ZipEntryInputStream(private val file: ZipFile, comment: String) : InputStream() {
+    private val stream: InputStream = file.getInputStream(file.entries().asSequence().first { it.comment == comment })
+    override fun read() = stream.read()
+    override fun read(b: ByteArray?) = stream.read(b)
+    override fun read(b: ByteArray?, off: Int, len: Int) = stream.read(b, off, len)
+    override fun skip(n: Long) = stream.skip(n)
+    override fun available() = stream.available()
+    override fun reset() = stream.reset()
+    override fun mark(readlimit: Int) = stream.mark(readlimit)
+    override fun markSupported() = stream.markSupported()
+    override fun close() {
+      stream.close()
+      file.close()
     }
   }
 
@@ -326,6 +350,7 @@ class ScreencastFile(
     if (myTranscriptListenerEnabled) {
       if (transcriptPsi == null && data != null) {
         createTranscriptPsi(data!!)
+        createDefaultBinding()
       }
       with(UndoManager.getInstance(project)) {
         if (!isRedoInProgress && !isUndoInProgress) {
@@ -349,6 +374,7 @@ class ScreencastFile(
   }
 
   override fun dispose() {
+    FILES.remove(file)
     myListeners.clear()
     data = null
   }

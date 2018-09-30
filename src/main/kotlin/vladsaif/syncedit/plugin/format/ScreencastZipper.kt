@@ -48,20 +48,23 @@ object ScreencastZipper {
           with(zipStream) {
             setLevel(0)
             if (script != null) {
-              putNextEntry(ZipEntry(destination.fileName.toString() + ".kts"))
-              setComment(EntryType.SCRIPT.name)
+              val entry = ZipEntry(destination.fileName.toString() + ".kts")
+              entry.comment = EntryType.SCRIPT.name
+              putNextEntry(entry)
               write(script!!.toByteArray(Charset.forName("UTF-8")))
               closeEntry()
             }
             if (audio != null) {
-              putNextEntry(ZipEntry(audio!!.fileName.toString()))
-              setComment(EntryType.AUDIO.name)
+              val zipEntry = ZipEntry(audio!!.fileName.toString())
+              zipEntry.comment = EntryType.AUDIO.name
+              putNextEntry(zipEntry)
               Files.copy(audio, this)
               closeEntry()
             }
             if (data != null) {
-              putNextEntry(ZipEntry(destination.fileName.toString() + ".transcript"))
-              setComment(EntryType.TRANSCRIPT_DATA.name)
+              val entry = ZipEntry(destination.fileName.toString() + ".transcript")
+              entry.comment = EntryType.TRANSCRIPT_DATA.name
+              putNextEntry(entry)
               write(data!!.toXml().toByteArray(Charset.forName("UTF-8")))
               closeEntry()
             }

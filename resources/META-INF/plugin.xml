@@ -35,8 +35,8 @@
       <action id="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               class="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               icon="ScreencastEditorIcons.SCREENCAST"
-              text="Open audio"
-              description="Opens audio waveform view"/>
+              text="Open Screencast"
+              description="Open Screencast audio and script data"/>
       <action id="vladsaif.syncedit.plugin.actions.tools.ManageScriptTranscriptRelations"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.actions.tools.ManageScriptTranscriptRelations"
@@ -60,34 +60,34 @@
     <action id="vladsaif.syncedit.plugin.actions.tools.SetCredentials"
             icon="ScreencastEditorIcons.SETTINGS"
             class="vladsaif.syncedit.plugin.actions.tools.SetCredentials"
-            text="Set cloud recognition credentials "
+            text="Set Cloud Recognition Credentials"
             description="Set credentials used in cloud recognition">
       <add-to-group group-id="GSpeechKit" anchor="last"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.ConcatenateAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ConcatenateAction"
-            text="Concatenate words"
+            text="Concatenate Words"
             description="Concatenate selected words">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction"
-            text="Exclude word"
+            text="Exclude Word"
             description="Exclude word from transcript">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt DELETE"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
-            text="Include word"
+            text="Include Word"
             description="Include to transcript previously excluded word ">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt EQUALS"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
-            text="Mute word"
+            text="Mute Word"
             description="Mute word">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="alt M"/>
@@ -99,7 +99,7 @@
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="ProjectViewPopupMenuRunGroup"/>
       <action id="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
               class="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
-              text="Open in Screencast Audio Editor"
+              text="Open Screencast"
               description="Open in Screencast Audio Editor"
               icon="ScreencastEditorIcons.EQUALIZER">
       </action>

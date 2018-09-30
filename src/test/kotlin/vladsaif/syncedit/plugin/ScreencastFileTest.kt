@@ -4,12 +4,12 @@ import com.intellij.psi.PsiFileFactory
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import kotlinx.coroutines.experimental.runBlocking
 import org.jetbrains.kotlin.idea.KotlinFileType
-import org.junit.Before
 import org.junit.Test
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 
 class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
-  private val screencastPath = RESOURCES_PATH.resolve(this.javaClass.name + ScreencastFileType.defaultExtension)
+  private val screencastPath = RESOURCES_PATH.resolve(javaClass.name.replace('\\', '.') + "."
+      + ScreencastFileType.defaultExtension)
   private val transcriptData = TranscriptData(listOf(
       WordData("first", IRange(1000, 2000)),
       WordData("two", IRange(2000, 3000)),
@@ -58,8 +58,8 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
     )
   }
 
-  @Before
-  fun before() {
+  override fun setUp() {
+    super.setUp()
     prepareTestScreencast(project, screencastPath, audioPath, script.text, transcriptData)
   }
 
@@ -68,6 +68,7 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
       ScreencastFile.create(project, screencastPath)
     }
     model.block()
+    model.dispose()
   }
 
   @Test
