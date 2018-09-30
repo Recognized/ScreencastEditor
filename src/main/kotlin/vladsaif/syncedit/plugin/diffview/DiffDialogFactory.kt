@@ -1,8 +1,8 @@
 package vladsaif.syncedit.plugin.diffview
 
+import com.intellij.application.options.CodeStyle
 import com.intellij.codeInsight.daemon.impl.analysis.FileHighlightingSetting
 import com.intellij.codeInsight.daemon.impl.analysis.HighlightLevelUtil
-import com.intellij.codeStyle.CodeStyleFacade
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
@@ -13,7 +13,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.EditorKind
 import com.intellij.openapi.editor.LogicalPosition
-import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.ex.EditorMarkupModel
@@ -32,8 +31,6 @@ import com.intellij.ui.TitledSeparator
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.IRange
@@ -43,8 +40,6 @@ import vladsaif.syncedit.plugin.audioview.toolbar.addAction
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
-import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptLanguage
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import java.awt.*
 import java.awt.GridBagConstraints.*
@@ -65,7 +60,7 @@ object DiffDialogFactory {
     val (splitter, diffModel) = createSplitter(model)
     val vertical = JPanel(GridBagLayout())
     vertical.add(
-        createTitle(model),
+        createTitle(),
         GridBagBuilder().fill(HORIZONTAL).gridx(0).gridy(0).weightx(1.0).weighty(0.0).done()
     )
     vertical.add(
@@ -104,8 +99,7 @@ object DiffDialogFactory {
     return panel
   }
 
-
-  private fun createTitle(model: ScreencastFile): JComponent {
+  private fun createTitle(): JComponent {
     val panel = createBoxedPanel(false)
     panel.add(TitledSeparator("Transcript"))
     val right = TitledSeparator("Script")
@@ -144,12 +138,11 @@ object DiffDialogFactory {
     group.addAction(
         "Reset",
         "Reset all changes",
-        AllIcons.Actions.Reset,
+        AllIcons.Actions.Rollback,
         { diffViewModel.resetChanges() },
         { true })
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
-
 
   private fun createSplitter(model: ScreencastFile): Pair<Splitter, DiffViewModel> {
     val pane = createTranscriptView(model.transcriptPsi!!)
@@ -253,22 +246,16 @@ object DiffDialogFactory {
   }
 
   private fun createEditorPanel(project: Project, psi: PsiFile): MyEditorWrapper {
-    val isScript = when (psi.language) {
-      KotlinLanguage.INSTANCE -> true
-      TranscriptLanguage -> false
-      else -> throw IllegalArgumentException()
-    }
-    val transformed = transformFile(project, psi, isScript)
+    val transformed = transformFile(project, psi)
     val factory = EditorFactory.getInstance()
     val kind = EditorKind.DIFF
     val editor = factory.createViewer(transformed.viewProvider.document!!, project, kind) as EditorEx
-    configureEditor(project, editor, transformed, isScript)
+    configureEditor(project, editor, transformed)
     return MyEditorWrapper(editor)
   }
 
-  private fun transformFile(project: Project, psi: PsiFile, isScript: Boolean): PsiFile {
-    val text = if (isScript) transformScript(psi as KtFile)
-    else transformTranscript(project, psi)
+  private fun transformFile(project: Project, psi: PsiFile): PsiFile {
+    val text = transformScript(psi as KtFile)
     return PsiFileFactory.getInstance(project).createFileFromText(
         psi.name,
         psi.fileType,
@@ -305,17 +292,14 @@ object DiffDialogFactory {
   }
 
 
-  private fun configureEditor(project: Project, editor: EditorEx, psi: PsiFile, isScript: Boolean) {
+  private fun configureEditor(project: Project, editor: EditorEx, psi: PsiFile) {
     with(editor) {
       setFile(psi.virtualFile)
       highlighter = createEditorHighlighter(project, psi)
-      verticalScrollbarOrientation = if (isScript) EditorEx.VERTICAL_SCROLLBAR_RIGHT
-      else EditorEx.VERTICAL_SCROLLBAR_LEFT
+      verticalScrollbarOrientation = EditorEx.VERTICAL_SCROLLBAR_RIGHT
       if (!project.isDisposed) {
-        val fileType = if (isScript) KotlinFileType.INSTANCE else TranscriptFileType
-        val codeStyleFacade = CodeStyleFacade.getInstance(project)
-        settings.setTabSize(codeStyleFacade.getTabSize(fileType))
-        settings.setUseTabCharacter(codeStyleFacade.useTabCharacter(fileType))
+        settings.setTabSize(CodeStyle.getIndentOptions(psi).TAB_SIZE)
+        settings.setUseTabCharacter(CodeStyle.getIndentOptions(psi).USE_TAB_CHARACTER)
       }
       settings.isCaretRowShown = false
       settings.isShowIntentionBulb = false
@@ -326,9 +310,6 @@ object DiffDialogFactory {
       foldingModel.isFoldingEnabled = false
       UIUtil.removeScrollBorder(component)
       HighlightLevelUtil.forceRootHighlighting(psi, FileHighlightingSetting.SKIP_HIGHLIGHTING)
-      if (!isScript) {
-        colorsScheme.setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
-      }
     }
   }
 

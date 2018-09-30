@@ -11,7 +11,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.io.exists
@@ -30,6 +29,7 @@ import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
+import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import java.io.IOException
@@ -59,23 +59,23 @@ class ScreencastFile(
     get() = getInputStreamByType(TRANSCRIPT_DATA)
   private val scriptInputStream: InputStream?
     get() = getInputStreamByType(SCRIPT)
-  var audioName: String? = null
-    private set
+  val name: String
+    get() = file.fileName.toString().substringBefore(ScreencastFileType.defaultExtension)
   var audioDataModel: AudioDataModel? = null
     private set
   val audioInputStream: InputStream?
-    get() = getInputStreamByType(AUDIO);
+    get() = getInputStreamByType(AUDIO)
   val bindings: MutableMap<Int, RangeMarker> = mutableMapOf()
-  var transcriptName: String? = null
+  val transcriptPsi: TranscriptPsiFile?
+    get() = getPsi(transcriptFile)
+  var transcriptFile: VirtualFile? = null
     private set
-  var transcriptPsi: TranscriptPsiFile? = null
+  var scriptFile: VirtualFile? = null
     private set
   val scriptDocument: Document?
     get() = scriptPsi?.viewProvider?.document
-  var scriptName: String? = null
-    private set
-  var scriptPsi: KtFile? = null
-    private set
+  val scriptPsi: KtFile?
+    get() = getPsi(scriptFile)
   val editionModel: EditionModel = DefaultEditionModel()
   var data: TranscriptData? = null
     set(value) {
@@ -95,106 +95,30 @@ class ScreencastFile(
     }
   }
 
-  private fun readZip() {
-    var audioName: String? = null
-    var transcriptName: String? = null
-    var scriptName: String? = null
-    ZipFile(file.toFile()).use { file ->
-      for (entry in file.entries()) {
-        when (entry.comment) {
-          AUDIO.name -> {
-            audioName = entry.name
-          }
-          TRANSCRIPT_DATA.name -> {
-            transcriptName = entry.name.substringBefore(".")
-          }
-          SCRIPT.name -> {
-            scriptName = entry.name.substringBefore(".")
-          }
-        }
-      }
-    }
-    this.audioName = audioName
-    this.transcriptName = transcriptName
-    this.scriptName = scriptName
-  }
-
   suspend fun initialize() {
     withContext(CommonPool) {
-      readZip()
       audioDataModel = audioInputStream?.let { SimpleAudioModel { audioInputStream!! } }
     }
     withContext(ExEDT) {
-      scriptPsi = scriptInputStream?.let {
-        createLightPsi(
-            scriptName!! + ".kts",
+      if (!TranscriptFactoryListener.isInitialized) {
+        TranscriptFactoryListener.initialize(project)
+      }
+      scriptFile = scriptInputStream?.let {
+        createVirtualFile(
+            "$name.kts",
             readContents(it),
             KotlinFileType.INSTANCE
-        ) as KtFile
+        )
       }
-      scriptPsi?.putUserData(KEY, this)
+      scriptFile?.putUserData(KEY, this)
       data = transcriptInputStream?.let { TranscriptData.createFrom(it) }
       synchronizeTranscriptWithEditionModel()
       addTranscriptDataListener(object : ScreencastFile.Listener {
         override fun onTranscriptDataChanged() {
-          val files = listOfNotNull(scriptPsi?.virtualFile, transcriptPsi?.virtualFile)
+          val files = listOfNotNull(transcriptFile, scriptFile)
           PsiDocumentManager.getInstance(project).reparseFiles(files, true)
         }
       })
-    }
-  }
-
-  private fun createTranscriptPsi(data: TranscriptData) {
-    transcriptPsi = data.text.let {
-      createLightPsi(
-          transcriptName + TranscriptFileType.defaultExtension,
-          it,
-          TranscriptFileType
-      ) as TranscriptPsiFile
-    }
-    transcriptPsi?.putUserData(KEY, this)
-  }
-
-  private fun readContents(stream: InputStream): String {
-    return stream.bufferedReader(Charset.forName("UTF-8")).use {
-      it.lines().collect(Collectors.joining("\n"))
-    }
-  }
-
-  private fun createLightPsi(name: String, text: String, type: FileType): PsiFile {
-    return PsiFileFactory.getInstance(project).createFileFromText(
-        name,
-        type,
-        text,
-        0,
-        true,
-        false
-    )
-  }
-
-  private fun getInputStreamByType(type: EntryType): InputStream? {
-    val exists = ZipFile(file.toFile()).use { file ->
-      file.entries().asSequence().forEach { println(it.name + ":" + it.comment) }
-      file.entries()
-          .asSequence()
-          .any { it.comment == type.name }
-    }
-    return if (exists) ZipEntryInputStream(ZipFile(file.toFile()), type.name) else null
-  }
-
-  private class ZipEntryInputStream(private val file: ZipFile, comment: String) : InputStream() {
-    private val stream: InputStream = file.getInputStream(file.entries().asSequence().first { it.comment == comment })
-    override fun read() = stream.read()
-    override fun read(b: ByteArray?) = stream.read(b)
-    override fun read(b: ByteArray?, off: Int, len: Int) = stream.read(b, off, len)
-    override fun skip(n: Long) = stream.skip(n)
-    override fun available() = stream.available()
-    override fun reset() = stream.reset()
-    override fun mark(readlimit: Int) = stream.mark(readlimit)
-    override fun markSupported() = stream.markSupported()
-    override fun close() {
-      stream.close()
-      file.close()
     }
   }
 
@@ -204,74 +128,6 @@ class ScreencastFile(
         onEditionModelChanged()
       }
     })
-  }
-
-  private fun onEditionModelChanged() {
-    val preparedEditions = data?.let { getWordReplacements(it) } ?: return
-    myTranscriptListenerEnabled = false
-    try {
-      replaceWords(preparedEditions)
-    } finally {
-      myTranscriptListenerEnabled = true
-    }
-  }
-
-  private fun getWordReplacements(data: TranscriptData): List<Pair<Int, WordData>> {
-    val audio = audioDataModel ?: return listOf()
-    val editions = editionModel.editions.map { audio.frameRangeToMsRange(it.first) to it.second.toWordDataState() }
-    val preparedEditions = mutableListOf<Pair<Int, WordData>>()
-    for (edition in editions) {
-      for ((i, word) in data.words.withIndex()) {
-        if (word.range in edition.first && word.state != edition.second) {
-          preparedEditions.add(i to word.copy(state = edition.second))
-        }
-      }
-    }
-    return preparedEditions.toList()
-  }
-
-  private fun EditionModel.EditionType.toWordDataState() = when (this) {
-    CUT -> EXCLUDED
-    MUTE -> MUTED
-    NO_CHANGES -> PRESENTED
-  }
-
-  private fun synchronizeTranscriptWithEditionModel() {
-    val words = data?.words ?: return
-    val audio = audioDataModel ?: return
-    editionModel.reset()
-    for (word in words) {
-      when (word.state) {
-        EXCLUDED -> editionModel.cut(audio.msRangeToFrameRange(word.range))
-        MUTED -> editionModel.mute(audio.msRangeToFrameRange(word.range))
-        PRESENTED -> editionModel.undo(audio.msRangeToFrameRange(word.range))
-      }
-    }
-  }
-
-  interface Listener {
-    fun onTranscriptDataChanged()
-  }
-
-  private fun updateTranscript() {
-    val nonNullData = data ?: return
-    transcriptPsi?.virtualFile?.updateDoc { doc ->
-      with(PsiDocumentManager.getInstance(project)) {
-        doPostponedOperationsAndUnblockDocument(doc)
-        doc.setText(nonNullData.text)
-        commitDocument(doc)
-      }
-    }
-  }
-
-  private fun VirtualFile.updateDoc(action: (Document) -> Unit) {
-    FileDocumentManager.getInstance().getDocument(this)?.let { doc ->
-      ApplicationManager.getApplication().invokeAndWait {
-        ApplicationManager.getApplication().runWriteAction {
-          action(doc)
-        }
-      }
-    }
   }
 
   fun addTranscriptDataListener(listener: Listener) {
@@ -344,6 +200,71 @@ class ScreencastFile(
     }
   }
 
+  private fun onEditionModelChanged() {
+    val preparedEditions = data?.let { getWordReplacements(it) } ?: return
+    myTranscriptListenerEnabled = false
+    try {
+      replaceWords(preparedEditions)
+    } finally {
+      myTranscriptListenerEnabled = true
+    }
+  }
+
+  private fun getWordReplacements(data: TranscriptData): List<Pair<Int, WordData>> {
+    val audio = audioDataModel ?: return listOf()
+    val editions = editionModel.editions.map { audio.frameRangeToMsRange(it.first) to it.second.toWordDataState() }
+    val preparedEditions = mutableListOf<Pair<Int, WordData>>()
+    for (edition in editions) {
+      for ((i, word) in data.words.withIndex()) {
+        if (word.range in edition.first && word.state != edition.second) {
+          preparedEditions.add(i to word.copy(state = edition.second))
+        }
+      }
+    }
+    return preparedEditions.toList()
+  }
+
+  private fun EditionModel.EditionType.toWordDataState() = when (this) {
+    CUT -> EXCLUDED
+    MUTE -> MUTED
+    NO_CHANGES -> PRESENTED
+  }
+
+  private fun synchronizeTranscriptWithEditionModel() {
+    val words = data?.words ?: return
+    val audio = audioDataModel ?: return
+    editionModel.reset()
+    for (word in words) {
+      when (word.state) {
+        EXCLUDED -> editionModel.cut(audio.msRangeToFrameRange(word.range))
+        MUTED -> editionModel.mute(audio.msRangeToFrameRange(word.range))
+        PRESENTED -> editionModel.undo(audio.msRangeToFrameRange(word.range))
+      }
+    }
+  }
+
+  private fun updateTranscript() {
+    val nonNullData = data ?: return
+    transcriptPsi?.virtualFile?.updateDoc { doc ->
+      with(PsiDocumentManager.getInstance(project)) {
+        doPostponedOperationsAndUnblockDocument(doc)
+        doc.setText(nonNullData.text)
+        commitDocument(doc)
+      }
+    }
+  }
+
+  private fun VirtualFile.updateDoc(action: (Document) -> Unit) {
+    FileDocumentManager.getInstance().getDocument(this)?.let { doc ->
+      ApplicationManager.getApplication().invokeAndWait {
+        ApplicationManager.getApplication().runWriteAction {
+          action(doc)
+        }
+      }
+    }
+  }
+
+
   private fun fireTranscriptDataChanged() {
     // Synchronize edition model with transcript data if it was changed in editor.
     // Also do not forger to reset coordinates cache.
@@ -383,6 +304,70 @@ class ScreencastFile(
     return "ScreencastFile(file=$file, myListeners=$myListeners, data=$data, scriptPsi=$scriptPsi, " +
         "transcriptPsi=$transcriptPsi, audioDataModel=$audioDataModel, editionModel=$editionModel)"
   }
+
+  private inline fun <reified T> getPsi(virtualFile: VirtualFile?): T? {
+    val file = virtualFile ?: return null
+    val doc = FileDocumentManager.getInstance().getDocument(file) ?: return null
+    return PsiDocumentManager.getInstance(project).getPsiFile(doc) as? T
+  }
+
+  private fun createTranscriptPsi(data: TranscriptData) {
+    transcriptFile = createVirtualFile(
+        "$name.transcript",
+        data.text,
+        TranscriptFileType
+    )
+    transcriptFile!!.putUserData(KEY, this)
+  }
+
+  private fun readContents(stream: InputStream): String {
+    return stream.bufferedReader(Charset.forName("UTF-8")).use {
+      it.lines().collect(Collectors.joining("\n"))
+    }
+  }
+
+  private fun createVirtualFile(name: String, text: String, type: FileType): VirtualFile {
+    return PsiFileFactory.getInstance(project).createFileFromText(
+        name,
+        type,
+        text,
+        0,
+        true,
+        false
+    ).virtualFile
+  }
+
+  private fun getInputStreamByType(type: EntryType): InputStream? {
+    val exists = ZipFile(file.toFile()).use { file ->
+      file.entries()
+          .asSequence()
+          .any { it.comment == type.name }
+    }
+    return if (exists) ZipEntryInputStream(ZipFile(file.toFile()), type.name) else null
+  }
+
+
+  interface Listener {
+    fun onTranscriptDataChanged()
+  }
+
+
+  private class ZipEntryInputStream(private val file: ZipFile, comment: String) : InputStream() {
+    private val stream: InputStream = file.getInputStream(file.entries().asSequence().first { it.comment == comment })
+    override fun read() = stream.read()
+    override fun read(b: ByteArray?) = stream.read(b)
+    override fun read(b: ByteArray?, off: Int, len: Int) = stream.read(b, off, len)
+    override fun skip(n: Long) = stream.skip(n)
+    override fun available() = stream.available()
+    override fun reset() = stream.reset()
+    override fun mark(readlimit: Int) = stream.mark(readlimit)
+    override fun markSupported() = stream.markSupported()
+    override fun close() {
+      stream.close()
+      file.close()
+    }
+  }
+
 
   companion object {
     private val FILES: MutableMap<Path, ScreencastFile> = ConcurrentHashMap()

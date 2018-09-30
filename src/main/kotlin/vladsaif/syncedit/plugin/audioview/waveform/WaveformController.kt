@@ -85,7 +85,7 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     if (myPlayState == PLAY) return
     if (myPlayState == STOP) {
       myPlayState = PLAY
-      waveform.model.screencast.audioName ?: return
+      waveform.model.screencast.audioInputStream ?: return
       val player = Player.create {
         waveform.model.screencast.audioInputStream!!
       }

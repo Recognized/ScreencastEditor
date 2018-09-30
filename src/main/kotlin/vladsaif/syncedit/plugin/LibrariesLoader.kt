@@ -1,7 +1,6 @@
 package vladsaif.syncedit.plugin
 
 import com.intellij.ide.plugins.cl.PluginClassLoader
-import com.intellij.openapi.components.ApplicationComponent
 import com.intellij.util.lang.UrlClassLoader
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException
@@ -10,7 +9,7 @@ import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Path
 
-class LibrariesLoader : ApplicationComponent {
+class LibrariesLoader {
   companion object {
     private val myUrls: List<URL>
     private var myLoaderField: ClassLoader? = null

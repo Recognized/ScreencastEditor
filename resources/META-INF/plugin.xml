@@ -18,7 +18,6 @@
     <annotator language="TranscriptLanguage"
                id="transcriptAnnotator"
                implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
-    <fileEditorProvider implementation="vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptEditorProvider"/>
     <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
     <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
     <fileTypeFactory implementation="vladsaif.syncedit.plugin.format.ScreencastFileTypeFactory"/>

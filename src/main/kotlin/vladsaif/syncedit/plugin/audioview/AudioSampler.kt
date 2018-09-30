@@ -27,13 +27,10 @@ class AudioSampler(
     if (underlyingStream.format.sampleSizeInBits < 8) {
       throw UnsupportedAudioFileException("Unsupported format, sample size ($sampleSizeInBits bits) less than byte")
     }
-    if (underlyingStream is DecodedMpegAudioInputStream) {
-      val start = System.currentTimeMillis()
-      if (skippedFrames != 0L) {
+    if (skippedFrames != 0L) {
+      if (underlyingStream is DecodedMpegAudioInputStream) {
         underlyingStream.skipFramesMpeg(buffer, skippedFrames)
-      }
-    } else {
-      if (skippedFrames != 0L) {
+      } else {
         underlyingStream.skipFrames(skippedFrames)
       }
     }

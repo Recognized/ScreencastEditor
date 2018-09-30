@@ -7,7 +7,7 @@ import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.TranscriptModelUndoableAction
+import vladsaif.syncedit.plugin.TranscriptUndoableAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
@@ -25,7 +25,7 @@ abstract class TranscriptRefactoringAction : AnAction() {
     CommandProcessor.getInstance().executeCommand(project, {
       doAction(model, getSelectedWords(editor, psi))
       val newData = model.data ?: return@executeCommand
-      val undo = TranscriptModelUndoableAction(model, data, newData)
+      val undo = TranscriptUndoableAction(model, data, newData)
       UndoManager.getInstance(project).undoableActionPerformed(undo)
     }, this.javaClass.simpleName, "ScreencastEditor", editor.document)
   }

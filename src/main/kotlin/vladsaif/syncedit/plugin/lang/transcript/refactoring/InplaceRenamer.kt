@@ -17,7 +17,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.refactoring.RefactoringBundle
 import com.intellij.util.containers.Stack
-import vladsaif.syncedit.plugin.TranscriptModelUndoableAction
+import vladsaif.syncedit.plugin.TranscriptUndoableAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
@@ -74,7 +74,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
         val currentData = model.data
         val newData = model.data?.excludeWord(myOriginalIndex)
         if (currentData != null && newData != null) {
-          val undo = TranscriptModelUndoableAction(model, currentData, newData)
+          val undo = TranscriptUndoableAction(model, currentData, newData)
           manager.undoableActionPerformed(undo)
         }
         // Now apply changes to model, because manager do not invoke redo() method
@@ -87,7 +87,7 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
         val currentData = model.data
         val newData = model.data?.renameWord(myOriginalIndex, editor.document.getText(textRange))
         if (currentData != null && newData != null) {
-          val undo = TranscriptModelUndoableAction(model, currentData, newData)
+          val undo = TranscriptUndoableAction(model, currentData, newData)
           manager.undoableActionPerformed(undo)
         }
         model.renameWord(myOriginalIndex, editor.document.getText(textRange))

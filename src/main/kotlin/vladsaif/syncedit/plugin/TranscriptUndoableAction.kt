@@ -5,11 +5,13 @@ import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.psi.PsiDocumentManager
 
-class TranscriptModelUndoableAction(
+class TranscriptUndoableAction(
     private val model: ScreencastFile,
-    private val currentData: TranscriptData,
-    private val newData: TranscriptData
+    private val before: TranscriptData,
+    private val after: TranscriptData
 ) : UndoableAction {
+
+  private val myAffectedDocuments = mutableSetOf<DocumentReference>()
 
   init {
     model.transcriptPsi
@@ -19,14 +21,12 @@ class TranscriptModelUndoableAction(
         ?.let { addAffectedDocuments(DocumentReferenceManager.getInstance().create(it)) }
   }
 
-  private val myAffectedDocuments = mutableSetOf<DocumentReference>()
-
   override fun redo() {
-    model.data = newData
+    model.data = after
   }
 
   override fun undo() {
-    model.data = currentData
+    model.data = before
   }
 
   fun addAffectedDocuments(ref: DocumentReference) {

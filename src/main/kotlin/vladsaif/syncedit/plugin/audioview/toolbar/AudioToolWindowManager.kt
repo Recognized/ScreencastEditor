@@ -39,7 +39,7 @@ object AudioToolWindowManager {
 
   private fun openAudioFile(screencast: ScreencastFile) {
     val audioPanel = AudioToolWindowPanel(screencast)
-    val content = ContentFactory.SERVICE.getInstance().createContent(audioPanel, screencast.audioName, false)
+    val content = ContentFactory.SERVICE.getInstance().createContent(audioPanel, screencast.name, false)
     val toolWindow = getToolWindow(screencast.project)
     toolWindow.contentManager.removeAllContents(true)
     toolWindow.contentManager.addContent(content)

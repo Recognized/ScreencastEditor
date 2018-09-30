@@ -173,7 +173,7 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
         }
       } catch (ex: IOException) {
         if (myIsBroken.compareAndSet(false, true)) {
-          showNotification("I/O error occurred during reading ${screencast.audioName} audio file. Try reopen file.")
+          showNotification("I/O error occurred during reading ${screencast.name} audio file. Try reopen file.")
         }
       } catch (ex: CancellationException) {
         return
