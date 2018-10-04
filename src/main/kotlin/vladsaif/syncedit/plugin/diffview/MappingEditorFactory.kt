@@ -52,12 +52,12 @@ import javax.swing.event.MouseInputAdapter
 import kotlin.math.max
 import kotlin.math.min
 
-object DiffDialogFactory {
+object MappingEditorFactory {
 
   fun showWindow(model: ScreencastFile) {
     val holder = JPanel(GridBagLayout())
     holder.border = BorderFactory.createEmptyBorder()
-    val (splitter, diffModel) = createSplitter(model)
+    val (splitter, diffViewModel) = createSplitter(model)
     val vertical = JPanel(GridBagLayout())
     vertical.add(
         createTitle(),
@@ -68,7 +68,7 @@ object DiffDialogFactory {
         GridBagBuilder().fill(BOTH).gridx(0).gridy(1).weightx(1.0).weighty(1.0).done()
     )
     holder.add(
-        createToolbar(diffModel).component,
+        createToolbar(diffViewModel).component,
         GridBagBuilder().anchor(WEST).fill(HORIZONTAL).gridx(0).gridy(0).weighty(0.0).weightx(1.0).done()
     )
     holder.add(vertical, GridBagBuilder().fill(BOTH).gridx(0).gridy(1).weightx(1.0).weighty(1.0).done())
@@ -79,15 +79,14 @@ object DiffDialogFactory {
       override fun keyPressed(e: KeyEvent?) {
         e ?: return
         if (e.keyCode == KeyEvent.VK_Z && (SystemInfo.isMac && e.isMetaDown || e.isControlDown)) {
-          diffModel.undo()
+          diffViewModel.undo()
         }
         if (e.keyCode == KeyEvent.VK_Z && e.isShiftDown && (SystemInfo.isMac && e.isMetaDown || e.isControlDown)) {
-          diffModel.redo()
+          diffViewModel.redo()
         }
       }
     })
-    Disposer.register(wrapper, splitter)
-    Disposer.register(wrapper, diffModel)
+    Disposer.register(wrapper, diffViewModel)
     wrapper.show()
   }
 
@@ -109,49 +108,49 @@ object DiffDialogFactory {
     return panel
   }
 
-  private fun createToolbar(diffViewModel: DiffViewModel): ActionToolbar {
+  private fun createToolbar(mappingViewModel: MappingViewModel): ActionToolbar {
     val group = DefaultActionGroup()
     group.addAction(
         "Bind",
         "Associate selected",
         AllIcons.General.Add,
-        { diffViewModel.bindSelected() },
-        { !diffViewModel.selectedItems.empty && !diffViewModel.editorSelectionRange.empty })
+        { mappingViewModel.bindSelected() },
+        { !mappingViewModel.selectedItems.empty && !mappingViewModel.editorSelectionRange.empty })
     group.addAction(
         "Unbind",
         "Remove associations",
         AllIcons.General.Remove,
-        { diffViewModel.unbindSelected() },
-        { !diffViewModel.selectedItems.empty })
+        { mappingViewModel.unbindSelected() },
+        { !mappingViewModel.selectedItems.empty })
     group.addAction(
         "Undo",
         "Undo last action",
         AllIcons.Actions.Undo,
-        { diffViewModel.undo() },
-        { diffViewModel.isUndoAvailable })
+        { mappingViewModel.undo() },
+        { mappingViewModel.isUndoAvailable })
     group.addAction(
         "Redo",
         "",
         AllIcons.Actions.Redo,
-        { diffViewModel.redo() },
-        { diffViewModel.isRedoAvailable })
+        { mappingViewModel.redo() },
+        { mappingViewModel.isRedoAvailable })
     group.addAction(
         "Reset",
         "Reset all changes",
         AllIcons.Actions.Rollback,
-        { diffViewModel.resetChanges() },
-        { diffViewModel.isResetAvailable })
+        { mappingViewModel.resetChanges() },
+        { mappingViewModel.isResetAvailable })
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 
-  private fun createSplitter(model: ScreencastFile): Pair<Splitter, DiffViewModel> {
+  private fun createSplitter(model: ScreencastFile): Pair<Splitter, MappingViewModel> {
     val pane = createTranscriptView(model.transcriptPsi!!)
     val editorView = createEditorPanel(model.project, model.scriptPsi!!)
     val textPanel = pane.viewport.view as TextItemPanel
-    val diffModel = DiffViewModel(DiffModel(model), editorView.editor as EditorEx, textPanel.cast())
+    val diffViewModel = MappingViewModel(MappingEditorModel(model), editorView.editor as EditorEx, textPanel.cast())
     val leftDragListener = object : MouseDragListener() {
       override fun onDrag(point: Point) {
-        diffModel.selectHeightRange(IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y)))
+        diffViewModel.selectHeightRange(IRange(min(dragStartEvent!!.y, point.y), max(dragStartEvent!!.y, point.y)))
       }
     }
     textPanel.addMouseListener(leftDragListener)
@@ -161,26 +160,26 @@ object DiffDialogFactory {
         e ?: return
         val number = textPanel.findItemNumber(e.point)
         if (number < 0 || !SwingUtilities.isLeftMouseButton(e)) {
-          diffModel.selectedItems = IRange.EMPTY_RANGE
+          diffViewModel.selectedItems = IRange.EMPTY_RANGE
         } else {
-          diffModel.selectedItems = IRange(number, number)
+          diffViewModel.selectedItems = IRange(number, number)
         }
       }
     }
     textPanel.addMouseListener(clickListener)
     textPanel.addMouseMotionListener(object : MouseInputAdapter() {
       override fun mouseExited(e: MouseEvent?) {
-        diffModel.hoveredItem = -1
+        diffViewModel.hoveredItem = -1
       }
 
       override fun mouseMoved(e: MouseEvent?) {
         e ?: return
         val number = textPanel.findItemNumber(e.point)
-        diffModel.hoveredItem = if (number < 0) -1 else number
+        diffViewModel.hoveredItem = if (number < 0) -1 else number
       }
     })
     val painter = SplitterPainter(
-        diffModel,
+        diffViewModel,
         createTranscriptLocator(pane.viewport),
         createScriptLocator(editorView.editor)
     )
@@ -189,7 +188,7 @@ object DiffDialogFactory {
         rightComponent = editorView,
         painter = painter
     )
-    diffModel.addChangeListener(ChangeListener {
+    diffViewModel.addChangeListener(ChangeListener {
       pane.revalidate()
       pane.repaint()
       splitter.repaint()
@@ -200,8 +199,8 @@ object DiffDialogFactory {
     pane.verticalScrollBar.addAdjustmentListener {
       splitter.divider.repaint()
     }
-    Disposer.register(splitter, editorView)
-    return splitter to diffModel
+    Disposer.register(diffViewModel, editorView)
+    return splitter to diffViewModel
   }
 
   private fun createTranscriptLocator(viewport: JViewport): Locator {

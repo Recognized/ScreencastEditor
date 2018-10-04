@@ -11,7 +11,7 @@ import java.awt.geom.Path2D
 import javax.swing.JComponent
 
 class SplitterPainter(
-    private val diffViewModel: DiffViewModel,
+    private val mappingViewModel: MappingViewModel,
     private val leftItemLocator: Locator,
     private val rightItemLocator: Locator
 ) {
@@ -22,7 +22,7 @@ class SplitterPainter(
       with(component) {
         color = background
         fillRect(0, 0, width, height)
-        val bindings = diffViewModel.bindings
+        val bindings = mappingViewModel.bindings
         val polygons = createShapes(bindings, width)
         for ((top, bottom) in polygons) {
           val path = Path2D.Double()

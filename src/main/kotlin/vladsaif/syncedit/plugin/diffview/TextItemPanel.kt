@@ -37,6 +37,4 @@ class TextItemPanel(layout: LayoutManager) : JPanel(layout) {
     val component = findComponentAt(point) as? TextItem ?: return -1
     return components.filterIsInstance<TextItem>().withIndex().firstOrNull { it.value == component }?.index ?: -1
   }
-
-
 }

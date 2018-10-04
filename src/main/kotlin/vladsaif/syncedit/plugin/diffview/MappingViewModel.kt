@@ -11,6 +11,7 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
+import com.intellij.openapi.util.Disposer
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.IRangeUnion
 import vladsaif.syncedit.plugin.MergedLineMapping
@@ -24,8 +25,8 @@ import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.max
 import kotlin.math.min
 
-class DiffViewModel(
-    private val diffModel: DiffModel,
+class MappingViewModel(
+    private val mappingEditorModel: MappingEditorModel,
     val editor: EditorEx,
     private val panel: TextItemPanel
 ) : ChangeNotifier by DefaultChangeNotifier(), Disposable {
@@ -76,7 +77,8 @@ class DiffViewModel(
   })
 
   init {
-    diffModel.addBindingsListener(this::onBindingsUpdate)
+    mappingEditorModel.addBindingsListener(this::onBindingsUpdate)
+    Disposer.register(this, mappingEditorModel)
   }
 
   private fun onBindingsUpdate(oldValue: List<MergedLineMapping>, newValue: List<MergedLineMapping>) {
@@ -106,7 +108,7 @@ class DiffViewModel(
   }
 
   override fun dispose() {
-    diffModel.removeBindingsListener(this::onBindingsUpdate)
+    mappingEditorModel.removeBindingsListener(this::onBindingsUpdate)
   }
 
   var editorHoveredLine: Int = -1
@@ -184,7 +186,7 @@ class DiffViewModel(
     })
     editor.addEditorMouseMotionListener(myEditorDragListener)
     editor.addEditorMouseListener(myEditorDragListener)
-    onBindingsUpdate(listOf(), diffModel.mergedLineMappings)
+    onBindingsUpdate(listOf(), mappingEditorModel.mergedLineMappings)
   }
 
   fun selectHeightRange(heightRange: IRange) {
@@ -193,33 +195,33 @@ class DiffViewModel(
 
   fun bindSelected() {
     if (selectedItems.empty || editorSelectionRange.empty) return
-    diffModel.bind(selectedItems, editorSelectionRange)
+    mappingEditorModel.bind(selectedItems, editorSelectionRange)
   }
 
   fun unbindSelected() {
     if (selectedItems.empty) return
-    diffModel.unbind(selectedItems)
+    mappingEditorModel.unbind(selectedItems)
   }
 
   fun undo() {
-    diffModel.undo()
+    mappingEditorModel.undo()
   }
 
   fun redo() {
-    diffModel.redo()
+    mappingEditorModel.redo()
   }
 
   fun resetChanges() {
-    diffModel.resetChanges()
+    mappingEditorModel.resetChanges()
   }
 
-  val bindings get() = diffModel.mergedLineMappings
+  val bindings get() = mappingEditorModel.mergedLineMappings
 
-  val isUndoAvailable get() = diffModel.isUndoAvailable
+  val isUndoAvailable get() = mappingEditorModel.isUndoAvailable
 
-  val isRedoAvailable get() = diffModel.isRedoAvailable
+  val isRedoAvailable get() = mappingEditorModel.isRedoAvailable
 
-  val isResetAvailable get() = diffModel.isResetAvailable
+  val isResetAvailable get() = mappingEditorModel.isResetAvailable
 
   private fun toItemRange(heightRange: IRange): IRange {
     var start = -1
@@ -239,7 +241,7 @@ class DiffViewModel(
       x.isDrawBottomBorder = false
       x.isDrawTopBorder = false
     }
-    for (binding in diffModel.mergedLineMappings) {
+    for (binding in mappingEditorModel.mergedLineMappings) {
       val range = binding.itemRange
       myTextItems[range.start].isDrawTopBorder = true
       myTextItems[range.end].isDrawBottomBorder = true
@@ -294,6 +296,6 @@ class DiffViewModel(
 
   private fun Editor.createHighlighter(line: IRange): List<RangeHighlighter> {
     return line.toIntRange()
-        .map { DiffDrawUtil.createHighlighter(this, it, it + 1, DiffSimulator, false)[0] }
+        .map { DiffDrawUtil.createHighlighter(this, it, it + 1, MappedLine, false)[0] }
   }
 }

@@ -6,7 +6,7 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.actions.errorNoModelForFile
-import vladsaif.syncedit.plugin.diffview.DiffDialogFactory
+import vladsaif.syncedit.plugin.diffview.MappingEditorFactory
 
 class ManageScriptTranscriptRelations : AnAction() {
 
@@ -18,7 +18,7 @@ class ManageScriptTranscriptRelations : AnAction() {
       if (model == null) {
         errorNoModelForFile(project, it)
       } else {
-        DiffDialogFactory.showWindow(model)
+        MappingEditorFactory.showWindow(model)
       }
     }
   }

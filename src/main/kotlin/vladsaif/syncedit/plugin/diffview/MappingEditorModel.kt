@@ -1,22 +1,24 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.RangeMarker
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import java.util.*
 import kotlin.collections.HashMap
 
-class DiffModel(
+class MappingEditorModel(
     val origin: ScreencastFile
 ) : Disposable {
 
   init {
     if (origin.data == null) {
-      throw IllegalStateException("Cannot create DiffModel from model without transcript data.")
+      throw IllegalStateException("Cannot create MappingEditorModel from model without transcript data.")
     }
     if (origin.scriptPsi == null) {
-      throw IllegalStateException("Cannot create DiffModel from model without script file.")
+      throw IllegalStateException("Cannot create MappingEditorModel from model without script file.")
     }
     if (origin.scriptDocument == null) {
       throw AssertionError("Script document is accidentally null.")
@@ -50,14 +52,14 @@ class DiffModel(
     }
   }
 
-  private var myMapping: Map<Int, IRange> = origin.bindings.mapValues { (_, v) -> v.toLineRange() }.toMutableMap()
+  private var myMapping: LineMapping = origin.textMapping.mapValues { (_, v) -> v.toLineRange() }.toMutableMap()
     set(value) {
       myChangesWereMade = value != myInitialMapping
       field = value
-      val newBindings = createMergedLineMappings(value, this@DiffModel::scriptLinesToVisibleLines)
+      val newBindings = createMergedLineMappings(value, this@MappingEditorModel::scriptLinesToVisibleLines)
       mergedLineMappings = newBindings
     }
-  var mergedLineMappings: List<MergedLineMapping> = createMergedLineMappings(myMapping, this@DiffModel::scriptLinesToVisibleLines)
+  var mergedLineMappings: List<MergedLineMapping> = createMergedLineMappings(myMapping, this@MappingEditorModel::scriptLinesToVisibleLines)
     private set(newValue) {
       if (field != newValue) {
         val oldValue = field
@@ -69,7 +71,18 @@ class DiffModel(
   private var myChangesWereMade = false
 
   override fun dispose() {
-    origin.applyBindings(myMapping)
+    val document = origin.scriptDocument!!
+    origin.applyWordMapping(myMapping.mapValues { (_, v) -> createMarker(v, document) })
+  }
+
+  private fun createMarker(lineRange: IRange, document: Document): RangeMarker {
+    return document.createRangeMarker(
+        document.getLineStartOffset(lineRange.start),
+        document.getLineEndOffset(lineRange.end)
+    ).apply {
+      isGreedyToLeft = false
+      isGreedyToRight = false
+    }
   }
 
   fun addBindingsListener(listener: (List<MergedLineMapping>, List<MergedLineMapping>) -> Unit) {

@@ -4,7 +4,7 @@ import com.intellij.diff.util.TextDiffType
 import com.intellij.openapi.editor.Editor
 import vladsaif.syncedit.plugin.Settings
 
-object DiffSimulator : TextDiffType {
+object MappedLine : TextDiffType {
 
   override fun getMarkerColor(editor: Editor?) = Settings.DIFF_FILLER_COLOR
 
