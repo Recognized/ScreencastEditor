@@ -93,14 +93,14 @@
     </action>
     <group id="vladsaif.syncedit.plugin.ProjectViewGroup"
            text="Screencast Editor"
-           popup="true"
+           popup="false"
            compact="true">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="ProjectViewPopupMenuRunGroup"/>
       <action id="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
               class="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
               text="Open Screencast"
-              description="Open in Screencast Audio Editor"
-              icon="ScreencastEditorIcons.EQUALIZER">
+              description="Open Screencast"
+              icon="ScreencastEditorIcons.SCREENCAST">
       </action>
     </group>
   </actions>

@@ -5,7 +5,6 @@ import com.intellij.codeInsight.highlighting.HighlightManager
 import com.intellij.codeInsight.template.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.CommandProcessor
-import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RangeMarker
@@ -17,7 +16,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.refactoring.RefactoringBundle
 import com.intellij.util.containers.Stack
-import vladsaif.syncedit.plugin.TranscriptUndoableAction
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 
@@ -61,37 +59,14 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
 
   fun acceptTemplate() {
     val highlighter = myHighlighters[0]
-    val project = editor.project
     val model = myPsiFile?.model
-    val manager = if (project == null)
-      UndoManager.getGlobalInstance()
-    else
-      UndoManager.getInstance(project)
     if (highlighter.startOffset == highlighter.endOffset) {
       // If word was deleted, lets exclude it
-      if (model != null) {
-        println(CommandProcessor.getInstance().currentCommandName)
-        val currentData = model.data
-        val newData = model.data?.excludeWord(myOriginalIndex)
-        if (currentData != null && newData != null) {
-          val undo = TranscriptUndoableAction(model, currentData, newData)
-          manager.undoableActionPerformed(undo)
-        }
-        // Now apply changes to model, because manager do not invoke redo() method
-        model.excludeWord(myOriginalIndex)
-      }
+      model?.excludeWord(myOriginalIndex)
       cancel()
     } else {
       val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
-      if (model != null) {
-        val currentData = model.data
-        val newData = model.data?.renameWord(myOriginalIndex, editor.document.getText(textRange))
-        if (currentData != null && newData != null) {
-          val undo = TranscriptUndoableAction(model, currentData, newData)
-          manager.undoableActionPerformed(undo)
-        }
-        model.renameWord(myOriginalIndex, editor.document.getText(textRange))
-      }
+      model?.renameWord(myOriginalIndex, editor.document.getText(textRange))
       finishEditing()
     }
   }
