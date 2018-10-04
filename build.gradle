@@ -80,7 +80,7 @@ test.systemProperty "google.credentials", project.properties["google.credentials
 intellij {
     pluginName "ScreencastEditor"
     plugins "Kotlin"
-    version "183.2153.8"
+    version "183.2940.10"
     downloadSources true
     instrumentCode true
 }
