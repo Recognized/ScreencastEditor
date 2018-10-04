@@ -1,11 +1,11 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.editor.RangeMarker
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import java.util.*
+import kotlin.collections.HashMap
 
 class DiffModel(
     val origin: ScreencastFile
@@ -23,42 +23,11 @@ class DiffModel(
     }
   }
 
-  private val myTranscriptDataOnStart: TranscriptData = origin.data!!
-  private val myUndoStack = ArrayDeque<TranscriptData>(1)
-  private val myRedoStack = ArrayDeque<TranscriptData>(1)
+  private val myListeners = mutableSetOf<(List<MergedLineMapping>, List<MergedLineMapping>) -> Unit>()
+  private val myUndoStack = ArrayDeque<Map<Int, IRange>>(1)
+  private val myRedoStack = ArrayDeque<Map<Int, IRange>>(1)
   private val myShiftedLines: IntArray
   private val myBackwardLines: IntArray
-  private var myChangesWereMade = false
-  private val myListeners = mutableSetOf<(List<Binding>, List<Binding>) -> Unit>()
-
-  private val myDataListener = object : ScreencastFile.Listener {
-    override fun onTranscriptDataChanged() {
-      myChangesWereMade = origin.data != myTranscriptDataOnStart
-      bindings = createBindings(origin.bindings, this@DiffModel::scriptLinesToVisibleLines)
-    }
-  }
-
-  init {
-    origin.addTranscriptDataListener(myDataListener)
-  }
-
-  override fun dispose() {
-    origin.removeTranscriptDataListener(myDataListener)
-  }
-
-  fun addBindingsListener(listener: (List<Binding>, List<Binding>) -> Unit) {
-    myListeners.add(listener)
-  }
-
-  fun removeBindingsListener(listener: (List<Binding>, List<Binding>) -> Unit) {
-    myListeners.remove(listener)
-  }
-
-  private fun fireStateChanged(oldValue: List<Binding>, newValue: List<Binding>) {
-    for (x in myListeners) {
-      x(oldValue, newValue)
-    }
-  }
 
   init {
     val document = origin.scriptDocument!!
@@ -81,6 +50,42 @@ class DiffModel(
     }
   }
 
+  private var myMapping: Map<Int, IRange> = origin.bindings.mapValues { (_, v) -> v.toLineRange() }.toMutableMap()
+    set(value) {
+      myChangesWereMade = value != myInitialMapping
+      field = value
+      val newBindings = createMergedLineMappings(value, this@DiffModel::scriptLinesToVisibleLines)
+      mergedLineMappings = newBindings
+    }
+  var mergedLineMappings: List<MergedLineMapping> = createMergedLineMappings(myMapping, this@DiffModel::scriptLinesToVisibleLines)
+    private set(newValue) {
+      if (field != newValue) {
+        val oldValue = field
+        field = newValue
+        fireStateChanged(oldValue, newValue)
+      }
+    }
+  private val myInitialMapping = HashMap(myMapping)
+  private var myChangesWereMade = false
+
+  override fun dispose() {
+    origin.applyBindings(myMapping)
+  }
+
+  fun addBindingsListener(listener: (List<MergedLineMapping>, List<MergedLineMapping>) -> Unit) {
+    myListeners.add(listener)
+  }
+
+  fun removeBindingsListener(listener: (List<MergedLineMapping>, List<MergedLineMapping>) -> Unit) {
+    myListeners.remove(listener)
+  }
+
+  private fun fireStateChanged(oldValue: List<MergedLineMapping>, newValue: List<MergedLineMapping>) {
+    for (x in myListeners) {
+      x(oldValue, newValue)
+    }
+  }
+
   private fun visibleLinesToScriptLines(line: IRange) = IRange(myShiftedLines[line.start], myShiftedLines[line.end])
 
   private fun scriptLinesToVisibleLines(line: IRange) = IRange(myBackwardLines[line.start], myBackwardLines[line.end])
@@ -91,8 +96,8 @@ class DiffModel(
     if (myUndoStack.size == UNDO_STACK_LIMIT) {
       myUndoStack.removeLast()
     }
-    myUndoStack.push(origin.data)
-    origin.data = myTranscriptDataOnStart
+    myUndoStack.push(myMapping)
+    myMapping = myInitialMapping
   }
 
   val isResetAvailable get() = myChangesWereMade
@@ -103,15 +108,15 @@ class DiffModel(
 
   fun undo() {
     if (!myUndoStack.isEmpty()) {
-      myRedoStack.push(origin.data)
-      origin.data = myUndoStack.pop()
+      myRedoStack.push(myMapping)
+      myMapping = myUndoStack.pop()
     }
   }
 
   fun redo() {
     if (!myRedoStack.isEmpty()) {
-      myUndoStack.push(origin.data)
-      origin.data = myRedoStack.pop()
+      myUndoStack.push(myMapping)
+      myMapping = myRedoStack.pop()
     }
   }
 
@@ -125,39 +130,23 @@ class DiffModel(
 
   private fun bindUnbind(isBind: Boolean, itemRange: IRange, editorLines: IRange) {
     myRedoStack.clear()
-    val convertedRange = visibleLinesToScriptLines(editorLines)
-    if (myUndoStack.size == UNDO_STACK_LIMIT) {
-      myUndoStack.removeLast()
+    val convertedRange by lazy(LazyThreadSafetyMode.NONE) { visibleLinesToScriptLines(editorLines) }
+    val oldMapping = myMapping
+    val newMapping = myMapping.toMutableMap()
+
+    for (item in itemRange.toIntRange()) {
+      if (isBind) newMapping[item] = convertedRange
+      else newMapping.remove(item)
     }
-    myUndoStack.push(origin.data)
-    val scriptDoc = origin.scriptDocument!!
-    val newMarker by lazy {
-      scriptDoc.createRangeMarker(
-          scriptDoc.getLineStartOffset(convertedRange.start).also { println(it) },
-          scriptDoc.getLineEndOffset(convertedRange.end).also(::println)
-      )
-    }
-    val replacements = mutableMapOf<Int, RangeMarker?>()
-    for (index in itemRange.toIntRange()) {
-      replacements[index] = if (isBind) newMarker else null
-    }
-    for ((key, value) in replacements) {
-      if (value == null) {
-        origin.bindings.remove(key)
-      } else {
-        origin.bindings[key] = value
+
+    if (oldMapping != newMapping) {
+      if (myUndoStack.size == UNDO_STACK_LIMIT) {
+        myUndoStack.removeLast()
       }
+      myUndoStack.push(oldMapping)
+      myMapping = newMapping
     }
   }
-
-  var bindings: List<Binding> = createBindings(origin.bindings, this@DiffModel::scriptLinesToVisibleLines)
-    set(newValue) {
-      if (field != newValue) {
-        val oldValue = field
-        field = newValue
-        fireStateChanged(oldValue, newValue)
-      }
-    }
 
   companion object {
     private const val UNDO_STACK_LIMIT = 16

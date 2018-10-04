@@ -2,13 +2,25 @@ package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.editor.RangeMarker
 
-data class Binding(
+data class MergedLineMapping(
     val itemRange: IRange,
     val lineRange: IRange
 )
 
-fun mergeBindings(bindings: List<Binding>): List<Binding> {
-  val sorted = bindings.filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange }
+/**
+ * Key: word index
+ * Value: mapped line range
+ */
+typealias LineMapping = Map<Int, IRange>
+
+/**
+ * Key: word index
+ * Value: mapped text range
+ */
+typealias TextRangeMapping = Map<Int, RangeMarker>
+
+fun mergeLineMappings(mergedLineMappings: List<MergedLineMapping>): List<MergedLineMapping> {
+  val sorted = mergedLineMappings.filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange }
   return sorted.fold(mutableListOf()) { acc, x ->
     when {
       x.itemRange.empty -> Unit
@@ -23,9 +35,9 @@ fun mergeBindings(bindings: List<Binding>): List<Binding> {
   }
 }
 
-fun createBindings(wordMapping: Map<Int, RangeMarker>, lineConverter: (IRange) -> IRange = { it }) = wordMapping.entries
-    .map { (index, x) -> Binding(IRange(index, index), lineConverter(x.toLineRange())) }
-    .let(::mergeBindings)
+fun createMergedLineMappings(lineMapping: LineMapping, lineConverter: (IRange) -> IRange = { it }) = lineMapping.entries
+    .map { (index, x) -> MergedLineMapping(IRange(index, index), lineConverter(x)) }
+    .let(::mergeLineMappings)
 
 fun RangeMarker.toLineRange(): IRange {
   if (!isValid) return IRange.EMPTY_RANGE

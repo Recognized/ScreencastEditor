@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.util.ui.GraphicsUtil
-import vladsaif.syncedit.plugin.Binding
+import vladsaif.syncedit.plugin.MergedLineMapping
 import vladsaif.syncedit.plugin.Settings
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -40,9 +40,9 @@ class SplitterPainter(
 
   // Create list of pair of shapes that enclose area of polygon.
   // Show bindings from transcript to script.
-  private fun createShapes(bindings: List<Binding>, width: Int): List<Pair<Shape, Shape>> {
+  private fun createShapes(mergedLineMappings: List<MergedLineMapping>, width: Int): List<Pair<Shape, Shape>> {
     val newShapes = mutableListOf<Pair<Shape, Shape>>()
-    for ((item, line) in bindings) {
+    for ((item, line) in mergedLineMappings) {
       val topLeftCorner = leftItemLocator.locate(item.start).first
       val bottomLeftCorner = leftItemLocator.locate(item.end).second - 1
       val topRightCorner = rightItemLocator.locate(line.start).first

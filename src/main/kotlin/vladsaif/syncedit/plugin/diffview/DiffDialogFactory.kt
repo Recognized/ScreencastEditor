@@ -140,7 +140,7 @@ object DiffDialogFactory {
         "Reset all changes",
         AllIcons.Actions.Rollback,
         { diffViewModel.resetChanges() },
-        { true })
+        { diffViewModel.isResetAvailable })
     return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
   }
 

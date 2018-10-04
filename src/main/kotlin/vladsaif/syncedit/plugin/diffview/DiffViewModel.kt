@@ -11,9 +11,9 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
-import vladsaif.syncedit.plugin.Binding
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.IRangeUnion
+import vladsaif.syncedit.plugin.MergedLineMapping
 import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
@@ -79,7 +79,7 @@ class DiffViewModel(
     diffModel.addBindingsListener(this::onBindingsUpdate)
   }
 
-  private fun onBindingsUpdate(oldValue: List<Binding>, newValue: List<Binding>) {
+  private fun onBindingsUpdate(oldValue: List<MergedLineMapping>, newValue: List<MergedLineMapping>) {
     updateHighlighters(oldValue, newValue)
     updateItemBind()
     selectedItems = IRange.EMPTY_RANGE
@@ -184,7 +184,7 @@ class DiffViewModel(
     })
     editor.addEditorMouseMotionListener(myEditorDragListener)
     editor.addEditorMouseListener(myEditorDragListener)
-    onBindingsUpdate(listOf(), diffModel.bindings)
+    onBindingsUpdate(listOf(), diffModel.mergedLineMappings)
   }
 
   fun selectHeightRange(heightRange: IRange) {
@@ -213,11 +213,13 @@ class DiffViewModel(
     diffModel.resetChanges()
   }
 
-  val bindings get() = diffModel.bindings
+  val bindings get() = diffModel.mergedLineMappings
 
   val isUndoAvailable get() = diffModel.isUndoAvailable
 
   val isRedoAvailable get() = diffModel.isRedoAvailable
+
+  val isResetAvailable get() = diffModel.isResetAvailable
 
   private fun toItemRange(heightRange: IRange): IRange {
     var start = -1
@@ -237,7 +239,7 @@ class DiffViewModel(
       x.isDrawBottomBorder = false
       x.isDrawTopBorder = false
     }
-    for (binding in diffModel.bindings) {
+    for (binding in diffModel.mergedLineMappings) {
       val range = binding.itemRange
       myTextItems[range.start].isDrawTopBorder = true
       myTextItems[range.end].isDrawBottomBorder = true
@@ -257,19 +259,19 @@ class DiffViewModel(
     }
   }
 
-  private fun updateHighlighters(oldBindings: List<Binding>, newBindings: List<Binding>) {
+  private fun updateHighlighters(oldMergedLineMappings: List<MergedLineMapping>, newMergedLineMappings: List<MergedLineMapping>) {
     val previouslyHighlighted = IRangeUnion()
     val newlyHighlighted = IRangeUnion()
-    for (binding in oldBindings) {
+    for (binding in oldMergedLineMappings) {
       previouslyHighlighted.union(binding.lineRange)
     }
-    for (binding in newBindings) {
+    for (binding in newMergedLineMappings) {
       newlyHighlighted.union(binding.lineRange)
     }
-    for (binding in oldBindings) {
+    for (binding in oldMergedLineMappings) {
       newlyHighlighted.exclude(binding.lineRange)
     }
-    for (binding in newBindings) {
+    for (binding in newMergedLineMappings) {
       previouslyHighlighted.exclude(binding.lineRange)
     }
     for ((highlighter, line) in myActiveLineHighlighters) {
@@ -291,6 +293,7 @@ class DiffViewModel(
   }
 
   private fun Editor.createHighlighter(line: IRange): List<RangeHighlighter> {
-    return DiffDrawUtil.createHighlighter(this, line.start, line.end + 1, DiffSimulator, false)
+    return line.toIntRange()
+        .map { DiffDrawUtil.createHighlighter(this, it, it + 1, DiffSimulator, false)[0] }
   }
 }

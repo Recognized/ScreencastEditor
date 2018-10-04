@@ -68,32 +68,32 @@ class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
         7 to factory(IRange(6, 9))
     )
     val expectedBindings = listOf(
-        Binding(IRange(1, 2), IRange(1, 3)),
-        Binding(IRange(3, 3), IRange(1, 4)),
-        Binding(IRange(5, 7), IRange(6, 9))
+        MergedLineMapping(IRange(1, 2), IRange(1, 3)),
+        MergedLineMapping(IRange(3, 3), IRange(1, 4)),
+        MergedLineMapping(IRange(5, 7), IRange(6, 9))
     )
-    assertEquals(expectedBindings, createBindings(bindData))
+    assertEquals(expectedBindings, createMergedLineMappings(bindData.mapValues { (_, v) -> v.toLineRange() }))
   }
 
   @Test
   fun `test merge bindings`() {
     val bindings = listOf(
-        Binding(IRange(1, 3), IRange(5, 6)),
-        Binding(IRange(2, 4), IRange(5, 6)),
-        Binding(IRange(2, 7), IRange(5, 6)),
-        Binding(IRange(4, 7), IRange(5, 7)),
-        Binding(IRange(9, 10), IRange(5, 7)),
-        Binding(IRange(11, 12), IRange(5, 7)),
-        Binding(IRange(14, 15), IRange(10, 11)),
-        Binding(IRange(17, 18), IRange(10, 11))
+        MergedLineMapping(IRange(1, 3), IRange(5, 6)),
+        MergedLineMapping(IRange(2, 4), IRange(5, 6)),
+        MergedLineMapping(IRange(2, 7), IRange(5, 6)),
+        MergedLineMapping(IRange(4, 7), IRange(5, 7)),
+        MergedLineMapping(IRange(9, 10), IRange(5, 7)),
+        MergedLineMapping(IRange(11, 12), IRange(5, 7)),
+        MergedLineMapping(IRange(14, 15), IRange(10, 11)),
+        MergedLineMapping(IRange(17, 18), IRange(10, 11))
     )
-    val merged = mergeBindings(bindings)
+    val merged = mergeLineMappings(bindings)
     val expected = listOf(
-        Binding(IRange(1, 7), IRange(5, 6)),
-        Binding(IRange(4, 7), IRange(5, 7)),
-        Binding(IRange(9, 12), IRange(5, 7)),
-        Binding(IRange(14, 15), IRange(10, 11)),
-        Binding(IRange(17, 18), IRange(10, 11))
+        MergedLineMapping(IRange(1, 7), IRange(5, 6)),
+        MergedLineMapping(IRange(4, 7), IRange(5, 7)),
+        MergedLineMapping(IRange(9, 12), IRange(5, 7)),
+        MergedLineMapping(IRange(14, 15), IRange(10, 11)),
+        MergedLineMapping(IRange(17, 18), IRange(10, 11))
     )
     assertEquals(expected, merged)
   }

@@ -2,7 +2,11 @@ package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.command.undo.DocumentReference
+import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoManager
+import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -55,6 +59,7 @@ class ScreencastFile(
   private val myListeners: MutableSet<Listener> = ContainerUtil.newConcurrentSet()
   private var myEditionListenerEnabled = true
   private var myTranscriptListenerEnabled = true
+  private val myBindings: MutableMap<Int, RangeMarker> = mutableMapOf()
   private val transcriptInputStream: InputStream?
     get() = getInputStreamByType(TRANSCRIPT_DATA)
   private val scriptInputStream: InputStream?
@@ -65,7 +70,8 @@ class ScreencastFile(
     private set
   val audioInputStream: InputStream?
     get() = getInputStreamByType(AUDIO)
-  val bindings: MutableMap<Int, RangeMarker> = mutableMapOf()
+  val bindings: TextRangeMapping
+    get() = myBindings
   val transcriptPsi: TranscriptPsiFile?
     get() = getPsi(transcriptFile)
   var transcriptFile: VirtualFile? = null
@@ -81,6 +87,11 @@ class ScreencastFile(
     set(value) {
       ApplicationManager.getApplication().assertIsDispatchThread()
       if (value != field) {
+        if (CommandProcessor.getInstance().currentCommand != null
+            && !UndoManager.getInstance(project).isUndoInProgress
+            && !UndoManager.getInstance(project).isRedoInProgress) {
+          UndoManager.getInstance(project).undoableActionPerformed(TranscriptDataUndoableAction(field!!, value))
+        }
         field = value
         fireTranscriptDataChanged()
       }
@@ -172,6 +183,10 @@ class ScreencastFile(
     data = data?.muteWords(indices)
   }
 
+  fun applyBindings(newBindings: Map<Int, IRange>) {
+
+  }
+
   fun createDefaultBinding() {
     val timedLines = TimeOffsetParser.parse(scriptPsi!!)
     val doc = scriptDocument!!
@@ -195,7 +210,7 @@ class ScreencastFile(
         doc.createRangeMarker(doc.getLineStartOffset(intersection.start), doc.getLineEndOffset(intersection.end))
       }
       if (marker != null) {
-        bindings[index] = marker
+        myBindings[index] = marker
       }
     }
   }
@@ -366,6 +381,35 @@ class ScreencastFile(
       stream.close()
       file.close()
     }
+  }
+
+
+  private inner class TranscriptDataUndoableAction(
+      private val dataBefore: TranscriptData?,
+      private val dataAfter: TranscriptData?
+  ) : UndoableAction {
+
+    private val myAffectedDocuments = mutableSetOf<DocumentReference>()
+
+    init {
+      transcriptFile
+          ?.let { FileDocumentManager.getInstance().getDocument(it) }
+          ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+      scriptDocument
+          ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+    }
+
+    override fun redo() {
+      data = dataAfter
+    }
+
+    override fun undo() {
+      data = dataBefore
+    }
+
+    override fun isGlobal() = false
+
+    override fun getAffectedDocuments() = myAffectedDocuments.toTypedArray()
   }
 
 
