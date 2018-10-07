@@ -30,7 +30,6 @@ class FakeRecording : AnAction() {
           val ideFrame = WindowManager.getInstance().getIdeFrame(project)
           val glassPane = IdeGlassPaneUtil.find(ideFrame.component) as IdeGlassPaneImpl
           val countDown = CountDownPainter(3)
-//          glassPane.add()
           countDown.deactivationAction = { glassPane.removePainter(countDown) }
           glassPane.addPainter(glassPane, countDown) { /* nothing */ }
           countDown.countDown()

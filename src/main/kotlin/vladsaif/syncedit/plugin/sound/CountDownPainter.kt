@@ -5,15 +5,19 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import java.awt.*
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.swing.Timer
 
 
-class CountDownPainter(private var count: Int) : AbstractPainter() {
+class CountDownPainter(count: Int) : AbstractPainter() {
+  private val myCounter = AtomicInteger(count)
   private val myTimer = Timer(1000) {
-    count--
+    myCounter.decrementAndGet()
     if (myDeactivateNextTime.get()) {
       deactivate()
+      return@Timer
     }
+    setNeedsRepaint(true)
   }
   private var myDeactivateNextTime = AtomicBoolean(false)
   var deactivationAction: (() -> Unit)? = null
@@ -28,9 +32,9 @@ class CountDownPainter(private var count: Int) : AbstractPainter() {
     g ?: return
     with(g) {
       font = UIUtil.getLabelFont().deriveFont(Font.BOLD).deriveFont(JBUI.scale(100.0f))
-      stroke = BasicStroke(4.0f)
+      stroke = BasicStroke(JBUI.scale(4.0f))
       val metrics = getFontMetrics(font)
-      val count = count
+      val count = myCounter.get()
       val str = if (count > 0) "" + count else "GO"
       if (count == 0) {
         myDeactivateNextTime.compareAndSet(false, true)
@@ -48,13 +52,8 @@ class CountDownPainter(private var count: Int) : AbstractPainter() {
     }
   }
 
-  override fun needsRepaint(): Boolean {
-    return true
-  }
-
   fun countDown() {
     setNeedsRepaint(true)
     myTimer.start()
   }
-
 }
