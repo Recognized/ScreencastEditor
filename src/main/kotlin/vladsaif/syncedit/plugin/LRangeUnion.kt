@@ -15,22 +15,6 @@ class LRangeUnion {
   val ranges
     get() = myRanges.toList()
 
-  fun clear() {
-    myRanges.clear()
-    myLastCalculated = null
-  }
-
-  fun load(other: LRangeUnion) {
-    clear()
-    myRanges.addAll(other.myRanges)
-  }
-
-  fun copy(): LRangeUnion {
-    val union = LRangeUnion()
-    union.load(this)
-    return union
-  }
-
   operator fun contains(other: LRange): Boolean {
     if (other.empty) return true
     val startPos = myRanges.binarySearch(LRange.from(other.start, 1), INTERSECTS_CMP)

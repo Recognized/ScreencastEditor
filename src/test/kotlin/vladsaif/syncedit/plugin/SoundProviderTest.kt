@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin
 
 import org.junit.Test
+import vladsaif.syncedit.plugin.sound.SoundProvider
 import java.io.InputStream
 import java.nio.file.Files
 import javax.sound.sampled.AudioFormat

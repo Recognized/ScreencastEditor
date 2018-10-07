@@ -69,48 +69,10 @@ data class LRange(val start: Long, val end: Long) : Comparable<LRange> {
       return@Comparator if (a.intersects(b)) 0 else (a.start - b.start).floorToInt()
     }
 
-    infix fun Long.clr(other: Long) = LRange(this, other)
-
     val EMPTY_RANGE = LRange(0, -1)
 
     fun from(startOffsetMs: Long, length: Long): LRange {
       return LRange(startOffsetMs, startOffsetMs + length - 1)
-    }
-
-    /**
-     * Merges adjacent ranges into one.
-     * Two ranges are considered adjacent if `one.getEndOffset() + 1 >= another.getStartOffset()`.
-     *
-     * @param ranges the ranges to merge
-     * @return new set with merged ranges
-     */
-    fun mergeAdjacent(ranges: Set<LRange>): Set<LRange> {
-      return mergeAdjacent(ArrayList(ranges)).toSet()
-    }
-
-    /**
-     * Merges adjacent ranges into one.
-     * Two ranges are considered adjacent if `one.getEndOffset() + 1 >= another.getStartOffset()`.
-     *
-     * @param merge ranges to merge
-     * @return new list with merged ranges
-     */
-    fun mergeAdjacent(merge: List<LRange>): List<LRange> {
-      val list = merge.toMutableList().sorted()
-      val result = mutableListOf<LRange>()
-      var start = -1L
-      for (i in list.indices) {
-        if (i == 0 || list[i].start > list[i - 1].end + 1) {
-          if (start != -1L) {
-            result.add(LRange(start, list[i - 1].end))
-          }
-          start = list[i].start
-        }
-      }
-      if (start != -1L) {
-        result.add(LRange(start, list.last().end))
-      }
-      return result
     }
   }
 }

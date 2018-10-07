@@ -8,11 +8,18 @@ import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.RangeMarker
+import com.intellij.openapi.editor.colors.EditorColors
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFileFactory
@@ -33,7 +40,6 @@ import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
-import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import java.io.IOException
@@ -70,7 +76,7 @@ class ScreencastFile(
     private set
   val audioInputStream: InputStream?
     get() = getInputStreamByType(AUDIO)
-  val bindings: TextRangeMapping
+  val textMapping: TextRangeMapping
     get() = myBindings
   val transcriptPsi: TranscriptPsiFile?
     get() = getPsi(transcriptFile)
@@ -111,9 +117,6 @@ class ScreencastFile(
       audioDataModel = audioInputStream?.let { SimpleAudioModel { audioInputStream!! } }
     }
     withContext(ExEDT) {
-      if (!TranscriptFactoryListener.isInitialized) {
-        TranscriptFactoryListener.initialize(project)
-      }
       scriptFile = scriptInputStream?.let {
         createVirtualFile(
             "$name.kts",
@@ -130,6 +133,11 @@ class ScreencastFile(
           PsiDocumentManager.getInstance(project).reparseFiles(files, true)
         }
       })
+      scriptDocument?.addDocumentListener(object : DocumentListener {
+        override fun documentChanged(event: DocumentEvent) {
+          synchronizeByScript()
+        }
+      })
     }
   }
 
@@ -139,6 +147,25 @@ class ScreencastFile(
         onEditionModelChanged()
       }
     })
+  }
+
+  private fun synchronizeByScript() {
+    textMapping.values.forEach {
+      println(scriptDocument!!.getText(TextRange(it.startOffset, it.endOffset)))
+      println(it.isValid)
+    }
+    val indices = textMapping
+        .filter { (_, marker) -> !marker.isValid || marker.startOffset == marker.endOffset || isTextCommented(marker) }
+        .keys
+        .sorted()
+        .toIntArray()
+    if (!indices.isEmpty()) {
+      excludeWords(indices)
+    }
+  }
+
+  private fun isTextCommented(rangeMarker: RangeMarker): Boolean {
+    return false
   }
 
   fun addTranscriptDataListener(listener: Listener) {
@@ -183,8 +210,10 @@ class ScreencastFile(
     data = data?.muteWords(indices)
   }
 
-  fun applyBindings(newBindings: Map<Int, IRange>) {
-
+  fun applyWordMapping(newMapping: TextRangeMapping) {
+    myBindings.clear()
+    myBindings.putAll(newMapping)
+    updateRangeHighlighters()
   }
 
   fun createDefaultBinding() {
@@ -211,6 +240,21 @@ class ScreencastFile(
       }
       if (marker != null) {
         myBindings[index] = marker
+      }
+    }
+  }
+
+  private fun updateRangeHighlighters() {
+    val document = scriptDocument ?: return
+    for (editor in EditorFactory.getInstance().getEditors(document)) {
+      for ((_, marker) in textMapping) {
+        (editor as EditorEx).markupModel.addRangeHighlighter(
+            marker.startOffset,
+            marker.endOffset,
+            10000,
+            editor.colorsScheme.getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES),
+            HighlighterTargetArea.EXACT_RANGE
+        )
       }
     }
   }
@@ -411,6 +455,30 @@ class ScreencastFile(
 
     override fun getAffectedDocuments() = myAffectedDocuments.toTypedArray()
   }
+
+
+//  private inner class MappingUndoableAction(
+//      val oldMapping:
+//  ) : UndoableAction {
+//
+//
+//    override fun redo() {
+//      TODO("not implemented")
+//    }
+//
+//    override fun undo() {
+//      TODO("not implemented")
+//    }
+//
+//    override fun isGlobal(): Boolean {
+//      TODO("not implemented")
+//    }
+//
+//    override fun getAffectedDocuments(): Array<DocumentReference>? {
+//      TODO("not implemented")
+//    }
+//
+//  }
 
 
   companion object {

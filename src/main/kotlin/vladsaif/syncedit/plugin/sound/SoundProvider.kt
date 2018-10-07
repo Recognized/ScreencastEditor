@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.sound
 
 import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider

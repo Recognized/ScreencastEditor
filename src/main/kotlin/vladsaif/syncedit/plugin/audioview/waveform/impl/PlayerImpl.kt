@@ -2,12 +2,12 @@ package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import com.intellij.openapi.application.ApplicationManager
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
-import vladsaif.syncedit.plugin.SoundProvider
 import vladsaif.syncedit.plugin.audioview.skipFramesMpeg
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.Player
 import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
+import vladsaif.syncedit.plugin.sound.SoundProvider
 import java.io.InputStream
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
