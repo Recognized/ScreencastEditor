@@ -1,8 +1,8 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.util.ui.GraphicsUtil
+import vladsaif.syncedit.plugin.ColorSettings
 import vladsaif.syncedit.plugin.MergedLineMapping
-import vladsaif.syncedit.plugin.Settings
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Shape
@@ -28,9 +28,9 @@ class SplitterPainter(
           val path = Path2D.Double()
           path.append(top, true)
           path.append(bottom, true)
-          color = Settings.DIFF_FILLER_COLOR
+          color = ColorSettings.MAPPING_HIGHLIGHT_COLOR
           fill(path)
-          color = Settings.DIFF_BORDER_COLOR
+          color = ColorSettings.MAPPING_BORDER_COLOR
           draw(top)
           draw(bottom)
         }

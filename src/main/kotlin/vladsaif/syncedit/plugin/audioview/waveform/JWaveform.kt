@@ -3,9 +3,9 @@ package vladsaif.syncedit.plugin.audioview.waveform
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import vladsaif.syncedit.plugin.ColorSettings
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.TextFormatter
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MultiSelectionModel
@@ -65,7 +65,7 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
   private fun Graphics2D.drawWordsBackGround() {
     val usedRange = model.drawRange
     val words = model.screencast.data?.words ?: return
-    color = Settings.DIFF_FILLER_COLOR
+    color = ColorSettings.MAPPING_HIGHLIGHT_COLOR
     for (word in words) {
       val (x1, x2) = model.getCoordinates(word)
       if (IRange(x1, x2).intersects(usedRange)) {
@@ -86,7 +86,7 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
 
   private fun Graphics2D.drawSelectedRange(selected: IRange, border: IRange) {
     val selectedVisible = border.intersect(selected)
-    color = Settings.SELECTION_COLOR
+    color = ColorSettings.AUDIO_SELECTION_COLOR
     if (!selectedVisible.empty) {
       fillRect(selectedVisible.start, 0, selectedVisible.length, height)
     }
@@ -94,8 +94,8 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
 
   private fun Graphics2D.drawPosition(position: Long) {
     val x = model.getChunk(position)
-    color = Settings.PLAY_LINE_COLOR
-    stroke = BasicStroke(Settings.ROOT_MEAN_SQUARE_STROKE_WIDTH)
+    color = ColorSettings.AUDIO_PLAY_LINE_COLOR
+    stroke = BasicStroke(ColorSettings.ROOT_MEAN_SQUARE_STROKE_WIDTH)
     drawLine(x, 0, x, height)
   }
 
@@ -123,15 +123,15 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
         workPieces.add(Pair(x, it.second))
       }
     }
-    stroke = BasicStroke(Settings.PEAK_STROKE_WIDTH)
-    drawWaveformPiece(workPieces, Settings.PEAK_CUT_COLOR, Settings.PEAK_COLOR) {
+    stroke = BasicStroke(ColorSettings.PEAK_STROKE_WIDTH)
+    drawWaveformPiece(workPieces, ColorSettings.AUDIO_PEAK_CUT_COLOR, ColorSettings.AUDIO_PEAK_COLOR) {
       val yTop = (height - (data.highestPeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
       val yBottom = (height - (data.lowestPeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
       drawLine(it, yTop.toInt(), it, yBottom.toInt())
     }
-    stroke = BasicStroke(Settings.ROOT_MEAN_SQUARE_STROKE_WIDTH)
-    color = Settings.ROOT_MEAN_SQUARE_COLOR
-    drawWaveformPiece(workPieces, Settings.ROOT_MEAN_SQUARE_CUT_COLOR, Settings.ROOT_MEAN_SQUARE_COLOR) {
+    stroke = BasicStroke(ColorSettings.ROOT_MEAN_SQUARE_STROKE_WIDTH)
+    color = ColorSettings.AUDIO_RMS_COLOR
+    drawWaveformPiece(workPieces, ColorSettings.AUDIO_RMS_CUT_COLOR, ColorSettings.AUDIO_RMS_COLOR) {
       val rmsHeight = (data.rootMeanSquare[it - data.skippedChunks] * height).toDouble() / data.maxPeak / 4
       val yAverage = (height - (data.averagePeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
       drawLine(it, (yAverage - rmsHeight).toInt(), it, (yAverage + rmsHeight).toInt())
@@ -171,12 +171,12 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
         drawCenteredWord(word.filteredText, coordinates)
       }
       val (leftBound, rightBound) = coordinates
-      color = Settings.WORD_SEPARATOR_COLOR
-      stroke = BasicStroke(Settings.WORD_SEPARATOR_WIDTH,
+      color = ColorSettings.WORD_SEPARATOR_COLOR
+      stroke = BasicStroke(ColorSettings.WORD_SEPARATOR_WIDTH,
           BasicStroke.CAP_BUTT,
           BasicStroke.JOIN_BEVEL,
           0f,
-          FloatArray(1) { Settings.DASH_WIDTH },
+          FloatArray(1) { ColorSettings.DASH_WIDTH },
           0f)
       if (leftBound > usedRange.start) {
         drawLine(leftBound, 0, leftBound, height)
@@ -190,12 +190,12 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
   private fun Graphics2D.drawMovingBorder() {
     val x = selectionModel.movingBorder
     if (x == -1) return
-    color = Settings.WORD_MOVING_SEPARATOR_COLOR
-    stroke = BasicStroke(Settings.WORD_SEPARATOR_WIDTH,
+    color = ColorSettings.WORD_MOVING_SEPARATOR_COLOR
+    stroke = BasicStroke(ColorSettings.WORD_SEPARATOR_WIDTH,
         BasicStroke.CAP_BUTT,
         BasicStroke.JOIN_BEVEL,
         0f,
-        FloatArray(1) { Settings.DASH_WIDTH },
+        FloatArray(1) { ColorSettings.DASH_WIDTH },
         0f)
     drawLine(x, 0, x, height)
   }
@@ -204,7 +204,7 @@ class JWaveform(multimediaModel: ScreencastFile) : JBPanel<JWaveform>(), ChangeL
     val (x1, x2) = borders
     val metrics = getFontMetrics(myWordFont)
     val stringWidth = metrics.stringWidth(word)
-    color = Settings.WORD_COLOR
+    color = ColorSettings.WORD_COLOR
     font = myWordFont
     if (stringWidth < x2.toLong() - x1) {
       val pos = ((x2.toLong() + x1 - stringWidth) / 2).toInt()

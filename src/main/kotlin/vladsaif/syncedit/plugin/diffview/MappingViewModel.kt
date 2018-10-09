@@ -12,10 +12,10 @@ import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.util.Disposer
+import vladsaif.syncedit.plugin.ColorSettings
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.IRangeUnion
 import vladsaif.syncedit.plugin.MergedLineMapping
-import vladsaif.syncedit.plugin.Settings
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
@@ -122,7 +122,7 @@ class MappingViewModel(
         myHoveredHighlighter = null
         if (newLine >= 0 && newLine !in editorSelectionRange) {
           val attributes = myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!
-          attributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
+          attributes.backgroundColor = ColorSettings.MAPPING_HOVERED_COLOR
           myHoveredHighlighter = editor.markupModel.addLineHighlighter(
               newLine,
               HighlighterLayer.SELECTION,
@@ -176,9 +176,9 @@ class MappingViewModel(
 
   init {
     myEditorHoveredAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
-    myEditorHoveredAttributes.backgroundColor = Settings.DIFF_HOVERED_COLOR
+    myEditorHoveredAttributes.backgroundColor = ColorSettings.MAPPING_HOVERED_COLOR
     myEditorSelectionAttributes.copyFrom(myDefaultScheme.getAttributes(DefaultLanguageHighlighterColors.COMMA)!!)
-    myEditorSelectionAttributes.backgroundColor = Settings.DIFF_SELECTED_COLOR
+    myEditorSelectionAttributes.backgroundColor = ColorSettings.MAPPING_SELECTION_COLOR
     editor.selectionModel.addSelectionListener(object : SelectionListener {
       override fun selectionChanged(e: SelectionEvent) {
         editorSelectionUpdated()

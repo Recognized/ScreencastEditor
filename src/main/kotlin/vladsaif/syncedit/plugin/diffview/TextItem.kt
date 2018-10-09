@@ -2,7 +2,7 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
-import vladsaif.syncedit.plugin.Settings
+import vladsaif.syncedit.plugin.ColorSettings
 import vladsaif.syncedit.plugin.TextFormatter
 import java.awt.*
 import javax.swing.BorderFactory
@@ -56,14 +56,14 @@ class TextItem(
       setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       color = when {
-        isSelected -> Settings.DIFF_SELECTED_COLOR
-        isHovered -> Settings.DIFF_HOVERED_COLOR
-        isBind -> Settings.DIFF_FILLER_COLOR
-        else -> Settings.DIFF_BACKGROUND
+        isSelected -> ColorSettings.MAPPING_SELECTION_COLOR
+        isHovered -> ColorSettings.MAPPING_HOVERED_COLOR
+        isBind -> ColorSettings.MAPPING_HIGHLIGHT_COLOR
+        else -> ColorSettings.MAPPING_BACKGROUND
       }
       fillRect(0, 0, width, height)
       with(create()) {
-        color = Settings.DIFF_BORDER_COLOR
+        color = ColorSettings.MAPPING_BORDER_COLOR
         stroke = BasicStroke(JBUI.scale(1.0f))
         if (isDrawTopBorder) {
           drawLine(0, 0, width, 0)
@@ -84,7 +84,7 @@ class TextItem(
       if (needDraw.size != lines.size && !needDraw.isEmpty()) {
         needDraw[needDraw.size - 1] = TextFormatter.createEllipsis(needDraw.last() + "...", availableWidth, getWidth)
       }
-      color = Settings.DIFF_TEXT_COLOR
+      color = ColorSettings.MAPPING_TEXT_COLOR
       drawLines(needDraw)
     }
   }
