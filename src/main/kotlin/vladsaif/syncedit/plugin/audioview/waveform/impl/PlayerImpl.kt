@@ -12,11 +12,16 @@ import java.io.InputStream
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.SourceDataLine
+import kotlin.concurrent.thread
 import kotlin.math.min
 
-class PlayerImpl(private val getAudioStream: () -> InputStream) : Player {
+class PlayerImpl(
+    private val getAudioStream: () -> InputStream,
+    private val editionModel: EditionModel
+) : Player {
   private val mySource: SourceDataLine
   private var myProcessUpdater: (Long) -> Unit = {}
+  private var myOnStopAction: () -> Unit = {}
   private var mySignalStopReceived = false
 
   init {
@@ -24,15 +29,7 @@ class PlayerImpl(private val getAudioStream: () -> InputStream) : Player {
     mySource = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
   }
 
-  override fun applyEditions(editionModel: EditionModel) {
-    SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { inputStream ->
-      SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
-        applyEditionImpl(it, editionModel)
-      }
-    }
-  }
-
-  private fun applyEditionImpl(decodedStream: AudioInputStream, editionModel: EditionModel) {
+  private fun applyEditionImpl(decodedStream: AudioInputStream) {
     val editions = editionModel.editions
     if (!mySource.isOpen) mySource.open(decodedStream.format)
     ApplicationManager.getApplication().invokeLater { mySource.start() }
@@ -146,8 +143,29 @@ class PlayerImpl(private val getAudioStream: () -> InputStream) : Player {
     }
   }
 
-  override fun play() {
+  override fun resume() {
     mySource.start()
+  }
+
+  override fun setOnStopAction(action: () -> Unit) {
+    myOnStopAction = action
+  }
+
+  override fun play(errorHandler: (Throwable) -> Unit) {
+    mySource.start()
+    thread(start = true) {
+      SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { inputStream ->
+        SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
+          try {
+            applyEditionImpl(it)
+          } catch (ex: Throwable) {
+            ApplicationManager.getApplication().invokeLater { errorHandler(ex) }
+          } finally {
+            myOnStopAction()
+          }
+        }
+      }
+    }
   }
 }
 

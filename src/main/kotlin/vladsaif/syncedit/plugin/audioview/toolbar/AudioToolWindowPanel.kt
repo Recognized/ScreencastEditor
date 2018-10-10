@@ -10,8 +10,7 @@ import icons.ScreencastEditorIcons.*
 import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.actions.errorRequirementsNotSatisfied
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
-import vladsaif.syncedit.plugin.audioview.waveform.Player
-import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.PLAY
+import vladsaif.syncedit.plugin.audioview.waveform.WaveformController
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import java.io.IOException
 import javax.swing.Icon
@@ -26,7 +25,7 @@ class AudioToolWindowPanel(screencast: ScreencastFile) : SimpleToolWindowPanel(f
       with(wave.controller) {
         addAction("Play", "Play audio", ScreencastEditorIcons.PLAY, this::play) { playState != PLAY }
         addAction("Pause", "Pause audio", PAUSE, this::pause) { playState == PLAY }
-        addAction("Stop", "Stop audio", STOP, this::stopImmediately) { playState != Player.PlayState.STOP }
+        addAction("Stop", "Stop audio", STOP, this::stopImmediately) { playState !is WaveformController.PlayState.Stopped }
         addAction("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo) { hasSelection }
         addAction("Clip", "Clip audio", DELETE, this::cutSelected) { hasSelection }
         addAction("Mute", "Mute selected", VOLUME_OFF, this::muteSelected) { hasSelection }

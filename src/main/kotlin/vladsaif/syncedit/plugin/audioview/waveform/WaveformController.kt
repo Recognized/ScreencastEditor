@@ -7,8 +7,8 @@ import com.intellij.openapi.application.ApplicationManager
 import org.picocontainer.Disposable
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.LRange
-import vladsaif.syncedit.plugin.audioview.waveform.Player.PlayState.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.audioview.waveform.impl.PlayerImpl
 import java.awt.Dimension
 import java.io.IOException
 import javax.swing.JScrollPane
@@ -16,18 +16,14 @@ import javax.swing.event.ChangeEvent
 
 class WaveformController(private val waveform: JWaveform) : Disposable {
   private var myScrollPane: JScrollPane? = null
-  private var myPlayer: Player? = null
   private var myIgnoreBarChanges = false
   @Volatile
   private var myBlockScaling = false
   @Volatile
-  private var myPlayState = STOP
-  @Volatile
-  private var myUpdateTime: Long = -1
-  //  private val myTimer: Timer = Timer(32) { timeTicks() }
+  private var myPlayState: PlayState = PlayState.Stopped
   val hasSelection: Boolean
     get() = !waveform.selectionModel.selectedRanges.isEmpty()
-  val playState: Player.PlayState
+  val playState: PlayState
     get() = myPlayState
 
   fun installZoom(scrollPane: JScrollPane) {
@@ -78,42 +74,37 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     waveform.stateChanged(ChangeEvent(waveform.model.editionModel))
   }
 
-  /**
-   * @throws java.io.IOException
-   */
   fun play() {
-    if (myPlayState == PLAY) return
-    if (myPlayState == STOP) {
-      myPlayState = PLAY
-      waveform.model.screencast.audioInputStream ?: return
-      val player = Player.create {
-        waveform.model.screencast.audioInputStream!!
+    val state = myPlayState
+    when (state) {
+      is PlayState.Playing -> return
+      is PlayState.Paused -> {
+        myPlayState = PlayState.Playing(state.player)
+        state.player.resume()
       }
-      myPlayer = player
-      player.setProcessUpdater(this::positionUpdater)
-      player.play()
-      ApplicationManager.getApplication().executeOnPooledThread {
-        try {
-          if (waveform.selectionModel.selectedRanges.isEmpty()) {
-            player.applyEditions(waveform.model.editionModel)
-          } else {
-            player.applyEditions(waveform.selectionModel.toEditionModel())
-          }
-        } catch (ex: IOException) {
-          showNotification("I/O error occurred while playing audio. ${ex.message}")
-        } catch (ex: SecurityException) {
-          showNotification("Cannot access audio file due to security restrictions.")
-        } finally {
+      is PlayState.Stopped -> {
+        waveform.model.screencast.audioInputStream ?: return
+        val editionModel = if (waveform.selectionModel.selectedRanges.isEmpty()) {
+          waveform.model.editionModel
+        } else {
+          waveform.selectionModel.toEditionModel()
+        }
+        val player = PlayerImpl({ waveform.model.screencast.audioInputStream!! }, editionModel)
+        player.setProcessUpdater(this::positionUpdater)
+        player.setOnStopAction {
           ApplicationManager.getApplication().invokeAndWait {
             stop()
             waveform.model.playFramePosition.set(-1L)
           }
         }
+        player.play {
+          when (it) {
+            is IOException -> showNotification("I/O error occurred while playing audio. ${it.message}")
+            is SecurityException -> showNotification("Cannot access audio file due to security restrictions.")
+          }
+        }
+        myPlayState = PlayState.Playing(player)
       }
-    } else {
-      myPlayState = PLAY
-      myPlayer?.play()
-//      myTimer.start()
     }
   }
 
@@ -134,18 +125,15 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     }
   }
 
-  private fun timeTicks() {
-    val audio = waveform.model.screencast.audioDataModel ?: return
-    val pos = waveform.model.playFramePosition.get()
-    if (pos == -1L) return
-    waveform.model.playFramePosition.compareAndSet(pos, pos + (audio.framesPerMillisecond * 32).toLong())
-    waveform.stateChanged(ChangeEvent(this))
-  }
-
   fun pause() {
-    if (myPlayState == STOP) return
-    myPlayState = PAUSE
-    myPlayer?.pause()
+    val state = myPlayState
+    when (state) {
+      is PlayState.Stopped, is PlayState.Paused -> return
+      is PlayState.Playing -> {
+        state.player.pause()
+        myPlayState = PlayState.Paused(state.player)
+      }
+    }
   }
 
   fun stopImmediately() {
@@ -157,12 +145,16 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
   }
 
   private fun stopBase(action: Player.() -> Unit) {
-    if (myPlayState == STOP) return
-    myPlayState = STOP
-    myPlayer?.action()
+    val state = myPlayState
+    val player = when (state) {
+      is PlayState.Stopped -> return
+      is PlayState.Playing -> state.player
+      is PlayState.Paused -> state.player
+    }
+    myPlayState = PlayState.Stopped
+    player.action()
     waveform.stateChanged(ChangeEvent(this))
     waveform.model.playFramePosition.set(-1)
-    myPlayer = null
   }
 
   override fun dispose() {
@@ -198,6 +190,12 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     scrollPane.repaint()
     scrollPane.viewport.repaint()
     scrollPane.viewport.view.repaint()
+  }
+
+  sealed class PlayState {
+    object Stopped : PlayState()
+    class Playing(val player: Player) : PlayState()
+    class Paused(val player: Player) : PlayState()
   }
 }
 
