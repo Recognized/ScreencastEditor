@@ -61,7 +61,8 @@ object ColorSettings : PersistentStateComponent<ColorSettings.ColorState> {
 
   private fun Pair<Color, Color>.toLong(): Long {
     val (bright, dark) = this
-    return bright.rgb.toLong() or (dark.rgb.toLong() shl 32)
+    val x = bright.rgb.toLong() or (dark.rgb.toLong() shl 32)
+    return x
   }
 
   private fun Long.toJBColor(): JBColor {
@@ -69,11 +70,11 @@ object ColorSettings : PersistentStateComponent<ColorSettings.ColorState> {
   }
 
   private fun Long.getDark(): Color {
-    return Color((this ushr 32).toInt())
+    return Color((this ushr 32).toInt(), true)
   }
 
   private fun Long.getBright(): Color {
-    return Color((this and ((1 shl 32) - 1)).toInt())
+    return Color((this and ((1L shl 32) - 1)).toInt(), true)
   }
 
   override fun getState(): ColorState? = STATE
