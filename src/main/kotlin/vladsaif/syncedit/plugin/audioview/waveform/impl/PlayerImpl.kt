@@ -30,6 +30,57 @@ class PlayerImpl(
     mySource = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
   }
 
+  override fun setProcessUpdater(updater: (Long) -> Unit) {
+    myProcessUpdater = updater
+  }
+
+  override fun pause() {
+    mySource.stop()
+  }
+
+  override fun stop() {
+    mySignalStopReceived = true
+    mySource.drain()
+    mySource.flush()
+    mySource.stop()
+  }
+
+  override fun stopImmediately() {
+    mySignalStopReceived = true
+    mySource.stop()
+    mySource.flush()
+  }
+
+  override fun close() {
+    try {
+      mySource.close()
+    } catch (ex: Throwable) {
+    }
+  }
+
+  override fun resume() {
+    mySource.start()
+  }
+
+  override fun setOnStopAction(action: () -> Unit) {
+    myOnStopAction = action
+  }
+
+  override fun play(errorHandler: (Throwable) -> Unit) {
+    mySource.start()
+    thread(start = true) {
+      SoundProvider.getAudioInputStream(getAudioStream()).use { inputStream ->
+        try {
+          applyEditionImpl(inputStream)
+        } catch (ex: Throwable) {
+          ApplicationManager.getApplication().invokeLater { errorHandler(ex) }
+        } finally {
+          myOnStopAction()
+        }
+      }
+    }
+  }
+
   private fun applyEditionImpl(decodedStream: AudioInputStream) {
     val editions = editionModel.editions
     if (!mySource.isOpen) mySource.open(decodedStream.format)
@@ -109,59 +160,6 @@ class PlayerImpl(
     while (needWrite != 0) {
       val written = mySource.write(buffer, size - needWrite, needWrite)
       needWrite -= written
-    }
-  }
-
-  override fun setProcessUpdater(updater: (Long) -> Unit) {
-    myProcessUpdater = updater
-  }
-
-  override fun pause() {
-    mySource.stop()
-  }
-
-  override fun stop() {
-    mySignalStopReceived = true
-    mySource.drain()
-    mySource.flush()
-    mySource.stop()
-  }
-
-  override fun stopImmediately() {
-    mySignalStopReceived = true
-    mySource.stop()
-    mySource.flush()
-  }
-
-  override fun close() {
-    try {
-      mySource.close()
-    } catch (ex: Throwable) {
-    }
-  }
-
-  override fun resume() {
-    mySource.start()
-  }
-
-  override fun setOnStopAction(action: () -> Unit) {
-    myOnStopAction = action
-  }
-
-  override fun play(errorHandler: (Throwable) -> Unit) {
-    mySource.start()
-    thread(start = true) {
-      SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { inputStream ->
-        //        SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
-          try {
-            applyEditionImpl(inputStream)
-          } catch (ex: Throwable) {
-            ApplicationManager.getApplication().invokeLater { errorHandler(ex) }
-          } finally {
-            myOnStopAction()
-          }
-//        }
-      }
     }
   }
 }

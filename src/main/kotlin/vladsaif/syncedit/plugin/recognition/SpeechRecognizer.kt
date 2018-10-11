@@ -75,7 +75,7 @@ interface SpeechRecognizer {
       try {
         val data = withContext(CommonPool) {
           try {
-            SpeechRecognizer.getCurrentRecognizer().recognize(Supplier { file.audioInputStream!! }).await()
+            SpeechRecognizer.getCurrentRecognizer().recognize(Supplier { file.audioInputStream }).await()
           } finally {
             // Probably, library won't be used again after recognition
             LibrariesLoader.releaseClassloader()

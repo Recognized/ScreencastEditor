@@ -5,6 +5,7 @@ import com.intellij.util.io.inputStream
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.After
 import vladsaif.syncedit.plugin.*
+import vladsaif.syncedit.plugin.sound.SoundProvider
 import java.nio.file.Files
 
 class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
@@ -31,8 +32,15 @@ class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
     assertEquals(TRANSCRIPT_DATA, myScreencast.data!!)
   }
 
-  fun `test audio preserved`() {
-    assertEquals(AUDIO_PATH.inputStream().sha1sum(), myScreencast.audioInputStream!!.sha1sum())
+  fun `test audio file preserved`() {
+    assertEquals(AUDIO_PATH.inputStream().sha1sum(), myScreencast.audioInputStream.sha1sum())
+  }
+
+  fun `test audio data preserved`() {
+    assertEquals(
+        SoundProvider.getAudioInputStream(AUDIO_PATH.toFile()).sha1sum(),
+        SoundProvider.getAudioInputStream(myScreencast.audioInputStream).sha1sum()
+    )
   }
 
   @After

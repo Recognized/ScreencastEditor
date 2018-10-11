@@ -65,20 +65,27 @@ class ScreencastFile(
     val project: Project,
     val file: Path
 ) : Disposable {
+
   private val myListeners: MutableSet<Listener> = ContainerUtil.newConcurrentSet()
   private var myEditionListenerEnabled = true
   private var myTranscriptListenerEnabled = true
   private val myBindings: MutableMap<Int, RangeMarker> = mutableMapOf()
-  private val transcriptInputStream: InputStream?
-    get() = getInputStreamByType(TRANSCRIPT_DATA)
-  private val scriptInputStream: InputStream?
-    get() = getInputStreamByType(SCRIPT)
+  private val myTranscriptInputStream: InputStream
+    get() = getInputStreamByType(TRANSCRIPT_DATA) ?: throw IllegalStateException("Transcript is not set")
+  private val isTranscriptSet: Boolean
+    get() = isDataSet(TRANSCRIPT_DATA)
+  private val myScriptInputStream: InputStream
+    get() = getInputStreamByType(SCRIPT) ?: throw IllegalStateException("Script is not set")
+  private val isScriptSet: Boolean
+    get() = isDataSet(SCRIPT)
   val name: String
     get() = file.fileName.toString().substringBefore(ScreencastFileType.defaultExtension)
   var audioDataModel: AudioDataModel? = null
     private set
-  val audioInputStream: InputStream?
-    get() = getInputStreamByType(AUDIO)
+  val audioInputStream: InputStream
+    get() = getInputStreamByType(AUDIO) ?: throw IllegalStateException("Audio is not set")
+  val isAudioSet: Boolean
+    get() = isDataSet(AUDIO)
   val textMapping: TextRangeMapping
     get() = myBindings
   val transcriptPsi: TranscriptPsiFile?
@@ -117,18 +124,22 @@ class ScreencastFile(
 
   suspend fun initialize() {
     withContext(CommonPool) {
-      audioDataModel = audioInputStream?.let { SimpleAudioModel { audioInputStream!! } }
+      if (isAudioSet) {
+        audioDataModel = SimpleAudioModel { audioInputStream }
+      }
     }
     withContext(ExEDT) {
-      scriptFile = scriptInputStream?.let {
-        createVirtualFile(
+      if (isScriptSet) {
+        scriptFile = createVirtualFile(
             "$name.kts",
-            readContents(it),
+            readContents(myScriptInputStream),
             KotlinFileType.INSTANCE
         )
       }
       scriptFile?.putUserData(KEY, this)
-      data = transcriptInputStream?.let { TranscriptData.createFrom(it) }
+      if (isTranscriptSet) {
+        data = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
+      }
       synchronizeTranscriptWithEditionModel()
       addTranscriptDataListener(object : ScreencastFile.Listener {
         override fun onTranscriptDataChanged() {
@@ -147,8 +158,8 @@ class ScreencastFile(
   fun save(progressUpdate: (Double) -> Unit) {
     val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
     with(ScreencastZipper(tempFile)) {
-      if (audioInputStream != null) {
-        addAudio(Supplier { audioInputStream!! }, editionModel, progressUpdate)
+      if (isAudioSet) {
+        addAudio(Supplier { audioInputStream }, editionModel, progressUpdate)
       }
       val data = data
       if (data != null) {
@@ -417,6 +428,12 @@ class ScreencastFile(
     ).virtualFile
   }
 
+  private fun isDataSet(type: EntryType): Boolean {
+    return ZipFile(file.toFile()).use { file ->
+      file.entries().asSequence().any { it.comment == type.name }
+    }
+  }
+
   private fun getInputStreamByType(type: EntryType): InputStream? {
     val exists = ZipFile(file.toFile()).use { file ->
       file.entries()
@@ -432,18 +449,29 @@ class ScreencastFile(
   }
 
 
+  // Actual zipStream cannot skip properly
   private class ZipEntryInputStream(private val file: ZipFile, comment: String) : InputStream() {
-    private val stream: InputStream = file.getInputStream(file.entries().asSequence().first { it.comment == comment })
-    override fun read() = stream.read()
-    override fun read(b: ByteArray?) = stream.read(b)
-    override fun read(b: ByteArray?, off: Int, len: Int) = stream.read(b, off, len)
-    override fun skip(n: Long) = stream.skip(n)
-    override fun available() = stream.available()
-    override fun reset() = stream.reset()
-    override fun mark(readlimit: Int) = stream.mark(readlimit)
-    override fun markSupported() = stream.markSupported()
+
+    private val myStream: InputStream = file.getInputStream(file.entries().asSequence().first { it.comment == comment })
+
+    override fun read() = myStream.read()
+
+    override fun read(b: ByteArray?) = myStream.read(b)
+
+    override fun read(b: ByteArray?, off: Int, len: Int) = myStream.read(b, off, len)
+
+    override fun available() = myStream.available()
+
+    override fun reset() = myStream.reset()
+
+    override fun mark(readlimit: Int) = myStream.mark(readlimit)
+
+    override fun markSupported() = myStream.markSupported()
+
+    override fun skip(n: Long) = myStream.skip(n)
+
     override fun close() {
-      stream.close()
+      myStream.close()
       file.close()
     }
   }

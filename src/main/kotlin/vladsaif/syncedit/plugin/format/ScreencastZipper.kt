@@ -12,7 +12,6 @@ import java.io.OutputStream
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
 import java.util.function.Supplier
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -26,6 +25,7 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
 
   init {
     myZipStream.setLevel(0)
+    myZipStream.setMethod(ZipOutputStream.DEFLATED)
   }
 
   @Synchronized
@@ -53,7 +53,7 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
         myZipStream.closeEntry()
       }
     }
-    outputStream.use(block)
+    outputStream.buffered().use(block)
   }
 
   @Synchronized
@@ -86,7 +86,7 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
   }
 
   /**
-   * Puts first 44 bytes of [inputStream] to [outputStream]
+   * Put first 44 bytes of [inputStream] to [outputStream]
    */
   private fun putWavHeader(out: OutputStream, inputStream: InputStream) {
     val header = ByteArray(44)
@@ -206,9 +206,9 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
   }
 }
 
+// Exact implementation from Java 9 JDK
 @Throws(IOException::class)
 fun InputStream.transferTo(out: OutputStream): Long {
-  Objects.requireNonNull(out, "out")
   var transferred: Long = 0
   val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
   var read: Int

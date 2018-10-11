@@ -4,6 +4,7 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import org.picocontainer.Disposable
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.LRange
@@ -13,6 +14,7 @@ import java.awt.Dimension
 import java.io.IOException
 import javax.swing.JScrollPane
 import javax.swing.event.ChangeEvent
+
 
 class WaveformController(private val waveform: JWaveform) : Disposable {
   private var myScrollPane: JScrollPane? = null
@@ -89,7 +91,7 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
         } else {
           waveform.selectionModel.toEditionModel()
         }
-        val player = PlayerImpl({ waveform.model.screencast.audioInputStream!! }, editionModel)
+        val player = PlayerImpl({ waveform.model.screencast.audioInputStream }, editionModel)
         player.setProcessUpdater(this::positionUpdater)
         player.setOnStopAction {
           ApplicationManager.getApplication().invokeAndWait {
@@ -99,7 +101,10 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
         }
         player.play {
           when (it) {
-            is IOException -> showNotification("I/O error occurred while playing audio. ${it.message}")
+            is IOException -> {
+              showNotification("I/O error occurred while playing audio. ${it.message}")
+              LOG.info(it)
+            }
             is SecurityException -> showNotification("Cannot access audio file due to security restrictions.")
           }
         }
@@ -192,10 +197,16 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     scrollPane.viewport.view.repaint()
   }
 
+
   sealed class PlayState {
     object Stopped : PlayState()
     class Playing(val player: Player) : PlayState()
     class Paused(val player: Player) : PlayState()
+  }
+
+
+  companion object {
+    private val LOG = logger<WaveformController>()
   }
 }
 

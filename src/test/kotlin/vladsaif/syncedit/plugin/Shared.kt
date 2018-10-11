@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
-import vladsaif.syncedit.plugin.format.transferTo
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -113,11 +112,7 @@ fun prepareTestScreencast(
   println("Cache is not consistent. Recreating: $out")
   ScreencastZipper(out).use { zipper ->
     if (audio != null) {
-      Files.newInputStream(audio).use { inputAudio ->
-        zipper.useAudioOutputStream { outputAudio ->
-          inputAudio.transferTo(outputAudio.buffered())
-        }
-      }
+      zipper.addAudio(audio)
     }
     if (script != null) {
       zipper.addScript(script)
@@ -134,9 +129,9 @@ private fun consistentWith(
     data: TranscriptData?,
     screencast: ScreencastFile
 ): Boolean {
-  if (audio != null && screencast.audioInputStream != null) {
+  if (audio != null && screencast.isAudioSet) {
     val consistent = Files.newInputStream(audio).use { cached ->
-      cached.buffered().sha1sum() == screencast.audioInputStream!!.buffered().sha1sum()
+      cached.buffered().use(InputStream::sha1sum) == screencast.audioInputStream.buffered().use(InputStream::sha1sum)
     }
     if (!consistent) return false
   }

@@ -46,11 +46,6 @@
               class="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
               text="Choose speech recognizer"
               description="Choose speech recognizer"/>
-      <action id="vladsaif.syncedit.plugin.actions.internal.FakeRecording"
-              icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.actions.internal.FakeRecording"
-              text="Record sound (FAKE)"
-              description="Start diff window"/>
       <separator/>
       <group id="SpeechRecognizers" popup="false" compact="true">
         <group text="Google Speech Kit" id="GSpeechKit" popup="true" compact="true"/>

@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.sound
 import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader
+import vladsaif.syncedit.plugin.floorToInt
 import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
@@ -11,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 import javax.sound.sampled.*
 import kotlin.concurrent.thread
+import kotlin.math.min
 
 /** This object duplicates some part of [javax.sound.sampled.AudioSystem].
  *
@@ -34,10 +36,11 @@ object SoundProvider {
 
   @Throws(java.io.IOException::class, UnsupportedAudioFileException::class)
   fun getAudioInputStream(inputStream: InputStream): AudioInputStream {
+    val stream = ExactSkippingBIS(inputStream)
     return try {
-      AudioSystem.getAudioInputStream(inputStream.buffered())
+      AudioSystem.getAudioInputStream(stream)
     } catch (ex: UnsupportedAudioFileException) {
-      MPEG_FILE_READER.getAudioInputStream(inputStream.buffered())
+      MPEG_FILE_READER.getAudioInputStream(stream)
     }
   }
 
@@ -67,10 +70,11 @@ object SoundProvider {
 
   @Throws(java.io.IOException::class, UnsupportedAudioFileException::class)
   fun getAudioFileFormat(inputStream: InputStream): AudioFileFormat {
+    val stream = ExactSkippingBIS(inputStream)
     return try {
-      AudioSystem.getAudioFileFormat(inputStream.buffered())
+      AudioSystem.getAudioFileFormat(stream)
     } catch (ex: UnsupportedAudioFileException) {
-      MPEG_FILE_READER.getAudioFileFormat(inputStream.buffered())
+      MPEG_FILE_READER.getAudioFileFormat(stream)
     }
   }
 
@@ -152,7 +156,7 @@ object SoundProvider {
   }
 
   private fun withPcmStream(source: InputStream, action: (AudioInputStream) -> Unit) {
-    getAudioInputStream(source.buffered()).use { encoded ->
+    getAudioInputStream(source).use { encoded ->
       when {
         encoded.format == encoded.format.toPcmPreservingChannels() -> {
           action(encoded)
@@ -165,7 +169,7 @@ object SoundProvider {
   }
 
   private fun withMonoPcmStream(source: InputStream, action: (AudioInputStream) -> Unit) {
-    getAudioInputStream(source.buffered()).use { encoded ->
+    getAudioInputStream(source).use { encoded ->
       when {
         encoded.format == encoded.format.toMonoFormat() -> {
           action(encoded)
@@ -202,50 +206,47 @@ object SoundProvider {
   // Pre-calculate size of WAV file in frames and then use it in this function
   private fun createSizedAudioStream(source: AudioInputStream, size: Long): AudioInputStream {
     if (source.frameLength > 0) return source
-    return object : AudioInputStream(ByteArrayInputStream(ByteArray(0)), source.format.toPcmPreservingChannels(), size) {
-      override fun skip(n: Long): Long {
-        return source.skip(n)
-      }
+    return object : AudioInputStream(
+        ByteArrayInputStream(ByteArray(0)), // fake arguments
+        source.format.toPcmPreservingChannels(),
+        size
+    ) {
+      override fun skip(n: Long) = source.skip(n)
 
-      override fun getFrameLength(): Long {
-        return size
-      }
+      override fun getFrameLength(): Long = size
 
-      override fun available(): Int {
-        return source.available()
-      }
+      override fun available(): Int = source.available()
 
-      override fun reset() {
-        source.reset()
-      }
+      override fun reset() = source.reset()
 
-      override fun close() {
-        source.close()
-      }
+      override fun close() = source.close()
 
-      override fun mark(readlimit: Int) {
-        source.mark(readlimit)
-      }
+      override fun mark(readlimit: Int) = source.mark(readlimit)
 
-      override fun markSupported(): Boolean {
-        return source.markSupported()
-      }
+      override fun markSupported(): Boolean = source.markSupported()
 
-      override fun read(): Int {
-        return source.read()
-      }
+      override fun read(): Int = source.read()
 
-      override fun read(b: ByteArray?): Int {
-        return source.read(b)
-      }
+      override fun read(b: ByteArray?): Int = source.read(b)
 
-      override fun read(b: ByteArray?, off: Int, len: Int): Int {
-        return source.read(b, off, len)
-      }
+      override fun read(b: ByteArray?, off: Int, len: Int): Int = source.read(b, off, len)
 
-      override fun getFormat(): AudioFormat {
-        return source.format
+      override fun getFormat(): AudioFormat = source.format
+    }
+  }
+
+  private class ExactSkippingBIS(stream: InputStream) : BufferedInputStream(stream) {
+    override fun skip(n: Long): Long {
+      var totalSkipped = 0L
+      val skipBuffer = ByteArray(1 shl 14)
+      while (totalSkipped < n) {
+        val res = read(skipBuffer, 0, min(skipBuffer.size, (n - totalSkipped).floorToInt()))
+        if (res < 0) {
+          break
+        }
+        totalSkipped += res
       }
+      return totalSkipped
     }
   }
 }
