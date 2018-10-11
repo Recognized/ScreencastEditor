@@ -77,6 +77,16 @@ sourceSets {
 
 test.systemProperty "google.credentials", project.properties["google.credentials"]
 
+task lightTest(type: Test) {
+    test.systemProperty "google.credentials", ""
+    test
+}
+
+configure(lightTest) {
+    group "verification"
+    description "Run tests without testing recognition"
+}
+
 intellij {
     pluginName "ScreencastEditor"
     plugins "Kotlin"
@@ -110,7 +120,6 @@ project.afterEvaluate {
         }
     }
 }
-
 
 dependencies {
     compile group: "javazoom", name: "jlayer", version: "1.0.1"
