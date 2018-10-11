@@ -29,7 +29,7 @@ class GSpeechKit : SpeechRecognizer {
     try {
       // Google mostly accept PCM encoded audio
       // But we can decode it to PCM, if it is in other encoding
-      return SoundProvider.withWavFileStream(supplier) { stream ->
+      return SoundProvider.withMonoWavFileStream(supplier) { stream ->
         val result = method.invoke(instance, stream) as CompletableFuture<List<List<Any>>>
         result.thenApply(this::parseResponse)
       }

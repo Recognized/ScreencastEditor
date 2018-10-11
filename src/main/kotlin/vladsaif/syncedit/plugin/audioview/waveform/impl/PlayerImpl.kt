@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.audioview.skipFramesMpeg
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
@@ -90,7 +91,6 @@ class PlayerImpl(
           while (needBytes != 0L) {
             val read = decodedStream.read(buffer, 0, min(buffer.size.toLong(), needBytes).toInt())
             if (read == -1 || mySignalStopReceived) {
-              println("Break no changes $mySignalStopReceived")
               break@outer
             }
             needBytes -= read
@@ -101,7 +101,7 @@ class PlayerImpl(
         }
       }
     }
-    println(totalFrames / decodedStream.format.frameRate)
+    LOG.info("Played ${totalFrames / decodedStream.format.frameRate}ms")
   }
 
   private fun writeOrBlock(buffer: ByteArray, size: Int) {
@@ -112,9 +112,6 @@ class PlayerImpl(
     }
   }
 
-  /**
-   * Set [updater] that will be sometimes called with the number of frames written to the source data line.
-   */
   override fun setProcessUpdater(updater: (Long) -> Unit) {
     myProcessUpdater = updater
   }
@@ -155,19 +152,21 @@ class PlayerImpl(
     mySource.start()
     thread(start = true) {
       SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { inputStream ->
-        SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
+        //        SoundProvider.getAudioInputStream(inputStream.format.toDecodeFormat(), inputStream).use {
           try {
-            applyEditionImpl(it)
+            applyEditionImpl(inputStream)
           } catch (ex: Throwable) {
             ApplicationManager.getApplication().invokeLater { errorHandler(ex) }
           } finally {
             myOnStopAction()
           }
-        }
+//        }
       }
     }
   }
 }
+
+private val LOG = logger<PlayerImpl>()
 
 fun Int.modFloor(modulus: Int): Int {
   return this - this % modulus

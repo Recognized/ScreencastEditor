@@ -95,21 +95,21 @@ class SoundProviderTest {
 
   @Test
   fun `test convert stereo 22khz mp3 to mono pcm 44khz`() {
-    SoundProvider.withWavFileStream(RESOURCES_PATH.resolve("demo_stereo.mp3")) {
+    SoundProvider.withMonoWavFileStream(RESOURCES_PATH.resolve("demo_stereo.mp3")) {
       println(consumeStream(it))
     }
   }
 
   @Test
   fun `test mono mp3 44khz to mono pcm 44khz`() {
-    SoundProvider.withWavFileStream(RESOURCES_PATH.resolve("demo.mp3")) {
+    SoundProvider.withMonoWavFileStream(RESOURCES_PATH.resolve("demo.mp3")) {
       println(consumeStream(it))
     }
   }
 
   @Test
   fun `test idempotent conversion`() {
-    SoundProvider.withWavFileStream(RESOURCES_PATH.resolve("demo.wav")) {
+    SoundProvider.withMonoWavFileStream(RESOURCES_PATH.resolve("demo.wav")) {
       println(consumeStream(it))
     }
   }

@@ -5,8 +5,6 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.util.ProgressWindow
 import com.intellij.openapi.project.Project
 import com.intellij.util.containers.ContainerUtil
-import java.io.IOException
-import java.nio.file.Path
 import javax.sound.sampled.*
 import kotlin.concurrent.thread
 import kotlin.system.measureTimeMillis
@@ -49,7 +47,7 @@ object SoundRecorder {
    * @throws javax.sound.sampled.LineUnavailableException If data line cannot be acquired, or opened,
    * or if recording format is not supported.
    */
-  fun start(out: Path, project: Project, errorHandler: (IOException) -> Unit) {
+  fun start(project: Project, streamProcessor: (AudioInputStream) -> Unit) {
     ApplicationManager.getApplication().assertIsDispatchThread()
     val state = STATE
     when (state) {
@@ -84,11 +82,7 @@ object SoundRecorder {
         p.stop()
         p.processFinish()
         try {
-          AudioInputStream(line).use { stream ->
-            AudioSystem.write(stream, AudioFileFormat.Type.WAVE, out.toFile())
-          }
-        } catch (ex: IOException) {
-          errorHandler(ex)
+          AudioInputStream(line).use(streamProcessor)
         } finally {
           ApplicationManager.getApplication().invokeAndWait {
             STATE = InternalState.Idle

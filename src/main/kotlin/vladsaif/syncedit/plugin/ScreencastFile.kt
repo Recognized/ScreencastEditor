@@ -37,6 +37,7 @@ import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.impl.SimpleAudioModel
 import vladsaif.syncedit.plugin.format.ScreencastFileType
+import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
@@ -45,8 +46,10 @@ import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.Charset
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
+import java.util.function.Supplier
 import java.util.stream.Collectors
 import java.util.zip.ZipFile
 import javax.swing.event.ChangeListener
@@ -139,6 +142,24 @@ class ScreencastFile(
         }
       })
     }
+  }
+
+  fun save(progressUpdate: (Double) -> Unit) {
+    val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
+    with(ScreencastZipper(tempFile)) {
+      if (audioInputStream != null) {
+        addAudio(Supplier { audioInputStream!! }, editionModel, progressUpdate)
+      }
+      val data = data
+      if (data != null) {
+        addTranscriptData(data)
+      }
+      val doc = scriptDocument
+      if (doc != null) {
+        addScript(doc.text)
+      }
+    }
+    Files.move(tempFile, file)
   }
 
   init {
@@ -455,30 +476,6 @@ class ScreencastFile(
 
     override fun getAffectedDocuments() = myAffectedDocuments.toTypedArray()
   }
-
-
-//  private inner class MappingUndoableAction(
-//      val oldMapping:
-//  ) : UndoableAction {
-//
-//
-//    override fun redo() {
-//      TODO("not implemented")
-//    }
-//
-//    override fun undo() {
-//      TODO("not implemented")
-//    }
-//
-//    override fun isGlobal(): Boolean {
-//      TODO("not implemented")
-//    }
-//
-//    override fun getAffectedDocuments(): Array<DocumentReference>? {
-//      TODO("not implemented")
-//    }
-//
-//  }
 
 
   companion object {

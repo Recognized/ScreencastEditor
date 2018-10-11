@@ -40,7 +40,7 @@ class GSpeechKitApiTest {
       data.words.all { !it.range.empty }
     }
     assertTrue("Words are overlapping.") {
-      data.words.zipWithNext().all { (current, next) -> current.range.end <= next.range.start }
+      data.words.asSequence().zipWithNext().all { (current, next) -> current.range.end <= next.range.start }
     }
   }
 }

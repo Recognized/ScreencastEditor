@@ -74,11 +74,11 @@ object SoundProvider {
     }
   }
 
-  fun <T> withWavFileStream(path: Path, block: (InputStream) -> T): T {
-    return withWavFileStream(Supplier { Files.newInputStream(path) }, block)
+  fun <T> withMonoWavFileStream(path: Path, block: (InputStream) -> T): T {
+    return withMonoWavFileStream(Supplier { Files.newInputStream(path) }, block)
   }
 
-  fun <T> withWavFileStream(supplier: Supplier<InputStream>, block: (InputStream) -> T): T {
+  fun <T> withMonoWavFileStream(supplier: Supplier<InputStream>, block: (InputStream) -> T): T {
     val (stream, lock) = convertAudioLazy(supplier)
     LOG.info("Audio is converting.")
     stream.use {
@@ -117,27 +117,51 @@ object SoundProvider {
   // Idea of this code is just to convert and send audio stream on the fly,
   // but there are several tricks are needed to implement it.
   private fun convertAudioLazy(supplier: Supplier<InputStream>): Pair<InputStream, Lock> {
-    val length = countFrames(supplier)
     val pipeIn = PipedInputStream(1 shl 14)
     val pipeOut = PipedOutputStream(pipeIn)
     val keepAlive = ReentrantLock()
     keepAlive.lock()
     thread {
-      supplier.get().use { source ->
-        // This is needed because of lack of transitive closure in audio system conversions.
-        // We need to manually convert audio through intermediate formats.
-        withMonoPcmStream(source) { mono ->
-          // Lets convert it using pipe
-          // No need for join, because execution continue after everything is written to pipe and then thread ends.
-          pipeOut.use {
-            AudioSystem.write(createSizedAudioStream(mono, length), AudioFileFormat.Type.WAVE, it)
-          }
-          LOG.info("Data is written to pipe.")
-          keepAlive.lock()
+      // This is needed because of lack of transitive closure in audio system conversions.
+      // We need to manually convert audio through intermediate formats.
+      withSizedMonoPcmStream(supplier) { mono ->
+        // Lets convert it using pipe
+        // No need for join, because execution continue after everything is written to pipe and then thread ends.
+        pipeOut.use {
+          AudioSystem.write(mono, AudioFileFormat.Type.WAVE, it)
         }
+        LOG.info("Data is written to pipe.")
+        keepAlive.lock()
       }
     }
     return BufferedInputStream(pipeIn) to keepAlive
+  }
+
+  private fun withSizedMonoPcmStream(supplier: Supplier<InputStream>, action: (AudioInputStream) -> Unit) {
+    val length = countFrames(supplier)
+    withMonoPcmStream(supplier.get()) {
+      action(createSizedAudioStream(it, length))
+    }
+  }
+
+  fun withSizedPcmStream(supplier: Supplier<InputStream>, action: (AudioInputStream) -> Unit) {
+    val length = countFrames(supplier)
+    withPcmStream(supplier.get()) {
+      action(createSizedAudioStream(it, length))
+    }
+  }
+
+  private fun withPcmStream(source: InputStream, action: (AudioInputStream) -> Unit) {
+    getAudioInputStream(source.buffered()).use { encoded ->
+      when {
+        encoded.format == encoded.format.toPcmPreservingChannels() -> {
+          action(encoded)
+        }
+        else -> {
+          getAudioInputStream(encoded.format.toPcmPreservingChannels(), encoded).use(action)
+        }
+      }
+    }
   }
 
   private fun withMonoPcmStream(source: InputStream, action: (AudioInputStream) -> Unit) {
