@@ -27,6 +27,10 @@
                                    implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
     <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
                    order="first"/>
+    <applicationService serviceInterface="vladsaif.syncedit.plugin.ColorSettings"
+                        serviceImplementation="vladsaif.syncedit.plugin.ColorSettings"/>
+    <applicationService serviceInterface="vladsaif.syncedit.plugin.recognition.GCredentialProvider"
+                        serviceImplementation="vladsaif.syncedit.plugin.recognition.GCredentialProvider"/>
   </extensions>
   <actions>
     <group text="Screencast Editor" id="ScreencastEditor" popup="true" compact="false">

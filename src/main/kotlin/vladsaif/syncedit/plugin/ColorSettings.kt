@@ -2,11 +2,12 @@ package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
+import com.intellij.openapi.components.Storage
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 
-@State(name = "ScreencastEditorSettings")
+@State(name = "ScreencastEditorSettings", storages = [Storage("screencastEditorGraphics.xml")])
 object ColorSettings : PersistentStateComponent<ColorSettings.ColorState> {
   private var STATE = ColorState()
 
@@ -61,8 +62,7 @@ object ColorSettings : PersistentStateComponent<ColorSettings.ColorState> {
 
   private fun Pair<Color, Color>.toLong(): Long {
     val (bright, dark) = this
-    val x = bright.rgb.toLong() or (dark.rgb.toLong() shl 32)
-    return x
+    return bright.rgb.toLong() or (dark.rgb.toLong() shl 32)
   }
 
   private fun Long.toJBColor(): JBColor {
@@ -86,15 +86,4 @@ object ColorSettings : PersistentStateComponent<ColorSettings.ColorState> {
   private fun Color.muchBrighter() = this.brighter().brighter().brighter().brighter()
 
   private fun Color.muchDarker() = this.darker().darker().darker().darker()
-
-  private infix fun Color.over(other: Color): Color {
-    assert(other.alpha == 255)
-    val srcRed = this.red * this.alpha / 255
-    val srcGreen = this.green * this.alpha / 255
-    val srcBlue = this.blue * this.alpha / 255
-    val dstRed = other.red * (255 - this.alpha) / 255
-    val dstGreen = other.green * (255 - this.alpha) / 255
-    val dstBlue = other.blue * (255 - this.alpha) / 255
-    return Color(srcRed + dstRed, srcGreen + dstGreen, srcBlue + dstBlue)
-  }
 }

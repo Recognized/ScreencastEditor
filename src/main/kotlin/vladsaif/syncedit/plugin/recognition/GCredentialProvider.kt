@@ -1,11 +1,14 @@
 package vladsaif.syncedit.plugin.recognition
 
 import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.State
+import com.intellij.openapi.components.Storage
 import com.intellij.openapi.diagnostic.logger
 import vladsaif.syncedit.plugin.LibrariesLoader
 import java.nio.file.Path
 
-class GCredentialProvider private constructor() : PersistentStateComponent<GCredentialProvider> {
+@State(name = "SpeechToTextKeyPath", storages = [Storage("speechToTextKeyPath.xml")])
+class GCredentialProvider : PersistentStateComponent<GCredentialProvider> {
   var gSettings: Path? = null
     private set
 
