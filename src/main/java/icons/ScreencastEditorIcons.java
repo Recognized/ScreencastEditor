@@ -1,9 +1,11 @@
 package icons;
 
 import com.intellij.openapi.util.IconLoader;
+import kotlin.Suppress;
 
 import javax.swing.*;
 
+@SuppressWarnings("unused")
 public interface ScreencastEditorIcons {
   Icon DELETE = IconLoader.getIcon("/icons/delete.png"); 
   Icon DELETE_TOOL_WINDOW = IconLoader.getIcon("/icons/deleteTool.png"); 
