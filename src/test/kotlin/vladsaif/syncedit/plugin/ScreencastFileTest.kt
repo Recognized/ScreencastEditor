@@ -3,12 +3,13 @@ package vladsaif.syncedit.plugin
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
+import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 
 class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
 
   override fun setUp() {
     super.setUp()
-    prepareTestScreencast(project, AUDIO_PATH, createScriptPsi(project).text, TRANSCRIPT_DATA)
+    prepareTestScreencast(project, AUDIO_PATH, createScriptPsi(project).text, DefaultEditionModel(), TRANSCRIPT_DATA)
   }
 
   private fun withModel(block: ScreencastFile.() -> Unit) {

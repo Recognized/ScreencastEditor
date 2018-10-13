@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
 import java.io.File
@@ -37,6 +38,10 @@ val TRANSCRIPT_DATA = TranscriptData(listOf(
     WordData("eleven", IRange(12000, 13000)),
     WordData("twelve", IRange(13000, 14000))
 ))
+val EDITION_MODEL = DefaultEditionModel().apply {
+  cut(LRange(0, 100000))
+  mute(LRange(200000, 300000))
+}
 val AUDIO_PATH: Path = RESOURCES_PATH.resolve("demo.wav")
 val SCRIPT_TEXT =
     """|timeOffset(ms = 1000L)
@@ -96,6 +101,7 @@ fun prepareTestScreencast(
     project: Project,
     audio: Path?,
     script: String?,
+    editionModel: DefaultEditionModel?,
     data: TranscriptData?
 ) {
   val out = SCREENCAST_PATH
@@ -104,7 +110,7 @@ fun prepareTestScreencast(
     runBlocking {
       screencast.initialize()
     }
-    if (consistentWith(audio, script, data, screencast)) {
+    if (consistentWith(audio, script, data, editionModel, screencast)) {
       println("Cache is consistent.")
       return
     }
@@ -120,6 +126,9 @@ fun prepareTestScreencast(
     if (data != null) {
       zipper.addTranscriptData(data)
     }
+    if (editionModel != null) {
+      zipper.addEditionModel(editionModel)
+    }
   }
 }
 
@@ -127,6 +136,7 @@ private fun consistentWith(
     audio: Path?,
     script: String?,
     data: TranscriptData?,
+    editionModel: DefaultEditionModel?,
     screencast: ScreencastFile
 ): Boolean {
   if (audio != null && screencast.isAudioSet) {
@@ -135,5 +145,7 @@ private fun consistentWith(
     }
     if (!consistent) return false
   }
-  return script == screencast.scriptDocument?.text && data == screencast.data
+  return script == screencast.scriptDocument?.text
+      && data == screencast.data
+      && (editionModel ?: DefaultEditionModel()) == screencast.editionModel
 }

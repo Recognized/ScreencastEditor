@@ -7,6 +7,7 @@ import com.intellij.openapi.command.undo.DocumentReference
 import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.command.undo.UndoableAction
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.RangeMarker
@@ -17,6 +18,7 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.progress.util.ProgressWindow
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
@@ -40,14 +42,18 @@ import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
+import vladsaif.syncedit.plugin.format.transferTo
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
+import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Supplier
 import java.util.stream.Collectors
@@ -78,6 +84,10 @@ class ScreencastFile(
     get() = getInputStreamByType(SCRIPT) ?: throw IllegalStateException("Script is not set")
   private val isScriptSet: Boolean
     get() = isDataSet(SCRIPT)
+  private val isEditionModelSet: Boolean
+    get() = isDataSet(EDITION_MODEL)
+  private val myEditionModelInputStream: InputStream
+    get() = getInputStreamByType(EDITION_MODEL) ?: throw IllegalStateException("Edition model is not set")
   val name: String
     get() = file.fileName.toString().substringBefore(ScreencastFileType.defaultExtension)
   var audioDataModel: AudioDataModel? = null
@@ -120,6 +130,7 @@ class ScreencastFile(
     if (!file.isFile() || !file.toString().endsWith(ScreencastFileType.defaultExtension)) {
       throw IOException("Supplied file ($file) is not screencast.")
     }
+    EditorFactory.getInstance().addEditorFactoryListener(TranscriptFactoryListener(), this)
   }
 
   suspend fun initialize() {
@@ -129,56 +140,108 @@ class ScreencastFile(
       }
     }
     withContext(ExEDT) {
+      if (isEditionModelSet) {
+        val output = ByteArrayOutputStream()
+        myEditionModelInputStream.use {
+          it.transferTo(output)
+        }
+        val modelFromZip = EditionModel.deserialize(output.toByteArray())
+        for ((range, type) in modelFromZip.editions) {
+          when(type) {
+            CUT -> editionModel.cut(range)
+            MUTE -> editionModel.mute(range)
+            NO_CHANGES -> editionModel.undo(range)
+          }
+        }
+      }
       if (isScriptSet) {
         scriptFile = createVirtualFile(
             "$name.kts",
             readContents(myScriptInputStream),
             KotlinFileType.INSTANCE
-        )
+        ).also { it.putUserData(KEY, this@ScreencastFile) }
       }
-      scriptFile?.putUserData(KEY, this)
       if (isTranscriptSet) {
         data = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
       }
-      synchronizeTranscriptWithEditionModel()
-      addTranscriptDataListener(object : ScreencastFile.Listener {
-        override fun onTranscriptDataChanged() {
-          val files = listOfNotNull(transcriptFile, scriptFile)
-          PsiDocumentManager.getInstance(project).reparseFiles(files, true)
-        }
-      })
-      scriptDocument?.addDocumentListener(object : DocumentListener {
-        override fun documentChanged(event: DocumentEvent) {
-          synchronizeByScript()
-        }
-      })
+      installListeners()
     }
   }
 
-  fun save(progressUpdate: (Double) -> Unit) {
-    val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
-    with(ScreencastZipper(tempFile)) {
-      if (isAudioSet) {
-        addAudio(Supplier { audioInputStream }, editionModel, progressUpdate)
+  private fun installListeners() {
+    addTranscriptDataListener(object : ScreencastFile.Listener {
+      override fun onTranscriptDataChanged() {
+        val files = listOfNotNull(transcriptFile, scriptFile)
+        PsiDocumentManager.getInstance(project).reparseFiles(files, true)
       }
-      val data = data
-      if (data != null) {
-        addTranscriptData(data)
+    })
+    scriptDocument?.addDocumentListener(object : DocumentListener {
+      override fun documentChanged(event: DocumentEvent) {
+        synchronizeByScript()
       }
-      val doc = scriptDocument
-      if (doc != null) {
-        addScript(doc.text)
-      }
-    }
-    Files.move(tempFile, file)
-  }
-
-  init {
+    })
     editionModel.addChangeListener(ChangeListener {
       if (myEditionListenerEnabled) {
         onEditionModelChanged()
       }
     })
+  }
+
+  /**
+   * Hard save function rewrites audio file and discards information about script and transcript changes.
+   *
+   * @return function that saves this screencast in the state when [getHardSaveFunction] was called
+   */
+  fun getHardSaveFunction(): (progressUpdater: (Double) -> Unit, Path) -> Unit {
+    val editionState = editionModel.copy()
+    val msDeleted = IRangeUnion()
+    if (isAudioSet) {
+      for ((range, type) in editionState.editions) {
+        if (type == CUT) {
+          msDeleted.union(audioDataModel!!.frameRangeToMsRange(range))
+        }
+      }
+    }
+    // Change word ranges because of deletions
+    val newTranscriptData = data?.words?.asSequence()
+        ?.filter { it.state != WordData.State.EXCLUDED }
+        ?.map { it.copy(range = msDeleted.impose(it.range)) }
+        ?.filter { !it.range.empty }
+        ?.toList()
+        ?.let { TranscriptData(it) }
+
+    // TODO update offsets
+    val newScript = scriptDocument?.text
+
+    return { progressUpdater, out ->
+      val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
+      with(ScreencastZipper(tempFile)) {
+        if (isAudioSet) {
+          addAudio(Supplier { audioInputStream }, editionState, progressUpdater)
+        }
+        newTranscriptData?.let(this::addTranscriptData)
+        newScript?.let(this::addScript)
+      }
+      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
+    }
+  }
+
+  fun getLightSaveFunction(): (Path) -> Unit {
+    val newTranscriptData = data
+    val newScript = scriptDocument?.text
+
+    return { out ->
+      val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
+      with(ScreencastZipper(tempFile)) {
+        if (isAudioSet) {
+          addAudio(audioInputStream)
+        }
+        newTranscriptData?.let(this::addTranscriptData)
+        newScript?.let(this::addScript)
+      }
+
+      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
+    }
   }
 
   private fun synchronizeByScript() {
@@ -508,6 +571,7 @@ class ScreencastFile(
 
   companion object {
     private val FILES: MutableMap<Path, ScreencastFile> = ConcurrentHashMap()
+    private val LOG = logger<ScreencastFile>()
     val KEY = Key.create<ScreencastFile>("SCREENCAST_FILE_KEY")
 
     fun get(file: Path): ScreencastFile? = FILES[file]

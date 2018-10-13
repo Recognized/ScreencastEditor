@@ -16,6 +16,7 @@ class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
       it.addScript(SCRIPT_TEXT)
       it.addTranscriptData(TRANSCRIPT_DATA)
       it.addAudio(AUDIO_PATH)
+      it.addEditionModel(EDITION_MODEL)
     }
     val screencast = ScreencastFile(project, myTempFile)
     runBlocking {

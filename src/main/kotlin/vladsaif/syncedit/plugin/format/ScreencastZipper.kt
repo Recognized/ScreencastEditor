@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.format
 import com.intellij.openapi.diagnostic.logger
 import vladsaif.syncedit.plugin.TranscriptData
 import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.impl.modFloor
 import vladsaif.syncedit.plugin.sound.SoundProvider
 import java.io.IOException
@@ -58,8 +57,26 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
 
   @Synchronized
   fun addAudio(
+      audio: Path
+  ) {
+    addAudio(Files.newInputStream(audio))
+  }
+
+  @Synchronized
+  fun addAudio(
+      inputStream: InputStream
+  ) {
+    useAudioOutputStream { output ->
+      inputStream.buffered().use { input ->
+        input.transferTo(output)
+      }
+    }
+  }
+
+  @Synchronized
+  fun addAudio(
       audio: Path,
-      editionModel: EditionModel = DefaultEditionModel(),
+      editionModel: EditionModel,
       progressUpdater: (Double) -> Unit = {}
   ) {
     addAudio(Supplier { Files.newInputStream(audio) }, editionModel, progressUpdater)
@@ -68,7 +85,7 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
   @Synchronized
   fun addAudio(
       inputStream: Supplier<InputStream>,
-      editionModel: EditionModel = DefaultEditionModel(),
+      editionModel: EditionModel,
       progressUpdater: (Double) -> Unit = {}
   ) {
     var totalLength = 0L
@@ -192,6 +209,20 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
     return this
   }
 
+  fun addEditionModel(editionModel: EditionModel): ScreencastZipper {
+    if (!myEntrySet.add(EntryType.EDITION_MODEL)) {
+      throw IllegalStateException("Edition model is already zipped.")
+    }
+    with(myZipStream) {
+      val entry = ZipEntry(destination.fileName.toString() + "_edition_model")
+      entry.comment = EntryType.EDITION_MODEL.name
+      putNextEntry(entry)
+      write(editionModel.serialize())
+      closeEntry()
+    }
+    return this
+  }
+
   override fun close() {
     try {
       myZipStream.close()
@@ -202,7 +233,7 @@ class ScreencastZipper(private val destination: Path) : AutoCloseable {
 
 
   enum class EntryType {
-    AUDIO, TRANSCRIPT_DATA, SCRIPT, BINDINGS
+    AUDIO, TRANSCRIPT_DATA, SCRIPT, BINDINGS, EDITION_MODEL
   }
 }
 

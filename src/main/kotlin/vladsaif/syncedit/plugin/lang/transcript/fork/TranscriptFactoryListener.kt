@@ -1,7 +1,5 @@
 package vladsaif.syncedit.plugin.lang.transcript.fork
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.EditorFactoryEvent
@@ -12,7 +10,7 @@ import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
 
-class TranscriptFactoryListener private constructor() : EditorFactoryListener {
+class TranscriptFactoryListener : EditorFactoryListener {
 
   override fun editorCreated(event: EditorFactoryEvent) {
     val virtualFile = FileDocumentManager.getInstance().getFile(event.editor.document) ?: return
@@ -28,11 +26,5 @@ class TranscriptFactoryListener private constructor() : EditorFactoryListener {
     }
     editor.colorsScheme.setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)
     EditorActionManager.getInstance().setReadonlyFragmentModificationHandler(editor.document) { }
-  }
-
-  companion object {
-    init {
-      EditorFactory.getInstance().addEditorFactoryListener(TranscriptFactoryListener(), ApplicationManager.getApplication())
-    }
   }
 }

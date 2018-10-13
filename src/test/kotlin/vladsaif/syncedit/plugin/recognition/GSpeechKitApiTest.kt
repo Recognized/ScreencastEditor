@@ -15,7 +15,7 @@ class GSpeechKitApiTest {
   fun before() {
     Assume.assumeTrue(
         "Credentials for Google Speech-to-text API are not available.",
-        CREDENTIALS_PATH != null
+        CREDENTIALS_PATH != null && CREDENTIALS_PATH.toString() != ""
     )
     GCredentialProvider.Instance.setGCredentialsFile(CREDENTIALS_PATH!!)
   }

@@ -6,8 +6,8 @@ import kotlin.math.min
 
 class LRangeUnion {
   private var myLastCalculated: LRange? = null
-  private var myCachedIndex = 0
-  private var myCachedAccum = 0L
+  private var myCursor = 0
+  private var myCursorValue = 0L
   /**
    * Invariant: sorted in ascending order, distance between each other at least one
    */
@@ -78,15 +78,15 @@ class LRangeUnion {
     var accumulator = 0L
     var i = 0
     if (myLastCalculated != null && myLastCalculated!!.start <= range.start) {
-      i = myCachedIndex
-      accumulator = myCachedAccum
+      i = myCursor
+      accumulator = myCursorValue
     }
     while (i < myRanges.size && myRanges[i].end < range.start) {
       accumulator += myRanges[i].length
       ++i
     }
-    myCachedIndex = i
-    myCachedAccum = accumulator
+    myCursor = i
+    myCursorValue = accumulator
     myLastCalculated = range
     var left = range.start - accumulator
     var right = range.end - accumulator
@@ -109,7 +109,7 @@ class LRangeUnion {
   }
 
   override fun equals(other: Any?): Boolean {
-    return other is LRangeUnion && other.myRanges.equals(myRanges)
+    return other is LRangeUnion && other.myRanges == myRanges
   }
 
   override fun hashCode(): Int {
