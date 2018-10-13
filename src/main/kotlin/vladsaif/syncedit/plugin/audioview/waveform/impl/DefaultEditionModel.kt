@@ -54,4 +54,35 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
     myNoChangesRanges.union(infinity)
     fireStateChanged()
   }
+
+  override fun copy(): EditionModel {
+    val copy = DefaultEditionModel()
+    for (range in myCutRanges.ranges) {
+      copy.cut(range)
+    }
+    for (range in myMuteRanges.ranges) {
+      copy.mute(range)
+    }
+    return copy
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as DefaultEditionModel
+
+    if (myCutRanges != other.myCutRanges) return false
+    if (myMuteRanges != other.myMuteRanges) return false
+    if (myNoChangesRanges != other.myNoChangesRanges) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = myCutRanges.hashCode()
+    result = 31 * result + myMuteRanges.hashCode()
+    result = 31 * result + myNoChangesRanges.hashCode()
+    return result
+  }
 }

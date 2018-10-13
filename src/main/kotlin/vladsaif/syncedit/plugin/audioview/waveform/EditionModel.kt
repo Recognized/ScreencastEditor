@@ -1,6 +1,10 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import vladsaif.syncedit.plugin.LRange
+import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
+import java.io.StringReader
+import java.util.*
 
 interface EditionModel : ChangeNotifier {
   enum class EditionType {
@@ -31,10 +35,36 @@ interface EditionModel : ChangeNotifier {
    */
   fun undo(frameRange: LRange)
 
-
   /**
    * Reset all changes.
    */
   fun reset()
 
+  fun copy(): EditionModel
+
+  fun serialize(): ByteArray {
+    return buildString {
+      for ((range, type) in editions) {
+        append("${range.start} ${range.end} $type\n")
+      }
+    }.toByteArray(Charsets.UTF_8)
+  }
+
+  companion object {
+
+    fun deserialize(bytes: ByteArray): EditionModel {
+      with(DefaultEditionModel()) {
+        val sc = Scanner(StringReader(String(bytes, Charsets.UTF_8)))
+        while (sc.hasNext()) {
+          val range = LRange(sc.nextLong(), sc.nextLong())
+          when (sc.next()) {
+            CUT.name -> cut(range)
+            MUTE.name -> mute(range)
+            NO_CHANGES.name -> undo(range)
+          }
+        }
+        return this
+      }
+    }
+  }
 }
