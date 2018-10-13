@@ -24,7 +24,6 @@ import com.intellij.openapi.ui.WindowWrapper
 import com.intellij.openapi.ui.WindowWrapperBuilder
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.SystemInfo
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.ui.TitledSeparator
@@ -36,7 +35,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.WordData
-import vladsaif.syncedit.plugin.audioview.toolbar.addAction
+import vladsaif.syncedit.plugin.actions.addAction
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
@@ -109,38 +108,39 @@ object MappingEditorFactory {
   }
 
   private fun createToolbar(mappingViewModel: MappingViewModel): ActionToolbar {
-    val group = DefaultActionGroup()
-    group.addAction(
-        "Bind",
-        "Associate selected",
-        AllIcons.General.Add,
-        { mappingViewModel.bindSelected() },
-        { !mappingViewModel.selectedItems.empty && !mappingViewModel.editorSelectionRange.empty })
-    group.addAction(
-        "Unbind",
-        "Remove associations",
-        AllIcons.General.Remove,
-        { mappingViewModel.unbindSelected() },
-        { !mappingViewModel.selectedItems.empty })
-    group.addAction(
-        "Undo",
-        "Undo last action",
-        AllIcons.Actions.Undo,
-        { mappingViewModel.undo() },
-        { mappingViewModel.isUndoAvailable })
-    group.addAction(
-        "Redo",
-        "",
-        AllIcons.Actions.Redo,
-        { mappingViewModel.redo() },
-        { mappingViewModel.isRedoAvailable })
-    group.addAction(
-        "Reset",
-        "Reset all changes",
-        AllIcons.Actions.Rollback,
-        { mappingViewModel.resetChanges() },
-        { mappingViewModel.isResetAvailable })
-    return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true)
+    with(DefaultActionGroup()) {
+      addAction(
+          "Bind",
+          "Associate selected",
+          AllIcons.General.Add,
+          { mappingViewModel.bindSelected() },
+          { !mappingViewModel.selectedItems.empty && !mappingViewModel.editorSelectionRange.empty })
+      addAction(
+          "Unbind",
+          "Remove associations",
+          AllIcons.General.Remove,
+          { mappingViewModel.unbindSelected() },
+          { !mappingViewModel.selectedItems.empty })
+      addAction(
+          "Undo",
+          "Undo last action",
+          AllIcons.Actions.Undo,
+          { mappingViewModel.undo() },
+          { mappingViewModel.isUndoAvailable })
+      addAction(
+          "Redo",
+          "",
+          AllIcons.Actions.Redo,
+          { mappingViewModel.redo() },
+          { mappingViewModel.isRedoAvailable })
+      addAction(
+          "Reset",
+          "Reset all changes",
+          AllIcons.Actions.Rollback,
+          { mappingViewModel.resetChanges() },
+          { mappingViewModel.isResetAvailable })
+      return ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, this, true)
+    }
   }
 
   private fun createSplitter(model: ScreencastFile): Pair<Splitter, MappingViewModel> {
@@ -263,10 +263,6 @@ object MappingEditorFactory {
         true,
         false
     )
-  }
-
-  private fun transformTranscript(project: Project, psi: PsiFile): String {
-    return PsiDocumentManager.getInstance(project).getDocument(psi)!!.text
   }
 
   /**

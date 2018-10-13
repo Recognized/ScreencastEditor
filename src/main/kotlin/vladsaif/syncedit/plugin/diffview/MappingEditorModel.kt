@@ -10,17 +10,17 @@ import java.util.*
 import kotlin.collections.HashMap
 
 class MappingEditorModel(
-    val origin: ScreencastFile
+    val screencast: ScreencastFile
 ) : Disposable {
 
   init {
-    if (origin.data == null) {
+    if (screencast.data == null) {
       throw IllegalStateException("Cannot create MappingEditorModel from model without transcript data.")
     }
-    if (origin.scriptPsi == null) {
+    if (screencast.scriptPsi == null) {
       throw IllegalStateException("Cannot create MappingEditorModel from model without script file.")
     }
-    if (origin.scriptDocument == null) {
+    if (screencast.scriptDocument == null) {
       throw AssertionError("Script document is accidentally null.")
     }
   }
@@ -32,10 +32,10 @@ class MappingEditorModel(
   private val myBackwardLines: IntArray
 
   init {
-    val document = origin.scriptDocument!!
+    val document = screencast.scriptDocument!!
     myShiftedLines = IntArray(document.lineCount) { it }
     myBackwardLines = IntArray(document.lineCount)
-    BlockVisitor.visit(origin.scriptPsi!!) {
+    BlockVisitor.visit(screencast.scriptPsi!!) {
       if (TimeOffsetParser.isTimeOffset(it)) {
         myShiftedLines[document.getLineNumber(it.textOffset)] = -1
       }
@@ -52,7 +52,7 @@ class MappingEditorModel(
     }
   }
 
-  private var myMapping: LineMapping = origin.textMapping.mapValues { (_, v) -> v.toLineRange() }.toMutableMap()
+  private var myMapping: LineMapping = screencast.textMapping.mapValues { (_, v) -> v.toLineRange() }.toMutableMap()
     set(value) {
       myChangesWereMade = value != myInitialMapping
       field = value
@@ -71,8 +71,8 @@ class MappingEditorModel(
   private var myChangesWereMade = false
 
   override fun dispose() {
-    val document = origin.scriptDocument!!
-    origin.applyWordMapping(myMapping.mapValues { (_, v) -> createMarker(v, document) })
+    val document = screencast.scriptDocument!!
+    screencast.applyWordMapping(myMapping.mapValues { (_, v) -> createMarker(v, document) })
   }
 
   private fun createMarker(lineRange: IRange, document: Document): RangeMarker {

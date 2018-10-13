@@ -11,7 +11,7 @@ import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.withContext
 import vladsaif.syncedit.plugin.ExEDT
 import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.audioview.toolbar.AudioToolWindowManager
+import vladsaif.syncedit.plugin.audioview.toolbar.ScreencastToolWindow
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import java.io.File
 import java.nio.file.Path
@@ -34,7 +34,7 @@ open class OpenScreencast : AnAction() {
         model.scriptPsi?.let {
           FileEditorManager.getInstance(project).openFile(it.virtualFile, true, true)
         }
-        AudioToolWindowManager.openAudio(model)
+        ScreencastToolWindow.openScreencastFile(model)
       }
     }
   }
