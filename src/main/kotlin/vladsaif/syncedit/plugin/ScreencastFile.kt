@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.undo.DocumentReference
 import com.intellij.openapi.command.undo.DocumentReferenceManager
@@ -88,7 +89,7 @@ class ScreencastFile(
   private val myEditionModelInputStream: InputStream
     get() = getInputStreamByType(EDITION_MODEL) ?: throw IllegalStateException("Edition model is not set")
   val name: String
-    get() = file.fileName.toString().substringBefore(ScreencastFileType.defaultExtension)
+    get() = file.fileName.toString().substringBefore(ScreencastFileType.dotExtension)
   var audioDataModel: AudioDataModel? = null
     private set
   val audioInputStream: InputStream
@@ -126,7 +127,7 @@ class ScreencastFile(
     if (!file.exists()) {
       throw IOException("File ($file) does not exist.")
     }
-    if (!file.isFile() || !file.toString().endsWith(ScreencastFileType.defaultExtension)) {
+    if (!file.isFile() || !file.toString().endsWith(ScreencastFileType.dotExtension)) {
       throw IOException("Supplied file ($file) is not screencast.")
     }
     EditorFactory.getInstance().addEditorFactoryListener(TranscriptFactoryListener(), this)
@@ -503,8 +504,16 @@ class ScreencastFile(
 
   private inline fun <reified T> getPsi(virtualFile: VirtualFile?): T? {
     val file = virtualFile ?: return null
-    val doc = FileDocumentManager.getInstance().getDocument(file) ?: return null
-    return PsiDocumentManager.getInstance(project).getPsiFile(doc) as? T
+    val psi = if (ApplicationManager.getApplication().isReadAccessAllowed) {
+      val doc = FileDocumentManager.getInstance().getDocument(file) ?: return null
+      PsiDocumentManager.getInstance(project).getPsiFile(doc)
+    } else {
+      runReadAction {
+        val doc = FileDocumentManager.getInstance().getDocument(file) ?: return@runReadAction null
+        PsiDocumentManager.getInstance(project).getPsiFile(doc)
+      }
+    }
+    return psi as? T
   }
 
   private fun createTranscriptPsi(data: TranscriptData) {

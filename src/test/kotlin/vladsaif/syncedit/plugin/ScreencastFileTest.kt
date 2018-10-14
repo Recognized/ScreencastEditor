@@ -1,11 +1,9 @@
 package vladsaif.syncedit.plugin
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.format.ScreencastFileType
 import java.nio.file.Files
 import java.nio.file.Paths
 

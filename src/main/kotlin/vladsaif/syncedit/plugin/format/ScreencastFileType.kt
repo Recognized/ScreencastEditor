@@ -19,4 +19,6 @@ object ScreencastFileType : FileType {
   override fun isBinary() = true
 
   override fun isReadOnly() = true
+
+  val dotExtension = ".$defaultExtension"
 }

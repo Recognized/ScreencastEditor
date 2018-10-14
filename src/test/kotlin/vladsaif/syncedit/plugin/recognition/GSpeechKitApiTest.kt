@@ -17,7 +17,7 @@ class GSpeechKitApiTest {
         "Credentials for Google Speech-to-text API are not available.",
         CREDENTIALS_PATH != null && CREDENTIALS_PATH.toString() != ""
     )
-    GCredentialProvider.Instance.setGCredentialsFile(CREDENTIALS_PATH!!)
+    CredentialsProvider.setCredentials(CREDENTIALS_PATH!!)
   }
 
   @Test

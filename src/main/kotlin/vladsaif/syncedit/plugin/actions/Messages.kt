@@ -5,6 +5,7 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import vladsaif.syncedit.plugin.ScreencastFile
 import java.io.IOException
 import java.nio.file.Path
 
@@ -59,6 +60,24 @@ fun notifySuccessfullyBound(project: Project, script: VirtualFile, audio: Virtua
           "Script: \"${script.path}\" \n",
       NotificationType.INFORMATION
   ).notify(project)
+}
+
+fun notifySuccessfullySaved(screencastFile: ScreencastFile) {
+  Notification(
+      "Screencast Editor",
+      "Saved",
+      "Successfully saved ${screencastFile.name}",
+      NotificationType.INFORMATION
+  ).notify(screencastFile.project)
+}
+
+fun errorWhileSaving(screencastFile: ScreencastFile, throwable: Throwable) {
+  Notification(
+      "Screencast Editor",
+      "Not saved",
+      "Error occurred while saving ${screencastFile.name}: ${throwable.message}",
+      NotificationType.ERROR
+  ).notify(screencastFile.project)
 }
 
 fun errorUnsupportedAudioFile(project: Project, path: Path) {

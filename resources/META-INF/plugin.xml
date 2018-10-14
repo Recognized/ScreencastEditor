@@ -15,26 +15,36 @@
   <depends>org.jetbrains.kotlin</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <annotator language="TranscriptLanguage"
-               id="transcriptAnnotator"
-               implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
-    <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
-    <fileTypeFactory implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
-    <fileTypeFactory implementation="vladsaif.syncedit.plugin.format.ScreencastFileTypeFactory"/>
-    <lang.parserDefinition language="TranscriptLanguage"
-                           implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
-    <lang.syntaxHighlighterFactory language="TranscriptLanguage"
-                                   implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
-    <renameHandler implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
-                   order="first"/>
-    <applicationService serviceInterface="vladsaif.syncedit.plugin.ColorSettings"
-                        serviceImplementation="vladsaif.syncedit.plugin.ColorSettings"/>
-    <applicationService serviceInterface="vladsaif.syncedit.plugin.recognition.GCredentialProvider"
-                        serviceImplementation="vladsaif.syncedit.plugin.recognition.GCredentialProvider"/>
+    <annotator
+        language="TranscriptLanguage"
+        id="transcriptAnnotator"
+        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
+    <fileTypeFactory
+        implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
+    <fileTypeFactory
+        implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
+    <fileTypeFactory
+        implementation="vladsaif.syncedit.plugin.format.ScreencastFileTypeFactory"/>
+    <lang.parserDefinition
+        language="TranscriptLanguage"
+        implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
+    <lang.syntaxHighlighterFactory
+        language="TranscriptLanguage"
+        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
+    <renameHandler
+        implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
+        order="first"/>
   </extensions>
   <actions>
-    <group text="Screencast Editor" id="ScreencastEditor" popup="true" compact="false">
-      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    <group
+        text="Screencast Editor"
+        id="ScreencastEditor"
+        popup="true"
+        compact="false"
+        icon="ScreencastEditorIcons.SCREENCAST">
+      <add-to-group
+          group-id="ToolsMenu"
+          anchor="last"/>
       <action id="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               class="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               icon="ScreencastEditorIcons.SCREENCAST"
@@ -106,6 +116,14 @@
   <application-components>
     <component>
       <implementation-class>vladsaif.syncedit.plugin.LibrariesLoader</implementation-class>
+    </component>
+    <component>
+      <implementation-class>vladsaif.syncedit.plugin.ColorSettings$ColorState</implementation-class>
+      <interface-class>vladsaif.syncedit.plugin.ColorSettings$ColorState</interface-class>
+    </component>
+    <component>
+      <interface-class>vladsaif.syncedit.plugin.recognition.CredentialsProvider</interface-class>
+      <implementation-class>vladsaif.syncedit.plugin.recognition.CredentialsProvider</implementation-class>
     </component>
   </application-components>
 

@@ -78,8 +78,11 @@ sourceSets {
 test.systemProperty "google.credentials", project.properties["google.credentials"]
 
 task lightTest(type: Test) {
-    test.systemProperty "google.credentials", ""
     test
+}
+
+lightTest.doFirst {
+    test.systemProperty "google.credentials", ""
 }
 
 configure(lightTest) {

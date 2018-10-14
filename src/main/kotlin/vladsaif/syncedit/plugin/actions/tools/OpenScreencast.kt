@@ -11,7 +11,7 @@ import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.withContext
 import vladsaif.syncedit.plugin.ExEDT
 import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.audioview.toolbar.ScreencastToolWindow
+import vladsaif.syncedit.plugin.actions.openScreencast
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import java.io.File
 import java.nio.file.Path
@@ -30,11 +30,11 @@ open class OpenScreencast : AnAction() {
     launch {
       withContext(ExEDT) {
         val path = file.toPath()
-        val model = ScreencastFile.get(path) ?: ScreencastFile.create(project, file.toPath())
-        model.scriptPsi?.let {
+        val screencast = ScreencastFile.get(path) ?: ScreencastFile.create(project, file.toPath())
+        screencast.scriptPsi?.let {
           FileEditorManager.getInstance(project).openFile(it.virtualFile, true, true)
         }
-        ScreencastToolWindow.openScreencastFile(model)
+        openScreencast(screencast)
       }
     }
   }

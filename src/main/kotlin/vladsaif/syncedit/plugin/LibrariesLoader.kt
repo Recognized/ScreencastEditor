@@ -2,12 +2,11 @@ package vladsaif.syncedit.plugin
 
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.util.lang.UrlClassLoader
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
 import java.net.URLClassLoader
-import java.nio.file.Files
-import java.nio.file.Path
 
 class LibrariesLoader {
   companion object {
@@ -34,8 +33,8 @@ class LibrariesLoader {
       return Class.forName("vladsaif.syncedit.plugin.GSpeechKitInternal", true, myUrlClassLoader)!!
     }
 
-    fun createGSpeechKitInstance(path: Path): Any {
-      Files.newInputStream(path).use {
+    fun createGSpeechKitInstance(key: String): Any {
+      ByteArrayInputStream(key.toByteArray(Charsets.UTF_8)).use {
         try {
           return getGSpeechKit().getConstructor(InputStream::class.java).newInstance(it)
         } catch (ex: InvocationTargetException) {
@@ -44,8 +43,8 @@ class LibrariesLoader {
       }
     }
 
-    fun checkCredentials(path: Path) {
-      Files.newInputStream(path).use {
+    fun checkCredentials(inputStream: InputStream) {
+      inputStream.use {
         try {
           getGSpeechKit().getConstructor(InputStream::class.java).newInstance(it)
         } catch (ex: InvocationTargetException) {

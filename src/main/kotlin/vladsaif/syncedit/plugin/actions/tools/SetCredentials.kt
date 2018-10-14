@@ -8,7 +8,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.actions.errorCredentials
 import vladsaif.syncedit.plugin.actions.infoCredentialsOK
-import vladsaif.syncedit.plugin.recognition.GCredentialProvider
+import vladsaif.syncedit.plugin.recognition.CredentialsProvider
 import java.io.File
 import java.io.IOException
 
@@ -22,7 +22,7 @@ class SetCredentials : AnAction() {
       ACTION_IN_PROGRESS = true
       ApplicationManager.getApplication().executeOnPooledThread {
         try {
-          GCredentialProvider.Instance.setGCredentialsFile(File(file.path).toPath())
+          CredentialsProvider.setCredentials(File(file.path).toPath())
           ApplicationManager.getApplication().invokeLater {
             infoCredentialsOK(e.project, file)
           }

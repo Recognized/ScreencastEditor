@@ -24,7 +24,7 @@ import javax.sound.sampled.UnsupportedAudioFileException
 import javax.swing.Icon
 
 object ScreencastToolWindow {
-  private const val myToolWindowId = "Screencast Audio Editor"
+  private const val myToolWindowId = "Screencast Editor"
 
   private fun getToolWindow(project: Project): ToolWindow {
     val manager = ToolWindowManager.getInstance(project)
@@ -42,7 +42,7 @@ object ScreencastToolWindow {
             }
           })
         }
-    toolWindow.icon = EQUALIZER_TOOL_WINDOW
+    toolWindow.icon = SCREENCAST_TOOL_WINDOW
     return toolWindow
   }
 

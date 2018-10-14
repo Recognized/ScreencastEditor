@@ -5,7 +5,7 @@ import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.LibrariesLoader
 import vladsaif.syncedit.plugin.TranscriptData
 import vladsaif.syncedit.plugin.WordData
-import vladsaif.syncedit.plugin.recognition.GCredentialProvider
+import vladsaif.syncedit.plugin.recognition.CredentialsProvider
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import vladsaif.syncedit.plugin.sound.SoundProvider
 import java.io.IOException
@@ -24,7 +24,7 @@ class GSpeechKit : SpeechRecognizer {
   @Throws(IOException::class)
   override fun recognize(supplier: Supplier<InputStream>): CompletableFuture<TranscriptData> {
     val speechKitClass = LibrariesLoader.getGSpeechKit()
-    val instance = LibrariesLoader.createGSpeechKitInstance(GCredentialProvider.Instance.gSettings!!)
+    val instance = LibrariesLoader.createGSpeechKitInstance(CredentialsProvider.getCredentials()!!)
     val method = speechKitClass.getMethod("recognize", InputStream::class.java)
     try {
       // Google mostly accept PCM encoded audio
@@ -55,7 +55,7 @@ class GSpeechKit : SpeechRecognizer {
 
   @Throws(IOException::class)
   override fun checkRequirements() {
-    if (GCredentialProvider.Instance.gSettings == null) {
+    if (!CredentialsProvider.isCredentialsSet) {
       throw IOException("Credentials for cloud service account should be set before recognition is used.")
     }
   }

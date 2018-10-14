@@ -3,7 +3,15 @@ package vladsaif.syncedit.plugin.actions
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
+import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.channels.actor
+import kotlinx.coroutines.experimental.withContext
+import vladsaif.syncedit.plugin.ExEDT
 import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.audioview.toolbar.ScreencastToolWindow
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
@@ -32,7 +40,7 @@ fun openScript(screencast: ScreencastFile) {
   }
 }
 
-fun openAudio(screencast: ScreencastFile) {
+fun openScreencast(screencast: ScreencastFile) {
   try {
     ScreencastToolWindow.openScreencastFile(screencast)
   } catch (ex: UnsupportedAudioFileException) {
@@ -43,7 +51,31 @@ fun openAudio(screencast: ScreencastFile) {
 }
 
 fun saveChanges(screencast: ScreencastFile) {
-  val savingFun = screencast.getLightSaveFunction()
+  lightSavingActor.offer(screencast)
+}
+
+val lightSavingActor = actor<ScreencastFile>(CommonPool) {
+  for(screencast in channel) {
+    val savingFun = screencast.getLightSaveFunction()
+    val saveTask = object : Task.Modal(screencast.project, "Saving ${screencast.name}...", false) {
+      override fun run(indicator: ProgressIndicator) {
+        try {
+          savingFun(screencast.file)
+          runInEdt {
+            notifySuccessfullySaved(screencast)
+          }
+        } catch (ex: Throwable) {
+          runInEdt {
+            errorWhileSaving(screencast, ex)
+          }
+        }
+      }
+    }
+    ProgressManager.getInstance().run(saveTask)
+    withContext(ExEDT) {
+
+    }
+  }
 }
 
 fun DefaultActionGroup.addAction(
