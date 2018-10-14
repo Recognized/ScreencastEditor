@@ -18,7 +18,6 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileTypes.FileType
-import com.intellij.openapi.progress.util.ProgressWindow
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
@@ -110,7 +109,7 @@ class ScreencastFile(
     get() = getPsi(scriptFile)
   val editionModel: EditionModel = DefaultEditionModel()
   var data: TranscriptData? = null
-    set(value) {
+    private set(value) {
       ApplicationManager.getApplication().assertIsDispatchThread()
       if (value != field) {
         if (CommandProcessor.getInstance().currentCommand != null
@@ -133,6 +132,13 @@ class ScreencastFile(
     EditorFactory.getInstance().addEditorFactoryListener(TranscriptFactoryListener(), this)
   }
 
+  fun loadTranscriptData(newData: TranscriptData) {
+    data = newData
+    bulkChange {
+      synchronizeTranscriptWithEditionModel()
+    }
+  }
+
   suspend fun initialize() {
     withContext(CommonPool) {
       if (isAudioSet) {
@@ -147,7 +153,7 @@ class ScreencastFile(
         }
         val modelFromZip = EditionModel.deserialize(output.toByteArray())
         for ((range, type) in modelFromZip.editions) {
-          when(type) {
+          when (type) {
             CUT -> editionModel.cut(range)
             MUTE -> editionModel.mute(range)
             NO_CHANGES -> editionModel.undo(range)
@@ -162,7 +168,9 @@ class ScreencastFile(
         ).also { it.putUserData(KEY, this@ScreencastFile) }
       }
       if (isTranscriptSet) {
-        data = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
+        val newData = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
+        if (isEditionModelSet) data = newData
+        else loadTranscriptData(newData)
       }
       installListeners()
     }
@@ -214,13 +222,13 @@ class ScreencastFile(
     val newScript = scriptDocument?.text
 
     return { progressUpdater, out ->
-      val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
-      with(ScreencastZipper(tempFile)) {
+      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
+      ScreencastZipper(tempFile).use { zipper ->
         if (isAudioSet) {
-          addAudio(Supplier { audioInputStream }, editionState, progressUpdater)
+          zipper.addAudio(Supplier { audioInputStream }, editionState, progressUpdater)
         }
-        newTranscriptData?.let(this::addTranscriptData)
-        newScript?.let(this::addScript)
+        newTranscriptData?.let(zipper::addTranscriptData)
+        newScript?.let(zipper::addScript)
       }
       Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
     }
@@ -229,15 +237,17 @@ class ScreencastFile(
   fun getLightSaveFunction(): (Path) -> Unit {
     val newTranscriptData = data
     val newScript = scriptDocument?.text
+    val newEditionModel = editionModel.copy()
 
     return { out ->
-      val tempFile = Files.createTempFile("screencast", ScreencastFileType.defaultExtension)
-      with(ScreencastZipper(tempFile)) {
+      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
+      ScreencastZipper(tempFile).use { zipper ->
         if (isAudioSet) {
-          addAudio(audioInputStream)
+          zipper.addAudio(audioInputStream)
         }
-        newTranscriptData?.let(this::addTranscriptData)
-        newScript?.let(this::addScript)
+        newTranscriptData?.let(zipper::addTranscriptData)
+        newScript?.let(zipper::addScript)
+        zipper.addEditionModel(newEditionModel)
       }
 
       Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
@@ -271,7 +281,7 @@ class ScreencastFile(
     myListeners -= listener
   }
 
-  fun replaceWords(replacements: List<Pair<Int, WordData>>) {
+  private fun replaceWords(replacements: List<Pair<Int, WordData>>) {
     if (replacements.isEmpty()) return
     data = data?.replaceWords(replacements)
   }
@@ -282,6 +292,17 @@ class ScreencastFile(
 
   fun changeRange(index: Int, newRange: IRange) {
     val word = data?.get(index) ?: return
+    val newFrameRange = audioDataModel!!.msRangeToFrameRange(newRange)
+    bulkChange {
+      when (word.state) {
+        EXCLUDED, MUTED -> {
+          undo(audioDataModel!!.msRangeToFrameRange(word.range))
+          if (word.state == EXCLUDED) cut(newFrameRange)
+          else mute(newFrameRange)
+        }
+        PRESENTED -> Unit
+      }
+    }
     data = data?.replaceWords(listOf(index to word.copy(range = newRange)))
   }
 
@@ -290,19 +311,37 @@ class ScreencastFile(
   }
 
   fun excludeWords(indices: IntArray) {
+    applyEdition(indices, EditionModel::cut)
     data = data?.excludeWords(indices)
   }
 
   fun excludeWord(index: Int) {
+    data?.let { data ->
+      bulkChange {
+        cut(audioDataModel!!.msRangeToFrameRange(data.words[index].range))
+      }
+    }
     data = data?.excludeWord(index)
   }
 
   fun showWords(indices: IntArray) {
+    applyEdition(indices, EditionModel::undo)
     data = data?.showWords(indices)
   }
 
   fun muteWords(indices: IntArray) {
+    applyEdition(indices, EditionModel::mute)
     data = data?.muteWords(indices)
+  }
+
+  private fun applyEdition(indices: IntArray, action: EditionModel.(LRange) -> Unit) {
+    data?.let { data ->
+      bulkChange {
+        for (i in indices) {
+          action(audioDataModel!!.msRangeToFrameRange(data.words[i].range))
+        }
+      }
+    }
   }
 
   fun applyWordMapping(newMapping: TextRangeMapping) {
@@ -336,6 +375,18 @@ class ScreencastFile(
       if (marker != null) {
         myBindings[index] = marker
       }
+    }
+  }
+
+  private fun bulkChange(action: EditionModel.() -> Unit) {
+    try {
+      editionModel.isNotificationSuppressed = true
+      myEditionListenerEnabled = false
+      editionModel.action()
+    } finally {
+      editionModel.isNotificationSuppressed = false
+      editionModel.fireStateChanged()
+      myEditionListenerEnabled = true
     }
   }
 
@@ -432,15 +483,6 @@ class ScreencastFile(
           // But transcript should be updated always, otherwise it will cause errors.
           updateTranscript()
         }
-      }
-      editionModel.isNotificationSuppressed = true
-      synchronizeTranscriptWithEditionModel()
-      editionModel.isNotificationSuppressed = false
-      try {
-        myEditionListenerEnabled = false
-        editionModel.fireStateChanged()
-      } finally {
-        myEditionListenerEnabled = true
       }
     }
     for (x in myListeners) {

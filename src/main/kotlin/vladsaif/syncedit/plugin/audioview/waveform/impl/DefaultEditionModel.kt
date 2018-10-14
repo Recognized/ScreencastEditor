@@ -85,4 +85,10 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
     result = 31 * result + myNoChangesRanges.hashCode()
     return result
   }
+
+  override fun toString(): String {
+    return editions.joinToString(separator = ", ", prefix = "[", postfix = "]") {
+      (range, type) -> "$range: $type"
+    }
+  }
 }

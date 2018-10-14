@@ -10,7 +10,10 @@ import java.nio.file.Files
 
 class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
 
-  private val myTempFile = Files.createTempFile(this.javaClass.name.replace('\\', '.'), ".scs")
+  private val myTempFile = Files.createTempFile(
+      this.javaClass.name.replace('\\', '.'), "" +
+      ".${ScreencastFileType.defaultExtension}"
+  )
   private val myScreencast by lazy {
     ScreencastZipper(myTempFile).use {
       it.addScript(SCRIPT_TEXT)
@@ -42,6 +45,10 @@ class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
         SoundProvider.getAudioInputStream(AUDIO_PATH.toFile()).sha1sum(),
         SoundProvider.getAudioInputStream(myScreencast.audioInputStream).sha1sum()
     )
+  }
+
+  fun `test edition model preserved`() {
+    assertEquals(EDITION_MODEL, myScreencast.editionModel)
   }
 
   @After

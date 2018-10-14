@@ -1,9 +1,13 @@
 package vladsaif.syncedit.plugin
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
+import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.format.ScreencastFileType
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
 
@@ -16,8 +20,11 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
     val model = runBlocking {
       ScreencastFile.create(project, SCREENCAST_PATH)
     }
-    model.block()
-    model.dispose()
+    try {
+      model.block()
+    } finally {
+      model.dispose()
+    }
   }
 
   @Test
@@ -45,9 +52,29 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
   }
 
   @Test
+  fun `test light save function`() {
+    withModel {
+      editionModel.cut(audioDataModel!!.msRangeToFrameRange(IRange(900, 2100)))
+      editionModel.mute(audioDataModel!!.msRangeToFrameRange(IRange(2900, 4100)))
+      val func = getLightSaveFunction()
+      val out = Paths.get("screencastSaved.scs")
+      func(out)
+      val saved = runBlocking { ScreencastFile.create(project, out) }
+      try {
+        assertEquals(this.data, saved.data)
+        assertEquals(this.editionModel, saved.editionModel)
+        assertEquals(this.scriptDocument?.text, saved.scriptDocument?.text)
+        Files.deleteIfExists(out)
+      } finally {
+        saved.dispose()
+      }
+    }
+  }
+
+  @Test
   fun `test default binding`() {
     withModel {
-      data = TRANSCRIPT_DATA
+      loadTranscriptData(TRANSCRIPT_DATA)
       createDefaultBinding()
       data!!.words.forEach(::println)
       // TODO

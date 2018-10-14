@@ -43,7 +43,7 @@ fun openAudio(screencast: ScreencastFile) {
 }
 
 fun saveChanges(screencast: ScreencastFile) {
-  screencast.getLightSaveFunction()
+  val savingFun = screencast.getLightSaveFunction()
 }
 
 fun DefaultActionGroup.addAction(
