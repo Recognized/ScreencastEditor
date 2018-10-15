@@ -20,7 +20,9 @@ public interface ScreencastEditorIcons {
   Icon SETTINGS = IconLoader.getIcon("/icons/settings.png");
   Icon SETTINGS_TOOL_WINDOW = IconLoader.getIcon("/icons/settingsTool.png");
   Icon STOP = IconLoader.getIcon("/icons/stop.png"); 
-  Icon STOP_TOOL_WINDOW = IconLoader.getIcon("/icons/stopTool.png"); 
+  Icon STOP_TOOL_WINDOW = IconLoader.getIcon("/icons/stopTool.png");
+  Icon TRANSCRIPT = IconLoader.getIcon("/icons/transcript.png");
+  Icon TRANSCRIPT_TOOL_WINDOW = IconLoader.getIcon("/icons/transcriptTool.png");
   Icon VOLUME_OFF = IconLoader.getIcon("/icons/volume_off.png"); 
   Icon VOLUME_OFF_TOOL_WINDOW = IconLoader.getIcon("/icons/volume_offTool.png"); 
 }
