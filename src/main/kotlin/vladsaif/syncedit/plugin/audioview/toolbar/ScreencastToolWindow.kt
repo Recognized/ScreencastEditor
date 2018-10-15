@@ -62,7 +62,7 @@ object ScreencastToolWindow {
 
   private fun createMainActionGroup(screencast: ScreencastFile): ActionGroup {
     with(DefaultActionGroup()) group@ {
-      addAction("Open transcript", "Open transcript in editor", EQUALIZER, {
+      addAction("Open transcript", "Open transcript in editor", TRANSCRIPT, {
         openTranscript(screencast)
       })
       addAction("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {

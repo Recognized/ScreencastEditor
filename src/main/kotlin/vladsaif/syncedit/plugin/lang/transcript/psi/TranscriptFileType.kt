@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.lang.transcript.psi
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileTypes.LanguageFileType
+import icons.ScreencastEditorIcons
 import java.util.*
 import javax.swing.Icon
 
@@ -15,5 +16,5 @@ object TranscriptFileType : LanguageFileType(TranscriptLanguage) {
 
   override fun getDefaultExtension() = extension
 
-  override fun getIcon(): Icon? = AllIcons.FileTypes.Text
+  override fun getIcon(): Icon? = ScreencastEditorIcons.TRANSCRIPT
 }
