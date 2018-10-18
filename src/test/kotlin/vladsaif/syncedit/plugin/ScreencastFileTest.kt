@@ -62,8 +62,8 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
         assertEquals(this.data, saved.data)
         assertEquals(this.editionModel, saved.editionModel)
         assertEquals(this.scriptDocument?.text, saved.scriptDocument?.text)
-        Files.deleteIfExists(out)
       } finally {
+        Files.deleteIfExists(out)
         saved.dispose()
       }
     }

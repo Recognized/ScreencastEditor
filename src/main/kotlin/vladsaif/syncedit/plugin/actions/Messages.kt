@@ -6,7 +6,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.ScreencastFile
-import java.io.IOException
 import java.nio.file.Path
 
 fun errorNoModelForFile(project: Project, file: VirtualFile) {
@@ -88,10 +87,10 @@ fun errorUnsupportedAudioFile(project: Project, path: Path) {
   )
 }
 
-fun errorIO(project: Project, ex: IOException) {
+fun errorIO(project: Project?, message: String?) {
   Messages.showErrorDialog(
       project,
-      "I/O error occurred. ${ex.message}",
+      "I/O error occurred. ${message ?: ""}",
       "I/O error"
   )
 }

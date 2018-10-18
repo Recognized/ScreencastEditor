@@ -92,8 +92,8 @@ configure(lightTest) {
 
 intellij {
     pluginName "ScreencastEditor"
-    plugins "Kotlin"
-    version "183.2940.10"
+    plugins "Kotlin", "com.intellij.testGuiFramework:183.3647.12"
+    version "183.3647.12"
     downloadSources true
     instrumentCode true
 }
@@ -106,8 +106,8 @@ project.afterEvaluate {
     def unwantedArtifacts = [
             "kotlinx-coroutines-core-0.20.jar",
             "kotlinx-coroutines-jdk8-0.20.jar",
-            "kotlinx-coroutines-core-0.22.5.jar",
-            "kotlinx-coroutines-jdk8-0.22.5.jar"
+            "kotlinx-coroutines-core-0.26.1.jar",
+            "kotlinx-coroutines-jdk8-0.26.1.jar"
     ]
 
     def excludedFiles = configurations.compileOnly.resolvedConfiguration.resolvedArtifacts.findAll {
@@ -131,10 +131,10 @@ dependencies {
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.2.61") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
-    compile("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:0.25.0") {
+    compile("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:0.26.1") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
-    compile("org.jetbrains.kotlinx:kotlinx-coroutines-guava:0.25.0") {
+    compile("org.jetbrains.kotlinx:kotlinx-coroutines-guava:0.26.1") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
     testCompile("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version") {

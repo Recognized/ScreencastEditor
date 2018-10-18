@@ -1,112 +1,241 @@
 package vladsaif.syncedit.plugin.actions.internal
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
+import com.intellij.openapi.ui.InputValidator
+import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.IdeGlassPaneUtil
 import com.intellij.openapi.wm.WindowManager
 import com.intellij.openapi.wm.impl.IdeGlassPaneImpl
+import vladsaif.syncedit.plugin.actions.GeneratedCodeReceiver
+import vladsaif.syncedit.plugin.actions.errorIO
 import vladsaif.syncedit.plugin.diffview.GridBagBuilder
+import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.sound.CountdownPanel
-import vladsaif.syncedit.plugin.sound.OutlinePanel
+import vladsaif.syncedit.plugin.sound.SoundProvider
 import vladsaif.syncedit.plugin.sound.SoundRecorder
 import vladsaif.syncedit.plugin.sound.SoundRecorder.State.IDLE
 import vladsaif.syncedit.plugin.sound.SoundRecorder.State.RECORDING
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.io.File
+import java.io.IOException
+import java.io.OutputStream
 import java.nio.file.Files
+import java.nio.file.Path
+import java.util.*
+import javax.sound.sampled.AudioFileFormat
+import javax.sound.sampled.AudioSystem
+import javax.sound.sampled.TargetDataLine
 
 object RecordingManager {
-  private val COUNTDOWN_LISTENER_KEY = Key.create<SoundRecorder.StateListener>("countdown_listener")
-  private val OUTLINE_LISTENER_KEY = Key.create<SoundRecorder.StateListener>("countdown_listener")
+  private val LOG = logger<RecordingManager>()
+  private var CURRENT_GLASS_PANE: IdeGlassPaneImpl? = null
+  private var CURRENT_RAW_AUDIO_PATH: Path? = null
 
-  fun startRecording(project: Project) {
-    ApplicationManager.getApplication().assertIsDispatchThread()
-    val countdown = createCountdownListener(project)
-    val outlinePanel = OutlinePanel()
-    val outlineListener = createOutlineListener(outlinePanel)
-    val ideFrame = WindowManager.getInstance().getIdeFrame(project)
-    val glassPane = IdeGlassPaneUtil.find(ideFrame.component) as IdeGlassPaneImpl
-    glassPane.layout = GridBagLayout()
-    glassPane.add(
-        outlinePanel,
-        GridBagBuilder()
-            .weightx(1.0)
-            .weighty(1.0)
-            .gridx(0)
-            .gridy(0)
-            .fill(GridBagConstraints.BOTH)
-            .done()
-    )
-    glassPane.revalidate()
-    glassPane.repaint()
-    addListener(project, countdown, COUNTDOWN_LISTENER_KEY)
-    addListener(project, outlineListener, OUTLINE_LISTENER_KEY)
-    val zipper = ScreencastZipper(Files.createTempFile("screencast", ""))
-    SoundRecorder.start(project) { audioInput ->
-      zipper.useAudioOutputStream { audioOutput ->
-        //        AudioSystem.write(audioInput, AudioFileFormat.Type, audioOutput.buffered())
+  init {
+//    SoundRecorder.addListener(object : SoundRecorder.StateListener {
+//      override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
+//        CURRENT_OUTLINE_PANEL?.updateState(newValue)
+//        if (newValue == IDLE) {
+//          CURRENT_GLASS_PANE?.let { CURRENT_OUTLINE_PANEL?.let(it::remove) }
+//          CURRENT_GLASS_PANE?.revalidate()
+//          CURRENT_GLASS_PANE?.repaint()
+//        }
+//      }
+//    })
+    SoundRecorder.addListener(object : SoundRecorder.StateListener {
+      override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
+        if (oldValue == IDLE && newValue == RECORDING) {
+          val countDown = CountdownPanel(3)
+          val pane = CURRENT_GLASS_PANE ?: return
+          countDown.deactivationAction = {
+            pane.remove(countDown)
+            pane.revalidate()
+            pane.repaint()
+          }
+          pane.add(
+              countDown,
+              GridBagBuilder()
+                  .weightx(1.0)
+                  .weighty(1.0)
+                  .gridx(0)
+                  .gridy(0)
+                  .fill(GridBagConstraints.BOTH)
+                  .done()
+          )
+          pane.revalidate()
+          pane.repaint()
+          countDown.countDown()
+        }
       }
-      zipper.addScript("Hello")
+    })
+  }
+
+  fun startRecording() {
+    ApplicationManager.getApplication().assertIsDispatchThread()
+    val ideFrame = WindowManager.getInstance().getIdeFrame(null)
+    val glassPane = IdeGlassPaneUtil.find(ideFrame.component) as IdeGlassPaneImpl
+    CURRENT_GLASS_PANE = glassPane
+    glassPane.layout = GridBagLayout()
+//    glassPane.add(
+//        CURRENT_OUTLINE_PANEL!!,
+//        GridBagBuilder()
+//            .weightx(1.0)
+//            .weighty(1.0)
+//            .gridx(0)
+//            .gridy(0)
+//            .fill(GridBagConstraints.BOTH)
+//            .done()
+//    )
+//    glassPane.revalidate()
+//    glassPane.repaint()
+    val rawAudioPath = Files.createTempFile("rawAudio", ".wave")
+    CURRENT_RAW_AUDIO_PATH = rawAudioPath
+    LOG.info("Raw audio path: $rawAudioPath")
+    // Delete temp file on application exit
+    Disposer.register(
+        ApplicationManager.getApplication(),
+        Disposable {
+          Files.deleteIfExists(rawAudioPath)
+        }
+    )
+    SoundRecorder.start { line ->
+      Files.newOutputStream(rawAudioPath).buffered().use {
+        writeWhileOpen(line, it)
+      }
     }
   }
 
-  fun stopRecording(project: Project) {
+  @Throws(IOException::class)
+  private fun writeWhileOpen(line: TargetDataLine, out: OutputStream): Long {
+    var transferred: Long = 0
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var read: Int
+    while (line.isOpen) {
+      read = line.read(buffer, 0, DEFAULT_BUFFER_SIZE)
+      println(read)
+      if (read < 0) break
+      out.write(buffer, 0, read)
+      transferred += read.toLong()
+    }
+    return transferred
+  }
+
+  fun stopRecording() {
     ApplicationManager.getApplication().assertIsDispatchThread()
     SoundRecorder.stop()
-    removeListener(project, COUNTDOWN_LISTENER_KEY)
-    removeListener(project, OUTLINE_LISTENER_KEY)
+    val rawDataPath = CURRENT_RAW_AUDIO_PATH
+    CURRENT_GLASS_PANE = null
+    CURRENT_RAW_AUDIO_PATH = null
+    if (rawDataPath != null) {
+      showSaveDialog(rawDataPath)
+    }
   }
 
-  fun pauseRecording(project: Project) {
-    ApplicationManager.getApplication().assertIsDispatchThread()
-    SoundRecorder.pause()
-  }
-
-  private fun createCountdownListener(project: Project) = object : SoundRecorder.StateListener {
-    override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
-      if (oldValue == IDLE && newValue == RECORDING) {
-        val ideFrame = WindowManager.getInstance().getIdeFrame(project)
-        val glassPane = IdeGlassPaneUtil.find(ideFrame.component) as IdeGlassPaneImpl
-        val countDown = CountdownPanel(3)
-        countDown.deactivationAction = {
-          glassPane.remove(countDown)
-          glassPane.revalidate()
-          glassPane.repaint()
+  private fun saveScreencast(
+      screencast: Path,
+      rawAudio: Path,
+      name: String
+  ) {
+    val out = screencast.resolve(name.replace('.', '_') + ScreencastFileType.dotExtension)
+    val task = object : Task.Backgroundable(null, "Saving screencast: $out", false) {
+      override fun run(indicator: ProgressIndicator) {
+        runInEdt {
+          indicator.isIndeterminate = true
+          if (!indicator.isRunning) indicator.start()
         }
-        glassPane.add(
-            countDown,
-            GridBagBuilder()
-                .weightx(1.0)
-                .weighty(1.0)
-                .gridx(0)
-                .gridy(0)
-                .fill(GridBagConstraints.BOTH)
-                .done()
-        )
-        glassPane.revalidate()
-        glassPane.repaint()
-        countDown.countDown()
+        try {
+          ScreencastZipper(out).use {
+            it.addScript(GeneratedCodeReceiver.getAndFlush())
+            it.useAudioOutputStream { out ->
+              val length = Files.newInputStream(rawAudio).buffered().use { raw ->
+                SoundProvider.countFrames(raw, SoundRecorder.RECORD_FORMAT)
+              }
+              Files.newInputStream(rawAudio).buffered().use { raw ->
+                SoundProvider.getAudioInputStream(raw, SoundRecorder.RECORD_FORMAT, length).use { audio ->
+                  // TODO: do not save in WAV, convert in something
+                  AudioSystem.write(audio, AudioFileFormat.Type.WAVE, out)
+                }
+              }
+            }
+          }
+        } catch (ex: Exception) {
+          runInEdt {
+            errorIO(null, ex.message)
+          }
+        } finally {
+          Files.deleteIfExists(rawAudio)
+          runInEdt {
+            if (indicator.isRunning) indicator.stop()
+          }
+        }
       }
     }
-  }
-
-  private fun createOutlineListener(panel: OutlinePanel) = object : SoundRecorder.StateListener {
-    override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
-      panel.updateState(newValue)
+    ApplicationManager.getApplication().invokeLater {
+      ProgressManager.getInstance().run(task)
     }
   }
 
-  private fun <T : SoundRecorder.StateListener> addListener(project: Project, listener: T, key: Key<T>) {
-    SoundRecorder.addListener(listener)
-    project.putUserData(key, listener)
+  private fun showSaveDialog(rawAudio: Path) {
+    val res = Messages.showYesNoDialog(
+        "Would you like to save screencast?",
+        "Save screencast",
+        null
+    )
+    if (res == Messages.YES) {
+      val descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor()
+      FileChooser.chooseFile(descriptor, null, null) { chosen: VirtualFile? ->
+        if (chosen == null) {
+          clear(rawAudio)
+          return@chooseFile
+        }
+        val name = Messages.showInputDialog(
+            "Enter screencast name",
+            "Save screencast",
+            null,
+            "screencast_${Date().toString().replace(' ', '_')}",
+            NAME_VALIDATOR
+        )
+        if (name == null) {
+          clear(rawAudio)
+          return@chooseFile
+        }
+        saveScreencast(File(chosen.path).toPath(), rawAudio, name)
+      }
+    } else {
+      clear(rawAudio)
+    }
   }
 
-  private fun <T : SoundRecorder.StateListener> removeListener(project: Project, key: Key<T>) {
-    val listener = project.getUserData(key)
-    if (listener != null) {
-      SoundRecorder.removeListener(listener)
+  private val NAME_VALIDATOR = object : InputValidator {
+    private val REGEX = "\\w+".toRegex()
+
+    override fun checkInput(inputString: String?) = inputString != null && REGEX.matches(inputString)
+
+    override fun canClose(inputString: String?) = checkInput(inputString)
+  }
+
+  private fun clear(rawAudio: Path) {
+    // Not save, then do not store anything
+    GeneratedCodeReceiver.getAndFlush()
+    ApplicationManager.getApplication().executeOnPooledThread {
+      Files.deleteIfExists(rawAudio)
     }
+  }
+
+  fun pauseRecording() {
+    ApplicationManager.getApplication().assertIsDispatchThread()
+    SoundRecorder.pause()
   }
 }

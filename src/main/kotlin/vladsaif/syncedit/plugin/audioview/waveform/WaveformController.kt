@@ -85,7 +85,9 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
         state.player.resume()
       }
       is PlayState.Stopped -> {
-        waveform.model.screencast.audioInputStream ?: return
+        if (!waveform.model.screencast.isAudioSet) {
+          return
+        }
         val editionModel = if (waveform.selectionModel.selectedRanges.isEmpty()) {
           waveform.model.editionModel
         } else {

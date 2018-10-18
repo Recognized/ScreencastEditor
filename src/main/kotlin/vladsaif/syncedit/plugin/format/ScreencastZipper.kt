@@ -18,7 +18,7 @@ import kotlin.math.min
 
 private val LOG = logger<ScreencastZipper>()
 
-class ScreencastZipper(private val destination: Path) : AutoCloseable {
+class ScreencastZipper(val destination: Path) : AutoCloseable {
   private val myZipStream = ZipOutputStream(Files.newOutputStream(destination).buffered())
   private val myEntrySet = mutableSetOf<EntryType>()
 
@@ -245,6 +245,7 @@ fun InputStream.transferTo(out: OutputStream): Long {
   var read: Int
   while (true) {
     read = this.read(buffer, 0, DEFAULT_BUFFER_SIZE)
+    println(read)
     if (read < 0) break
     out.write(buffer, 0, read)
     transferred += read.toLong()

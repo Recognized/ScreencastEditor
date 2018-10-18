@@ -46,7 +46,7 @@ fun openScreencast(screencast: ScreencastFile) {
   } catch (ex: UnsupportedAudioFileException) {
     errorUnsupportedAudioFile(screencast.project, screencast.file)
   } catch (ex: IOException) {
-    errorIO(screencast.project, ex)
+    errorIO(screencast.project, ex.message)
   }
 }
 

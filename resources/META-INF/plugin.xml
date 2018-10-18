@@ -13,12 +13,17 @@
     ]]></description>
 
   <depends>org.jetbrains.kotlin</depends>
+  <depends>com.intellij.testGuiFramework</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <annotator
         language="TranscriptLanguage"
         id="transcriptAnnotator"
         implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
+    <guiRecorderListener
+        implementation="vladsaif.syncedit.plugin.actions.GuiRecorderListener"/>
+    <generatedCodeReceiver
+        implementation="vladsaif.syncedit.plugin.actions.GeneratedCodeReceiver"/>
     <fileTypeFactory
         implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
     <fileTypeFactory

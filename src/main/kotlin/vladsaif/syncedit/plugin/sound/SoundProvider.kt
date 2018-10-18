@@ -78,6 +78,14 @@ object SoundProvider {
     }
   }
 
+  fun getAudioInputStream(
+      rawData: InputStream,
+      format: AudioFormat,
+      length: Long
+  ): AudioInputStream {
+    return AudioInputStream(ExactSkippingBIS(rawData), format, length)
+  }
+
   fun <T> withMonoWavFileStream(path: Path, block: (InputStream) -> T): T {
     return withMonoWavFileStream(Supplier { Files.newInputStream(path) }, block)
   }
@@ -93,6 +101,14 @@ object SoundProvider {
         LOG.info("Audio converted.")
       }
     }
+  }
+
+  fun countFrames(inputStream: InputStream, audioFormat: AudioFormat): Long {
+    var bytes = 0L
+    inputStream.buffered().use {
+      bytes = it.countBytes()
+    }
+    return bytes / audioFormat.frameSize
   }
 
   private fun AudioFormat.toMonoFormat(): AudioFormat {
@@ -190,17 +206,23 @@ object SoundProvider {
     var length = 0L
     supplier.get().use { inputStream ->
       withMonoPcmStream(inputStream) { mono ->
-        var x = 0
-        val buffer = ByteArray(1 shl 14)
-        while (x != -1) {
-          x = mono.read(buffer)
-          if (x != -1) {
-            length += x
-          }
-        }
+        length = mono.countBytes()
       }
     }
     return length / 2
+  }
+
+  private fun InputStream.countBytes(): Long {
+    var length = 0L
+    var x = 0
+    val buffer = ByteArray(1 shl 14)
+    while (x != -1) {
+      x = read(buffer)
+      if (x != -1) {
+        length += x
+      }
+    }
+    return length
   }
 
   // Pre-calculate size of WAV file in frames and then use it in this function

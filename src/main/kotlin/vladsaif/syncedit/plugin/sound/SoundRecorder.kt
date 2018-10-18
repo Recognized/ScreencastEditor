@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.sound
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.util.ProgressWindow
-import com.intellij.openapi.project.Project
 import com.intellij.util.containers.ContainerUtil
 import javax.sound.sampled.*
 import kotlin.concurrent.thread
@@ -12,7 +11,15 @@ import kotlin.system.measureTimeMillis
 
 object SoundRecorder {
   private val LOG = logger<SoundRecorder>()
-  private val RECORD_FORMAT = AudioFormat(
+  private val LISTENERS = ContainerUtil.newConcurrentSet<StateListener>()
+  private var STATE: InternalState = InternalState.Idle
+    set(newValue) {
+      val oldValue = field
+      field = newValue
+      fireStateChanged(oldValue.toState(), newValue.toState())
+    }
+
+  val RECORD_FORMAT = AudioFormat(
       AudioFormat.Encoding.PCM_SIGNED,
       44100f,
       16,
@@ -21,13 +28,6 @@ object SoundRecorder {
       44100f,
       false
   )
-  private val LISTENERS = ContainerUtil.newConcurrentSet<StateListener>()
-  private var STATE: InternalState = InternalState.Idle
-    set(newValue) {
-      val oldValue = field
-      field = newValue
-      fireStateChanged(oldValue.toState(), newValue.toState())
-    }
 
   init {
     // logger listener
@@ -47,7 +47,7 @@ object SoundRecorder {
    * @throws javax.sound.sampled.LineUnavailableException If data line cannot be acquired, or opened,
    * or if recording format is not supported.
    */
-  fun start(project: Project, streamProcessor: (AudioInputStream) -> Unit) {
+  fun start(lineProcessor: (TargetDataLine) -> Unit) {
     ApplicationManager.getApplication().assertIsDispatchThread()
     val state = STATE
     when (state) {
@@ -66,7 +66,7 @@ object SoundRecorder {
     val startTime = System.currentTimeMillis()
     val line = AudioSystem.getLine(info) as TargetDataLine
     STATE = InternalState.Preparing
-    val p = ProgressWindow(false, false, project)
+    val p = ProgressWindow(false, false, null)
     p.title = "Screencast Recorder"
     p.setDelayInMillis(80)
     p.start()
@@ -82,7 +82,7 @@ object SoundRecorder {
         p.stop()
         p.processFinish()
         try {
-          AudioInputStream(line).use(streamProcessor)
+          lineProcessor(line)
         } finally {
           ApplicationManager.getApplication().invokeAndWait {
             STATE = InternalState.Idle
@@ -116,6 +116,7 @@ object SoundRecorder {
         val time = measureTimeMillis {
           if (state is InternalState.Recording) {
             state.line.stop()
+            state.line.flush()
             state.line.close()
           } else {
             (state as InternalState.Paused).line.close()
