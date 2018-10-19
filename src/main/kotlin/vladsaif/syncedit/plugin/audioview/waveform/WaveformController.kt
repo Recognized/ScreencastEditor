@@ -6,10 +6,12 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import org.picocontainer.Disposable
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.LRange
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.audioview.waveform.impl.PlayerImpl
+import vladsaif.syncedit.plugin.sound.EditionModel
+import vladsaif.syncedit.plugin.sound.Player
+import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.sound.impl.PlayerImpl
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.LRange
 import java.awt.Dimension
 import java.io.IOException
 import javax.swing.JScrollPane

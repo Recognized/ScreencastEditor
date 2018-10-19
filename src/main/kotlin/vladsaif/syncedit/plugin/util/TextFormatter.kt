@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.util
 
 object TextFormatter {
 
@@ -24,7 +24,7 @@ object TextFormatter {
         dropped = when (dropped.length) {
           1 -> ""
           2 -> "."
-          3 -> ".."
+          3 -> ""
           else -> dropped.replaceRange(dropped.length - 4, dropped.length, "...")
         }
       }

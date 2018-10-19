@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.audioview
 
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State

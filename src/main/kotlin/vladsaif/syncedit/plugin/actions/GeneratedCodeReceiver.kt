@@ -1,7 +1,6 @@
 package vladsaif.syncedit.plugin.actions
 
 import com.intellij.testGuiFramework.recorder.GeneratedCodeReceiver
-import vladsaif.syncedit.plugin.Timer
 
 object GeneratedCodeReceiver : GeneratedCodeReceiver {
   private var myBuilder = StringBuilder();

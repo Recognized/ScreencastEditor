@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
-import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.util.IRange
 
 data class TimedLines(val lines: IRange, val time: IRange) : Comparable<TimedLines> {
   override fun compareTo(other: TimedLines) = CMP.compare(this, other)

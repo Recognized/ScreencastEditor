@@ -1,10 +1,11 @@
-package vladsaif.syncedit.plugin.audioview.waveform.impl
+package vladsaif.syncedit.plugin.sound.impl
 
-import vladsaif.syncedit.plugin.LRange
-import vladsaif.syncedit.plugin.LRangeUnion
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
+import vladsaif.syncedit.plugin.sound.EditionModel
+import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.util.LRange
+import vladsaif.syncedit.plugin.util.LRangeUnion
 
 
 class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionModel {

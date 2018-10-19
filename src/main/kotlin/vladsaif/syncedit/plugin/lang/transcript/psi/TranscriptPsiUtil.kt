@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.lang.transcript.psi
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
-import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.util.IRange
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.max
 import kotlin.math.min

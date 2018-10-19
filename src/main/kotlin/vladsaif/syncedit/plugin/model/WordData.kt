@@ -1,5 +1,6 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.model
 
+import vladsaif.syncedit.plugin.util.IRange
 import javax.xml.bind.annotation.XmlAccessType
 import javax.xml.bind.annotation.XmlAccessorType
 import javax.xml.bind.annotation.XmlAttribute

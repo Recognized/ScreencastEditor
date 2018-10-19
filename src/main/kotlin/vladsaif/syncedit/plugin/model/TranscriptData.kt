@@ -1,5 +1,7 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.model
 
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.TextFormatter
 import java.io.InputStream
 import java.io.StringReader
 import java.io.StringWriter

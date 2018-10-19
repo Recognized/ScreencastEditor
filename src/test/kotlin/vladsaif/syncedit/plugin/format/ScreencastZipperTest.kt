@@ -5,6 +5,7 @@ import com.intellij.util.io.inputStream
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.After
 import vladsaif.syncedit.plugin.*
+import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.sound.SoundProvider
 import java.nio.file.Files
 

@@ -1,32 +1,41 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.util
 
-import vladsaif.syncedit.plugin.LRange.Companion.INTERSECTS_CMP
+import vladsaif.syncedit.plugin.util.IRange.Companion.INTERSECTS_CMP
 import kotlin.math.max
 import kotlin.math.min
 
-class LRangeUnion {
-  private var myLastCalculated: LRange? = null
+class IRangeUnion {
+  private var myLastCalculated: IRange? = null
   private var myCursor = 0
-  private var myCursorValue = 0L
+  private var myCursorValue = 0
   /**
    * Invariant: sorted in ascending order, distance between each other at least one
    */
-  private val myRanges = mutableListOf<LRange>()
+  private val myRanges = mutableListOf<IRange>()
   val ranges
     get() = myRanges.toList()
 
-  operator fun contains(other: LRange): Boolean {
+  fun clear() {
+    myRanges.clear()
+    myLastCalculated = null
+  }
+
+  operator fun contains(other: IRange): Boolean {
     if (other.empty) return true
-    val startPos = myRanges.binarySearch(LRange.from(other.start, 1), INTERSECTS_CMP)
-    val endPos = myRanges.binarySearch(LRange.from(other.end, 1), INTERSECTS_CMP)
+    val startPos = myRanges.binarySearch(IRange.from(other.start, 1), INTERSECTS_CMP)
+    val endPos = myRanges.binarySearch(IRange.from(other.end, 1), INTERSECTS_CMP)
     return startPos >= 0 && startPos == endPos
   }
 
-  fun exclude(range: LRange) {
+  operator fun contains(other: Int): Boolean {
+    return IRange(other, other) in this
+  }
+
+  fun exclude(range: IRange) {
     if (range.empty) return
     myLastCalculated = null
-    val startPos = myRanges.binarySearch(LRange.from(range.start, 1), INTERSECTS_CMP)
-    val endPos = myRanges.binarySearch(LRange.from(range.end, 1), INTERSECTS_CMP)
+    val startPos = myRanges.binarySearch(IRange.from(range.start, 1), INTERSECTS_CMP)
+    val endPos = myRanges.binarySearch(IRange.from(range.end, 1), INTERSECTS_CMP)
     val lastTouched = if (endPos < 0) toInsertPosition(endPos) - 1 else endPos
     val toEdit = myRanges.subList(toInsertPosition(startPos), lastTouched + 1)
     if (!toEdit.isEmpty()) {
@@ -36,16 +45,16 @@ class LRangeUnion {
       toEdit.clear()
       // Add piece of start if it was replaced
       if (oldStart < range.start) {
-        toEdit.add(LRange(oldStart, range.start - 1))
+        toEdit.add(IRange(oldStart, range.start - 1))
       }
       if (oldEnd > range.end) {
-        toEdit.add(LRange(range.end + 1, oldEnd))
+        toEdit.add(IRange(range.end + 1, oldEnd))
       }
     }
   }
 
-  fun intersection(range: LRange): List<LRange> {
-    val ret = mutableListOf<LRange>()
+  fun intersection(range: IRange): List<IRange> {
+    val ret = mutableListOf<IRange>()
     for (x in myRanges) {
       val intersection = x intersect range
       if (!intersection.empty) {
@@ -55,12 +64,11 @@ class LRangeUnion {
     return ret
   }
 
-
-  fun union(range: LRange) {
+  fun union(range: IRange) {
     if (range.empty) return
     myLastCalculated = null
-    val startPos = myRanges.binarySearch(LRange.from(range.start - 1, 1), INTERSECTS_CMP)
-    val endPos = myRanges.binarySearch(LRange.from(range.end + 1, 1), INTERSECTS_CMP)
+    val startPos = myRanges.binarySearch(IRange.from(range.start - 1, 1), INTERSECTS_CMP)
+    val endPos = myRanges.binarySearch(IRange.from(range.end + 1, 1), INTERSECTS_CMP)
     val lastTouched = if (endPos < 0) toInsertPosition(endPos) - 1 else endPos
     val toEdit = myRanges.subList(toInsertPosition(startPos), lastTouched + 1)
     if (!toEdit.isEmpty()) {
@@ -68,14 +76,14 @@ class LRangeUnion {
       val oldEnd = toEdit.last().end
       // Clear all touched
       toEdit.clear()
-      toEdit.add(LRange(min(oldStart, range.start), max(oldEnd, range.end)))
+      toEdit.add(IRange(min(oldStart, range.start), max(oldEnd, range.end)))
     } else {
       toEdit.add(range)
     }
   }
 
-  fun impose(range: LRange): LRange {
-    var accumulator = 0L
+  fun impose(range: IRange): IRange {
+    var accumulator = 0
     var i = 0
     if (myLastCalculated != null && myLastCalculated!!.start <= range.start) {
       i = myCursor
@@ -90,8 +98,8 @@ class LRangeUnion {
     myLastCalculated = range
     var left = range.start - accumulator
     var right = range.end - accumulator
-    val leftPart = LRange(0, Math.max(range.start - 1, 0))
-    val rightPart = LRange(0, range.end)
+    val leftPart = IRange(0, Math.max(range.start - 1, 0))
+    val rightPart = IRange(0, range.end)
     while (i < myRanges.size) {
       val cur = myRanges[i]
       if (cur.start <= range.end) {
@@ -101,15 +109,15 @@ class LRangeUnion {
         break
       ++i
     }
-    return LRange(left, right)
+    return IRange(left, right)
   }
 
   override fun toString(): String {
-    return "ClosedLongRanges" + myRanges.joinToString(separator = ",", prefix = "(", postfix = ")")
+    return "ClosedIntRanges" + myRanges.joinToString(separator = ",", prefix = "(", postfix = ")")
   }
 
   override fun equals(other: Any?): Boolean {
-    return other is LRangeUnion && other.myRanges == myRanges
+    return other is IRangeUnion && other.myRanges.equals(myRanges)
   }
 
   override fun hashCode(): Int {

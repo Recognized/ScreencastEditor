@@ -32,14 +32,14 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.WordData
 import vladsaif.syncedit.plugin.actions.addAction
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
+import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.WordData
+import vladsaif.syncedit.plugin.util.IRange
 import java.awt.*
 import java.awt.GridBagConstraints.*
 import java.awt.event.KeyAdapter

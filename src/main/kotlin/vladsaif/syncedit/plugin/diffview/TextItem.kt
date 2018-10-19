@@ -2,8 +2,8 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
-import vladsaif.syncedit.plugin.ColorSettings
-import vladsaif.syncedit.plugin.TextFormatter
+import vladsaif.syncedit.plugin.audioview.ColorSettings
+import vladsaif.syncedit.plugin.util.TextFormatter
 import java.awt.*
 import javax.swing.BorderFactory
 import kotlin.math.max

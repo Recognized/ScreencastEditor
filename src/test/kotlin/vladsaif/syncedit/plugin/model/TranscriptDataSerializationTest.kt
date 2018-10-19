@@ -1,6 +1,7 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.model
 
 import org.junit.Test
+import vladsaif.syncedit.plugin.util.IRange
 import java.io.StringReader
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller

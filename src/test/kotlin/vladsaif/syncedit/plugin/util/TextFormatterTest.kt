@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.util
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

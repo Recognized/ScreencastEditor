@@ -2,7 +2,7 @@ package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.diff.util.TextDiffType
 import com.intellij.openapi.editor.Editor
-import vladsaif.syncedit.plugin.ColorSettings
+import vladsaif.syncedit.plugin.audioview.ColorSettings
 
 object MappedLine : TextDiffType {
 

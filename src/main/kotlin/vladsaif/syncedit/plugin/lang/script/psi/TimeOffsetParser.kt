@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtScriptInitializer
 import org.jetbrains.kotlin.psi.psiUtil.referenceExpression
-import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.util.IRange
 
 object TimeOffsetParser {
 

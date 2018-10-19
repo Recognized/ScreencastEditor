@@ -2,12 +2,12 @@ package vladsaif.syncedit.plugin.audioview.waveform.impl
 
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.IRange.Companion.EMPTY_RANGE
-import vladsaif.syncedit.plugin.IRangeUnion
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.SelectionModel
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformModel
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.IRange.Companion.EMPTY_RANGE
+import vladsaif.syncedit.plugin.util.IRangeUnion
 import java.awt.Cursor
 import java.awt.Point
 import java.awt.event.MouseEvent

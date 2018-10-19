@@ -11,10 +11,10 @@ import com.intellij.openapi.progress.Task
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.withContext
-import vladsaif.syncedit.plugin.ExEDT
-import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.audioview.toolbar.ScreencastToolWindow
+import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
+import vladsaif.syncedit.plugin.toolbar.ScreencastToolWindow
+import vladsaif.syncedit.plugin.util.ExEDT
 import java.io.IOException
 import javax.sound.sampled.UnsupportedAudioFileException
 import javax.swing.Icon

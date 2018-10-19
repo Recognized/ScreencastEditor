@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.audioview.waveform
+package vladsaif.syncedit.plugin.sound
 
 interface Player : AutoCloseable {
 

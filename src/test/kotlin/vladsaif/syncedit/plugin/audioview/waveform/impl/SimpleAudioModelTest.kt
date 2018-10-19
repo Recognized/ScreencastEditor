@@ -3,8 +3,8 @@ package vladsaif.syncedit.plugin.audioview.waveform.impl
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.RESOURCES_PATH
+import vladsaif.syncedit.plugin.util.IRange
 import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

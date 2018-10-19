@@ -1,9 +1,9 @@
-package vladsaif.syncedit.plugin.audioview.waveform.impl
+package vladsaif.syncedit.plugin.sound.impl
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import vladsaif.syncedit.plugin.LRange
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
+import vladsaif.syncedit.plugin.sound.EditionModel
+import vladsaif.syncedit.plugin.util.LRange
 
 class DefaultEditionModelTest {
 
@@ -23,7 +23,7 @@ class DefaultEditionModelTest {
 
   @Test
   fun `test serialization`() {
-    val model = DefaultEditionModel().apply { 
+    val model = DefaultEditionModel().apply {
       cut(LRange(0, 200))
       cut(LRange(400, 600))
       cut(LRange(800, 900))

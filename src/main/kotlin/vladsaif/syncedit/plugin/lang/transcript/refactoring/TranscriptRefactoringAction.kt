@@ -5,10 +5,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.psi.PsiDocumentManager
-import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
+import vladsaif.syncedit.plugin.model.ScreencastFile
 
 abstract class TranscriptRefactoringAction : AnAction() {
 

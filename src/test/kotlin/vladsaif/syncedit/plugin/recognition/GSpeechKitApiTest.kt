@@ -5,7 +5,7 @@ import org.junit.Before
 import org.junit.Test
 import vladsaif.syncedit.plugin.CREDENTIALS_PATH
 import vladsaif.syncedit.plugin.RESOURCES_PATH
-import vladsaif.syncedit.plugin.TranscriptData
+import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
 import kotlin.test.assertTrue
 

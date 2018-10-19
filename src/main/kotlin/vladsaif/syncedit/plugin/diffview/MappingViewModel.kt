@@ -12,13 +12,13 @@ import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.util.Disposer
-import vladsaif.syncedit.plugin.ColorSettings
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.IRangeUnion
-import vladsaif.syncedit.plugin.MergedLineMapping
+import vladsaif.syncedit.plugin.audioview.ColorSettings
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.IRangeUnion
+import vladsaif.syncedit.plugin.util.MergedLineMapping
 import java.awt.Point
 import java.awt.event.MouseEvent
 import kotlin.coroutines.experimental.buildSequence

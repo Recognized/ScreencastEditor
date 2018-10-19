@@ -5,10 +5,10 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiDocumentManager
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
+import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.util.IRange
 
 /**
  * Concatenates selected words into one big word.

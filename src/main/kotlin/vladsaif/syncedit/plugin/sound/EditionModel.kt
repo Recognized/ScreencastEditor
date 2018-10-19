@@ -1,8 +1,9 @@
-package vladsaif.syncedit.plugin.audioview.waveform
+package vladsaif.syncedit.plugin.sound
 
-import vladsaif.syncedit.plugin.LRange
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
+import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.util.LRange
 import java.io.StringReader
 import java.util.*
 

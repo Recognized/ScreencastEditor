@@ -4,7 +4,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.io.readText
-import vladsaif.syncedit.plugin.LibrariesLoader
+import vladsaif.syncedit.plugin.util.LibrariesLoader
 import java.io.ByteArrayInputStream
 import java.nio.file.Path
 
@@ -45,7 +45,8 @@ object CredentialsProvider {
 
     override fun getState(): CredentialsProvider.State {
       synchronized(CredentialsProvider) {
-        return STATE
+        // TODO: do not keep secure data, but help somehow
+        return State()
       }
     }
 

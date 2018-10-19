@@ -1,9 +1,7 @@
-package vladsaif.syncedit.plugin.audioview.toolbar
+package vladsaif.syncedit.plugin.toolbar
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -15,13 +13,13 @@ import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import icons.ScreencastEditorIcons.*
 import org.jetbrains.kotlin.idea.KotlinIcons
-import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.actions.*
+import vladsaif.syncedit.plugin.actions.addAction
+import vladsaif.syncedit.plugin.actions.openScript
+import vladsaif.syncedit.plugin.actions.openTranscript
+import vladsaif.syncedit.plugin.actions.saveChanges
 import vladsaif.syncedit.plugin.audioview.waveform.JScrollableWaveform
 import vladsaif.syncedit.plugin.audioview.waveform.WaveformController
-import java.io.IOException
-import javax.sound.sampled.UnsupportedAudioFileException
-import javax.swing.Icon
+import vladsaif.syncedit.plugin.model.ScreencastFile
 
 object ScreencastToolWindow {
   private const val myToolWindowId = "Screencast Editor"
@@ -62,6 +60,9 @@ object ScreencastToolWindow {
 
   private fun createMainActionGroup(screencast: ScreencastFile): ActionGroup {
     with(DefaultActionGroup()) group@ {
+      addAction("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
+
+      })
       addAction("Open transcript", "Open transcript in editor", TRANSCRIPT, {
         openTranscript(screencast)
       })

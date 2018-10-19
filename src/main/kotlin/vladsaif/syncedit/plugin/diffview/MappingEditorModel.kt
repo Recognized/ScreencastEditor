@@ -3,9 +3,10 @@ package vladsaif.syncedit.plugin.diffview
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.RangeMarker
-import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.lang.script.psi.BlockVisitor
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
+import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.util.*
 import java.util.*
 import kotlin.collections.HashMap
 

@@ -1,10 +1,10 @@
 package vladsaif.syncedit.plugin.format
 
 import com.intellij.openapi.diagnostic.logger
-import vladsaif.syncedit.plugin.TranscriptData
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
-import vladsaif.syncedit.plugin.audioview.waveform.impl.modFloor
+import vladsaif.syncedit.plugin.model.TranscriptData
+import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.SoundProvider
+import vladsaif.syncedit.plugin.sound.impl.modFloor
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream

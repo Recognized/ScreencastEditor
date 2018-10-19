@@ -11,11 +11,11 @@ import com.intellij.openapi.progress.Task
 import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.future.await
-import vladsaif.syncedit.plugin.ExEDT
-import vladsaif.syncedit.plugin.LibrariesLoader
-import vladsaif.syncedit.plugin.ScreencastFile
-import vladsaif.syncedit.plugin.TranscriptData
+import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
+import vladsaif.syncedit.plugin.util.ExEDT
+import vladsaif.syncedit.plugin.util.LibrariesLoader
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
@@ -116,12 +116,12 @@ interface SpeechRecognizer {
 
     override fun run(indicator: ProgressIndicator) {
       indicator.isIndeterminate = true
-      indicator.start()
+      if (!indicator.isRunning) indicator.start()
       try {
         runBlocking { job.join() }
       } catch (_: Throwable) {
       }
-      indicator.stop()
+      if (indicator.isRunning) indicator.stop()
     }
 
     override fun onCancel() {

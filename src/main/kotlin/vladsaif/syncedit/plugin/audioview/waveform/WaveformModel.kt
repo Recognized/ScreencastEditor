@@ -2,8 +2,13 @@ package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.util.ui.JBUI
-import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
+import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.WordData
+import vladsaif.syncedit.plugin.sound.EditionModel
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.LRange
+import vladsaif.syncedit.plugin.util.floorToInt
 import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean

@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
 import com.intellij.ui.components.JBScrollPane
-import vladsaif.syncedit.plugin.ScreencastFile
+import vladsaif.syncedit.plugin.model.ScreencastFile
 import javax.swing.ScrollPaneConstants
 
 class JScrollableWaveform(multimediaModel: ScreencastFile) : JBScrollPane(JWaveform(multimediaModel)) {

@@ -6,9 +6,9 @@ import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
+import vladsaif.syncedit.plugin.model.ScreencastFile
 
 class TranscriptFactoryListener : EditorFactoryListener {
 

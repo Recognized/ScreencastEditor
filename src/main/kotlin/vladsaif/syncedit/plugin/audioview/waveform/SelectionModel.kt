@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
-import vladsaif.syncedit.plugin.IRange
+import vladsaif.syncedit.plugin.util.IRange
 
 interface SelectionModel : ChangeNotifier {
   val selectedRanges: List<IRange>

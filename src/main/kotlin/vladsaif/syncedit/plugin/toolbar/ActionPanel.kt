@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.audioview.toolbar
+package vladsaif.syncedit.plugin.toolbar
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup

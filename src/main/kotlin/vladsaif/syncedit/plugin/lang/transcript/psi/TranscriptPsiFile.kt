@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.lang.transcript.psi
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.FileViewProvider
-import vladsaif.syncedit.plugin.ScreencastFile
+import vladsaif.syncedit.plugin.model.ScreencastFile
 
 class TranscriptPsiFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, TranscriptLanguage) {
   val model: ScreencastFile?

@@ -1,13 +1,13 @@
 package vladsaif.syncedit.plugin.recognition.recognizers
 
 import kotlinx.coroutines.experimental.CancellationException
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.LibrariesLoader
-import vladsaif.syncedit.plugin.TranscriptData
-import vladsaif.syncedit.plugin.WordData
+import vladsaif.syncedit.plugin.model.TranscriptData
+import vladsaif.syncedit.plugin.model.WordData
 import vladsaif.syncedit.plugin.recognition.CredentialsProvider
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import vladsaif.syncedit.plugin.sound.SoundProvider
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.LibrariesLoader
 import java.io.IOException
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException

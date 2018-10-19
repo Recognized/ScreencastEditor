@@ -3,8 +3,8 @@ package vladsaif.syncedit.plugin.lang.script.psi
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.junit.Test
-import vladsaif.syncedit.plugin.IRange
 import vladsaif.syncedit.plugin.createKtFile
+import vladsaif.syncedit.plugin.util.IRange
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 

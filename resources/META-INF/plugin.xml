@@ -54,12 +54,7 @@
               class="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               icon="ScreencastEditorIcons.SCREENCAST"
               text="Open Screencast"
-              description="Open Screencast audio and script data"/>
-      <action id="vladsaif.syncedit.plugin.actions.tools.ManageScriptTranscriptRelations"
-              icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.actions.tools.ManageScriptTranscriptRelations"
-              text="Manage transcript-script relations"
-              description="Open associations window"/>
+              description="Open Screencast"/>
       <action id="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
               icon="ScreencastEditorIcons.SETTINGS"
               class="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
@@ -89,21 +84,21 @@
             text="Exclude Word"
             description="Exclude word from transcript">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="alt DELETE"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
             text="Include Word"
             description="Include to transcript previously excluded word ">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="alt EQUALS"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt I"/>
     </action>
     <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
             class="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
             text="Mute Word"
             description="Mute word">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
-      <keyboard-shortcut keymap="$default" first-keystroke="alt M"/>
+      <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt M"/>
     </action>
     <group id="vladsaif.syncedit.plugin.ProjectViewGroup"
            text="Screencast Editor"
@@ -120,11 +115,11 @@
   </actions>
   <application-components>
     <component>
-      <implementation-class>vladsaif.syncedit.plugin.LibrariesLoader</implementation-class>
+      <implementation-class>vladsaif.syncedit.plugin.util.LibrariesLoader</implementation-class>
     </component>
     <component>
-      <implementation-class>vladsaif.syncedit.plugin.ColorSettings$ColorState</implementation-class>
-      <interface-class>vladsaif.syncedit.plugin.ColorSettings$ColorState</interface-class>
+      <implementation-class>vladsaif.syncedit.plugin.audioview.ColorSettings$ColorState</implementation-class>
+      <interface-class>vladsaif.syncedit.plugin.audioview.ColorSettings$ColorState</interface-class>
     </component>
     <component>
       <interface-class>vladsaif.syncedit.plugin.recognition.CredentialsProvider</interface-class>

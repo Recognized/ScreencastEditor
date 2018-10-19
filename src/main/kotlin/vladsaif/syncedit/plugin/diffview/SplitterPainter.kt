@@ -1,8 +1,8 @@
 package vladsaif.syncedit.plugin.diffview
 
 import com.intellij.util.ui.GraphicsUtil
-import vladsaif.syncedit.plugin.ColorSettings
-import vladsaif.syncedit.plugin.MergedLineMapping
+import vladsaif.syncedit.plugin.audioview.ColorSettings
+import vladsaif.syncedit.plugin.util.MergedLineMapping
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Shape

@@ -3,9 +3,9 @@ package vladsaif.syncedit.plugin.lang.transcript.annotators
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.psi.PsiElement
-import vladsaif.syncedit.plugin.WordData.State.EXCLUDED
-import vladsaif.syncedit.plugin.WordData.State.MUTED
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
+import vladsaif.syncedit.plugin.model.WordData.State.EXCLUDED
+import vladsaif.syncedit.plugin.model.WordData.State.MUTED
 
 class TranscriptAnnotator : Annotator {
 

@@ -1,9 +1,9 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
-import vladsaif.syncedit.plugin.IRange.Companion.clr
+import vladsaif.syncedit.plugin.util.IRange.Companion.clr
 import kotlin.test.assertTrue
 
 class IRangeTest {

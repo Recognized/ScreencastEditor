@@ -1,10 +1,11 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.model
 
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.junit.Test
+import vladsaif.syncedit.plugin.util.*
 
 class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
 

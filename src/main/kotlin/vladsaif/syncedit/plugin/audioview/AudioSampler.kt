@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview
 
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
-import vladsaif.syncedit.plugin.floorToInt
+import vladsaif.syncedit.plugin.util.floorToInt
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.math.min

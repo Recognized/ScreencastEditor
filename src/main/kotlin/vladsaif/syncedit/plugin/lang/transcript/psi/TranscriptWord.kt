@@ -4,7 +4,7 @@ import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNameIdentifierOwner
-import vladsaif.syncedit.plugin.WordData
+import vladsaif.syncedit.plugin.model.WordData
 
 interface TranscriptWord : PsiNameIdentifierOwner {
   val number: Int

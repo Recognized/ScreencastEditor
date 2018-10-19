@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.sound
 import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader
-import vladsaif.syncedit.plugin.floorToInt
+import vladsaif.syncedit.plugin.util.floorToInt
 import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path

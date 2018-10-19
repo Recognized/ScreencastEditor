@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.LRange
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.LRange
 import javax.sound.sampled.AudioFormat
 
 interface AudioDataModel {

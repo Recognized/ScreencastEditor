@@ -2,7 +2,6 @@ package vladsaif.syncedit.plugin.actions
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.testGuiFramework.recorder.GuiRecorderListener
-import vladsaif.syncedit.plugin.Timer
 import vladsaif.syncedit.plugin.actions.internal.RecordingManager
 
 object GuiRecorderListener : GuiRecorderListener() {

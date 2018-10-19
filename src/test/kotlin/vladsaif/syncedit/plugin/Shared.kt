@@ -10,9 +10,14 @@ import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
+import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.TranscriptData
+import vladsaif.syncedit.plugin.model.WordData
+import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.LRange
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files

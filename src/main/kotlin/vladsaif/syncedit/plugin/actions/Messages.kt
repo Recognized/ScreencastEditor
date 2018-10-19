@@ -5,7 +5,7 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
-import vladsaif.syncedit.plugin.ScreencastFile
+import vladsaif.syncedit.plugin.model.ScreencastFile
 import java.nio.file.Path
 
 fun errorNoModelForFile(project: Project, file: VirtualFile) {

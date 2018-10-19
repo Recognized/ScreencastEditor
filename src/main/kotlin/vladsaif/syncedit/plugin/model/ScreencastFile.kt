@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.model
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -32,11 +32,7 @@ import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
-import vladsaif.syncedit.plugin.WordData.State.*
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel
-import vladsaif.syncedit.plugin.audioview.waveform.EditionModel.EditionType.*
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.audioview.waveform.impl.SimpleAudioModel
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
@@ -47,6 +43,11 @@ import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
+import vladsaif.syncedit.plugin.model.WordData.State.*
+import vladsaif.syncedit.plugin.sound.EditionModel
+import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.util.*
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -178,7 +179,7 @@ class ScreencastFile(
   }
 
   private fun installListeners() {
-    addTranscriptDataListener(object : ScreencastFile.Listener {
+    addTranscriptDataListener(object : Listener {
       override fun onTranscriptDataChanged() {
         val files = listOfNotNull(transcriptFile, scriptFile)
         PsiDocumentManager.getInstance(project).reparseFiles(files, true)

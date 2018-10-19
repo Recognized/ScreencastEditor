@@ -1,9 +1,11 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.model
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
-import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.*
+import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.util.IRange
 import java.nio.file.Files
 import java.nio.file.Paths
 

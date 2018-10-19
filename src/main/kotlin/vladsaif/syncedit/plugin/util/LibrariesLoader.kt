@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin
+package vladsaif.syncedit.plugin.util
 
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.util.lang.UrlClassLoader

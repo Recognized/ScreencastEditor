@@ -204,7 +204,7 @@ object RecordingManager {
             "Enter screencast name",
             "Save screencast",
             null,
-            "screencast_${Date().toString().replace(' ', '_')}",
+            "screencast_${Date().toString().replace(' ', '_').replace(':', '_')}",
             NAME_VALIDATOR
         )
         if (name == null) {

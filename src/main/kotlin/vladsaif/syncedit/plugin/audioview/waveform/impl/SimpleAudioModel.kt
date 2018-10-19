@@ -1,13 +1,13 @@
 package vladsaif.syncedit.plugin.audioview.waveform.impl
 
-import vladsaif.syncedit.plugin.IRange
-import vladsaif.syncedit.plugin.LRange
 import vladsaif.syncedit.plugin.audioview.AudioSampler
 import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.audioview.waveform.AveragedSampleData
 import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
-import vladsaif.syncedit.plugin.floorToInt
 import vladsaif.syncedit.plugin.sound.SoundProvider
+import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.LRange
+import vladsaif.syncedit.plugin.util.floorToInt
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path

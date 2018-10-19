@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.lang.transcript.refactoring
 
-import vladsaif.syncedit.plugin.ScreencastFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
+import vladsaif.syncedit.plugin.model.ScreencastFile
 
 /**
  * Excludes words from transcript so they are cut out from corresponding audio.
