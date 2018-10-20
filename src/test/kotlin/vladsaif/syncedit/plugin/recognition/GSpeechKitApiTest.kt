@@ -7,6 +7,8 @@ import vladsaif.syncedit.plugin.CREDENTIALS_PATH
 import vladsaif.syncedit.plugin.RESOURCES_PATH
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
+import vladsaif.syncedit.plugin.util.empty
+import vladsaif.syncedit.plugin.util.end
 import kotlin.test.assertTrue
 
 class GSpeechKitApiTest {

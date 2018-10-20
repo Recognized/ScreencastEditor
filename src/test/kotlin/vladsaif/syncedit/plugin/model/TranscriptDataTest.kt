@@ -20,7 +20,7 @@ class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
         "fifth",
         "sixth"
     )
-    val ranges = (1..words.size).map { IRange(it, it + 1) }
+    val ranges = (1..words.size).map { IntRange(it, it + 1) }
     val wordsData = words.zip(ranges).map { WordData(it.first, it.second) }
     return TranscriptData(wordsData)
   }
@@ -61,17 +61,17 @@ class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
   fun `test bindings`() {
     val factory = createMarkerFactory(20)
     val bindData = mapOf(
-        1 to factory(IRange(1, 3)),
-        2 to factory(IRange(1, 3)),
-        3 to factory(IRange(1, 4)),
-        5 to factory(IRange(6, 9)),
-        6 to factory(IRange(6, 9)),
-        7 to factory(IRange(6, 9))
+        1 to factory(IntRange(1, 3)),
+        2 to factory(IntRange(1, 3)),
+        3 to factory(IntRange(1, 4)),
+        5 to factory(IntRange(6, 9)),
+        6 to factory(IntRange(6, 9)),
+        7 to factory(IntRange(6, 9))
     )
     val expectedBindings = listOf(
-        MergedLineMapping(IRange(1, 2), IRange(1, 3)),
-        MergedLineMapping(IRange(3, 3), IRange(1, 4)),
-        MergedLineMapping(IRange(5, 7), IRange(6, 9))
+        MergedLineMapping(IntRange(1, 2), IntRange(1, 3)),
+        MergedLineMapping(IntRange(3, 3), IntRange(1, 4)),
+        MergedLineMapping(IntRange(5, 7), IntRange(6, 9))
     )
     assertEquals(expectedBindings, createMergedLineMappings(bindData.mapValues { (_, v) -> v.toLineRange() }))
   }
@@ -79,27 +79,27 @@ class TranscriptDataTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test merge bindings`() {
     val bindings = listOf(
-        MergedLineMapping(IRange(1, 3), IRange(5, 6)),
-        MergedLineMapping(IRange(2, 4), IRange(5, 6)),
-        MergedLineMapping(IRange(2, 7), IRange(5, 6)),
-        MergedLineMapping(IRange(4, 7), IRange(5, 7)),
-        MergedLineMapping(IRange(9, 10), IRange(5, 7)),
-        MergedLineMapping(IRange(11, 12), IRange(5, 7)),
-        MergedLineMapping(IRange(14, 15), IRange(10, 11)),
-        MergedLineMapping(IRange(17, 18), IRange(10, 11))
+        MergedLineMapping(IntRange(1, 3), IntRange(5, 6)),
+        MergedLineMapping(IntRange(2, 4), IntRange(5, 6)),
+        MergedLineMapping(IntRange(2, 7), IntRange(5, 6)),
+        MergedLineMapping(IntRange(4, 7), IntRange(5, 7)),
+        MergedLineMapping(IntRange(9, 10), IntRange(5, 7)),
+        MergedLineMapping(IntRange(11, 12), IntRange(5, 7)),
+        MergedLineMapping(IntRange(14, 15), IntRange(10, 11)),
+        MergedLineMapping(IntRange(17, 18), IntRange(10, 11))
     )
     val merged = mergeLineMappings(bindings)
     val expected = listOf(
-        MergedLineMapping(IRange(1, 7), IRange(5, 6)),
-        MergedLineMapping(IRange(4, 7), IRange(5, 7)),
-        MergedLineMapping(IRange(9, 12), IRange(5, 7)),
-        MergedLineMapping(IRange(14, 15), IRange(10, 11)),
-        MergedLineMapping(IRange(17, 18), IRange(10, 11))
+        MergedLineMapping(IntRange(1, 7), IntRange(5, 6)),
+        MergedLineMapping(IntRange(4, 7), IntRange(5, 7)),
+        MergedLineMapping(IntRange(9, 12), IntRange(5, 7)),
+        MergedLineMapping(IntRange(14, 15), IntRange(10, 11)),
+        MergedLineMapping(IntRange(17, 18), IntRange(10, 11))
     )
     assertEquals(expected, merged)
   }
 
-  private fun createMarkerFactory(lines: Int): (IRange) -> RangeMarker {
+  private fun createMarkerFactory(lines: Int): (IntRange) -> RangeMarker {
     val doc = createDocument(lines)
     return {
       doc.createRangeMarker(doc.getLineStartOffset(it.start), doc.getLineEndOffset(it.end))

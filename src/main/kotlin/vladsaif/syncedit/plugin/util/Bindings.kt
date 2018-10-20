@@ -3,15 +3,15 @@ package vladsaif.syncedit.plugin.util
 import com.intellij.openapi.editor.RangeMarker
 
 data class MergedLineMapping(
-    val itemRange: IRange,
-    val lineRange: IRange
+    val itemRange: IntRange,
+    val lineRange: IntRange
 )
 
 /**
  * Key: word index
  * Value: mapped line range
  */
-typealias LineMapping = Map<Int, IRange>
+typealias LineMapping = Map<Int, IntRange>
 
 /**
  * Key: word index
@@ -20,7 +20,7 @@ typealias LineMapping = Map<Int, IRange>
 typealias TextRangeMapping = Map<Int, RangeMarker>
 
 fun mergeLineMappings(mergedLineMappings: List<MergedLineMapping>): List<MergedLineMapping> {
-  val sorted = mergedLineMappings.filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange }
+  val sorted = mergedLineMappings.filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange.start }
   return sorted.fold(mutableListOf()) { acc, x ->
     when {
       x.itemRange.empty -> Unit
@@ -35,12 +35,12 @@ fun mergeLineMappings(mergedLineMappings: List<MergedLineMapping>): List<MergedL
   }
 }
 
-fun createMergedLineMappings(lineMapping: LineMapping, lineConverter: (IRange) -> IRange = { it }) = lineMapping.entries
-    .map { (index, x) -> MergedLineMapping(IRange(index, index), lineConverter(x)) }
+fun createMergedLineMappings(lineMapping: LineMapping, lineConverter: (IntRange) -> IntRange = { it }) = lineMapping.entries
+    .map { (index, x) -> MergedLineMapping(IntRange(index, index), lineConverter(x)) }
     .let(::mergeLineMappings)
 
-fun RangeMarker.toLineRange(): IRange {
-  if (!isValid) return IRange.EMPTY_RANGE
+fun RangeMarker.toLineRange(): IntRange {
+  if (!isValid) return IntRange.EMPTY
   val doc = this.document
-  return IRange(doc.getLineNumber(startOffset), doc.getLineNumber(endOffset))
+  return IntRange(doc.getLineNumber(startOffset), doc.getLineNumber(endOffset))
 }

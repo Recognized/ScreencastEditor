@@ -6,7 +6,6 @@ import vladsaif.syncedit.plugin.model.WordData
 import vladsaif.syncedit.plugin.recognition.CredentialsProvider
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import vladsaif.syncedit.plugin.sound.SoundProvider
-import vladsaif.syncedit.plugin.util.IRange
 import vladsaif.syncedit.plugin.util.LibrariesLoader
 import java.io.IOException
 import java.io.InputStream
@@ -48,7 +47,7 @@ class GSpeechKit : SpeechRecognizer {
       val word = x[0] as String
       val startTime = x[1] as Int
       val endTime = x[2] as Int
-      list.add(WordData(word, IRange(startTime, endTime)))
+      list.add(WordData(word, IntRange(startTime, endTime)))
     }
     return TranscriptData(list)
   }

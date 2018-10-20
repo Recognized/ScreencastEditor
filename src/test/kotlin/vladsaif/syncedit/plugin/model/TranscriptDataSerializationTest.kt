@@ -1,7 +1,6 @@
 package vladsaif.syncedit.plugin.model
 
 import org.junit.Test
-import vladsaif.syncedit.plugin.util.IRange
 import java.io.StringReader
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
@@ -12,8 +11,8 @@ class TranscriptDataSerializationTest {
 
   @Test
   fun `test jaxb serialization`() {
-    val data = TranscriptData(listOf(WordData("first", IRange(10, 20), WordData.State.PRESENTED),
-        WordData("second", IRange(100, 200), WordData.State.PRESENTED)))
+    val data = TranscriptData(listOf(WordData("first", IntRange(10, 20), WordData.State.PRESENTED),
+        WordData("second", IntRange(100, 200), WordData.State.PRESENTED)))
     val context = JAXBContext.newInstance(TranscriptData::class.java)
     val marshaller = context.createMarshaller()
     marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
@@ -38,8 +37,8 @@ class TranscriptDataSerializationTest {
     </words>
 </transcript>""")) as TranscriptData
     val data = TranscriptData(listOf(
-        WordData("first", IRange(10, 20), WordData.State.PRESENTED),
-        WordData("second", IRange(100, 200), WordData.State.PRESENTED)
+        WordData("first", IntRange(10, 20), WordData.State.PRESENTED),
+        WordData("second", IntRange(100, 200), WordData.State.PRESENTED)
     ))
     assertEquals(data, obj)
   }

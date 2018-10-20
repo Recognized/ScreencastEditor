@@ -16,8 +16,6 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.model.WordData
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.util.IRange
-import vladsaif.syncedit.plugin.util.LRange
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -30,22 +28,22 @@ val RESOURCES_PATH: Path = Paths.get("src", "test", "resources")
 val CREDENTIALS_PATH: Path? = System.getProperty("google.credentials")?.let { File(it).toPath() }
 val SCREENCAST_PATH: Path = RESOURCES_PATH.resolve("screencast.${ScreencastFileType.defaultExtension}")
 val TRANSCRIPT_DATA = TranscriptData(listOf(
-    WordData("first", IRange(1000, 2000)),
-    WordData("two", IRange(2000, 3000)),
-    WordData("three", IRange(3000, 4000)),
-    WordData("four", IRange(4000, 5000)),
-    WordData("five", IRange(5000, 6000)),
-    WordData("six", IRange(6000, 7000)),
-    WordData("seven", IRange(8000, 9000)),
-    WordData("eight", IRange(9000, 9500)),
-    WordData("nine", IRange(10000, 11000)),
-    WordData("ten", IRange(11000, 12000)),
-    WordData("eleven", IRange(12000, 13000)),
-    WordData("twelve", IRange(13000, 14000))
+    WordData("first", IntRange(1000, 2000)),
+    WordData("two", IntRange(2000, 3000)),
+    WordData("three", IntRange(3000, 4000)),
+    WordData("four", IntRange(4000, 5000)),
+    WordData("five", IntRange(5000, 6000)),
+    WordData("six", IntRange(6000, 7000)),
+    WordData("seven", IntRange(8000, 9000)),
+    WordData("eight", IntRange(9000, 9500)),
+    WordData("nine", IntRange(10000, 11000)),
+    WordData("ten", IntRange(11000, 12000)),
+    WordData("eleven", IntRange(12000, 13000)),
+    WordData("twelve", IntRange(13000, 14000))
 ))
 val EDITION_MODEL = DefaultEditionModel().apply {
-  cut(LRange(0, 100000))
-  mute(LRange(200000, 300000))
+  cut(LongRange(0, 100000))
+  mute(LongRange(200000, 300000))
 }
 val AUDIO_PATH: Path = RESOURCES_PATH.resolve("demo.wav")
 val SCRIPT_TEXT =

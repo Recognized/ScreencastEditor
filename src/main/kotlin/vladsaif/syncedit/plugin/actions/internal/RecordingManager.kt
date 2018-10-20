@@ -18,7 +18,6 @@ import com.intellij.openapi.wm.WindowManager
 import com.intellij.openapi.wm.impl.IdeGlassPaneImpl
 import vladsaif.syncedit.plugin.actions.GeneratedCodeReceiver
 import vladsaif.syncedit.plugin.actions.errorIO
-import vladsaif.syncedit.plugin.diffview.GridBagBuilder
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.sound.CountdownPanel
@@ -26,6 +25,7 @@ import vladsaif.syncedit.plugin.sound.SoundProvider
 import vladsaif.syncedit.plugin.sound.SoundRecorder
 import vladsaif.syncedit.plugin.sound.SoundRecorder.State.IDLE
 import vladsaif.syncedit.plugin.sound.SoundRecorder.State.RECORDING
+import vladsaif.syncedit.plugin.util.GridBagBuilder
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.io.File

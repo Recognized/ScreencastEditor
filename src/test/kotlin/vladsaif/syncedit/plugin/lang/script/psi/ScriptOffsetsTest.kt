@@ -4,7 +4,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.junit.Test
 import vladsaif.syncedit.plugin.createKtFile
-import vladsaif.syncedit.plugin.util.IRange
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -75,13 +74,14 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = listOf(
-        TimedLines(lines = IRange(1, 1), time = IRange(2000, 3000)), // statement()
-        TimedLines(lines = IRange(2, 2), time = IRange(2000, 3000)), // call()
-        TimedLines(lines = IRange(3, 3), time = IRange(2000, 3000)), // anotherCall()
-        TimedLines(lines = IRange(6, 9), time = IRange(3000, 5000)), // block
-        TimedLines(lines = IRange(7, 7), time = IRange(3000, 4000)) // call()
-    )
+    val expected = codeBlockModel {
+      statement("statement()", 2000..3000)
+      statement("call()", 2000..3000)
+      statement("anotherCall()", 2000..3000)
+      block("startBlock", 3000..5000) {
+        statement("call()", 3000..4000)
+      }
+    }
     assertEquals(expected, actual)
   }
 
@@ -95,11 +95,11 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = listOf(
-        TimedLines(lines = IRange(0, 0), time = IRange(0, 3000)), // statement()
-        TimedLines(lines = IRange(1, 1), time = IRange(0, 3000)), // call()
-        TimedLines(lines = IRange(2, 2), time = IRange(0, 3000))  // anotherCall()
-    )
+    val expected = codeBlockModel {
+      statement("statement()", 0..3000)
+      statement("call()", 0..3000)
+      statement("anotherCall()", 0..3000)
+    }
     assertEquals(expected, actual)
   }
 
@@ -113,7 +113,27 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    assertEquals(listOf(TimedLines(IRange(1, 3), IRange.EMPTY_RANGE)), actual)
+    val expected = codeBlockModel {
+    }
+    assertEquals(expected, actual)
+  }
+
+  @Test
+  fun `test empty block`() {
+    val text = """
+      timeOffset(3000L)
+      startBlock {
+        timeOffset(1000L)
+      }
+      timeOffset(1000L)
+    """.trimIndent()
+    val ktFile = createKtFile(text)
+    val actual = TimeOffsetParser.parse(ktFile)
+    val expected = codeBlockModel {
+      block("startBlock", 3000..5000) {
+      }
+    }
+    assertEquals(expected, actual)
   }
 
   @Test
@@ -124,6 +144,8 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    assertEquals(listOf(TimedLines(IRange(0, 1), IRange.EMPTY_RANGE)), actual)
+    val expected = codeBlockModel {
+    }
+    assertEquals(expected, actual)
   }
 }

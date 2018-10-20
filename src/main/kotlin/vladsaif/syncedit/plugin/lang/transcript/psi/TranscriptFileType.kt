@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin.lang.transcript.psi
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileTypes.LanguageFileType
 import icons.ScreencastEditorIcons
 import java.util.*

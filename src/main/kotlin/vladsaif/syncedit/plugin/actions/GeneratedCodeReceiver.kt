@@ -25,7 +25,7 @@ object GeneratedCodeReceiver : GeneratedCodeReceiver {
 infix operator fun String.times(multiplier: Int): String {
   return buildString {
     for (i in 1..multiplier) {
-      append(this)
+      append(this@times)
     }
   }
 }

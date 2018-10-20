@@ -55,7 +55,7 @@ fun saveChanges(screencast: ScreencastFile) {
 }
 
 val lightSavingActor = actor<ScreencastFile>(CommonPool) {
-  for(screencast in channel) {
+  for (screencast in channel) {
     val savingFun = screencast.getLightSaveFunction()
     val saveTask = object : Task.Modal(screencast.project, "Saving ${screencast.name}...", false) {
       override fun run(indicator: ProgressIndicator) {

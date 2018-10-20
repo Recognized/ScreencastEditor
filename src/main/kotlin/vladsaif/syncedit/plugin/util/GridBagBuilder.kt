@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.diffview
+package vladsaif.syncedit.plugin.util
 
 import java.awt.GridBagConstraints
 import java.awt.Insets

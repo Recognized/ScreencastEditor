@@ -10,8 +10,7 @@ import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.Player
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.sound.impl.PlayerImpl
-import vladsaif.syncedit.plugin.util.IRange
-import vladsaif.syncedit.plugin.util.LRange
+import vladsaif.syncedit.plugin.util.intersect
 import java.awt.Dimension
 import java.io.IOException
 import javax.swing.JScrollPane
@@ -70,9 +69,9 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
     edit(waveform.model.editionModel::undo)
   }
 
-  private inline fun edit(consumer: (LRange) -> Unit) {
+  private inline fun edit(consumer: (LongRange) -> Unit) {
     waveform.selectionModel.selectedRanges.forEach {
-      val truncated = it intersect IRange(0, waveform.model.maxChunks - 1)
+      val truncated = it intersect IntRange(0, waveform.model.maxChunks - 1)
       consumer(waveform.model.chunkRangeToFrameRange(truncated))
     }
     waveform.stateChanged(ChangeEvent(waveform.model.editionModel))
@@ -120,7 +119,7 @@ class WaveformController(private val waveform: JWaveform) : Disposable {
   private fun SelectionModel.toEditionModel(): EditionModel {
     val editionModel = DefaultEditionModel()
     val audioModel = waveform.model.screencast.audioDataModel ?: return editionModel
-    editionModel.cut(LRange(0, audioModel.totalFrames))
+    editionModel.cut(LongRange(0, audioModel.totalFrames))
     for (selected in selectedRanges) {
       editionModel.undo(waveform.model.chunkRangeToFrameRange(selected))
     }

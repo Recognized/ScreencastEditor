@@ -6,9 +6,7 @@ import vladsaif.syncedit.plugin.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.model.WordData
 import vladsaif.syncedit.plugin.sound.EditionModel
-import vladsaif.syncedit.plugin.util.IRange
-import vladsaif.syncedit.plugin.util.LRange
-import vladsaif.syncedit.plugin.util.floorToInt
+import vladsaif.syncedit.plugin.util.*
 import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -24,12 +22,12 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
    * Waveform presented using sliding window and this is the visible part of it.
    */
   private val myVisibleRange
-    get() = IRange(myFirstVisibleChunk, myFirstVisibleChunk + myVisibleChunks - 1)
+    get() = IntRange(myFirstVisibleChunk, myFirstVisibleChunk + myVisibleChunks - 1)
   /**
    * Coordinates are expected to be called very frequently and most of the time they do not change.
    * So it worth to cache it, because it requires some possibly heavy calculations.
    */
-  private val myCoordinates: List<IRange>
+  private val myCoordinates: List<IntRange>
     get() = if (myCoordinatesCacheCoherent) myCoordinatesCache
     else {
       val xx = screencast.data?.words?.map { getCoordinates(it) }
@@ -44,11 +42,11 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   private var myAudioData = listOf(AveragedSampleData())
   private var myCurrentTask: LoadTask? = null
   private var myCoordinatesCacheCoherent = false
-  private var myCoordinatesCache = listOf<IRange>()
+  private var myCoordinatesCache = listOf<IntRange>()
   private var myVisibleChunks = 4000
   private var myFirstVisibleChunk = 0
   private var myNeedInitialLoad = true
-  private var myLastLoadedVisibleRange: IRange? = null
+  private var myLastLoadedVisibleRange: IntRange? = null
   private var myMaxChunks = myVisibleChunks
   private var myIsBroken = AtomicBoolean(false)
   var playFramePosition: AtomicLong = AtomicLong(-1L)
@@ -68,27 +66,27 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
         myNeedInitialLoad = false
       }
     }
-  val drawRange: IRange
-    get() = IRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
+  val drawRange: IntRange
+    get() = IntRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
         min(myFirstVisibleChunk + myVisibleChunks * 3, myMaxChunks - 1))
   val editionModel: EditionModel
     get() = screencast.editionModel
-  private var myWordBorders: List<IRange> = listOf()
-  val wordBorders: List<IRange>
+  private var myWordBorders: List<IntRange> = listOf()
+  val wordBorders: List<IntRange>
     get() {
       if (!myCoordinatesCacheCoherent) {
         myCoordinates
       }
       return myWordBorders
     }
-  val wordCoordinates: List<IRange>
+  val wordCoordinates: List<IntRange>
     get() = myCoordinates
 
-  private fun calculateWordBorders(): List<IRange> {
-    val list = mutableListOf<IRange>()
+  private fun calculateWordBorders(): List<IntRange> {
+    val list = mutableListOf<IntRange>()
     for (x in myCoordinatesCache) {
-      list.add(IRange(x.start - JBUI.scale(magnetRange), x.start + JBUI.scale(magnetRange)))
-      list.add(IRange(x.end - JBUI.scale(magnetRange), x.end + JBUI.scale(magnetRange)))
+      list.add(IntRange(x.start - JBUI.scale(magnetRange), x.start + JBUI.scale(magnetRange)))
+      list.add(IntRange(x.end - JBUI.scale(magnetRange), x.end + JBUI.scale(magnetRange)))
     }
     return list
   }
@@ -120,27 +118,27 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
 
   fun getChunk(frame: Long) = myAudioDataProvider?.getChunk(myMaxChunks, frame) ?: 0
 
-  fun chunkRangeToFrameRange(chunkRange: IRange): LRange {
-    val model = myAudioDataProvider ?: return LRange.EMPTY_RANGE
-    return LRange(model.getStartFrame(myMaxChunks, chunkRange.start),
+  fun chunkRangeToFrameRange(chunkRange: IntRange): LongRange {
+    val model = myAudioDataProvider ?: return LongRange.EMPTY
+    return LongRange(model.getStartFrame(myMaxChunks, chunkRange.start),
         model.getStartFrame(myMaxChunks, chunkRange.end + 1) - 1)
   }
 
-  fun frameRangeToChunkRange(frameRange: LRange): IRange {
-    val model = myAudioDataProvider ?: return IRange.EMPTY_RANGE
-    return IRange(model.getChunk(myMaxChunks, frameRange.start),
+  fun frameRangeToChunkRange(frameRange: LongRange): IntRange {
+    val model = myAudioDataProvider ?: return IntRange.EMPTY
+    return IntRange(model.getChunk(myMaxChunks, frameRange.start),
         model.getChunk(myMaxChunks, frameRange.end))
   }
 
-  fun getCoordinates(word: WordData): IRange {
-    val model = myAudioDataProvider ?: return IRange.EMPTY_RANGE
+  fun getCoordinates(word: WordData): IntRange {
+    val model = myAudioDataProvider ?: return IntRange.EMPTY
     val left = model.getChunk(myMaxChunks, (word.range.start / model.millisecondsPerFrame).toLong())
     val right = model.getChunk(myMaxChunks, (word.range.end / model.millisecondsPerFrame).toLong())
-    return IRange(left, right)
+    return IntRange(left, right)
   }
 
   fun getEnclosingWord(coordinate: Int): WordData? {
-    val index = myCoordinates.binarySearch(IRange(coordinate, coordinate), IRange.INTERSECTS_CMP)
+    val index = myCoordinates.binarySearch(IntRange(coordinate, coordinate), IntRange.INTERSECTS_CMP)
     return if (index < 0) null
     else screencast.data?.words?.get(index)
   }
@@ -160,7 +158,7 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
 
   inner class LoadTask(
       private val maxChunks: Int,
-      private val drawRange: IRange,
+      private val drawRange: IntRange,
       private val callback: () -> Unit
   ) : Runnable {
     @Volatile
@@ -190,7 +188,7 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
 
-  private fun loadData(maxChunks: Int, drawRange: IRange, callback: () -> Unit) {
+  private fun loadData(maxChunks: Int, drawRange: IntRange, callback: () -> Unit) {
     if (isBroken) return
     myCurrentTask?.isActive = false
     val newTask = LoadTask(maxChunks, drawRange, callback)
@@ -232,13 +230,13 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
   fun getContainingWordRange(coordinate: Int) =
-      myCoordinates.find { it.contains(coordinate) } ?: IRange.EMPTY_RANGE
+      myCoordinates.find { it.contains(coordinate) } ?: IntRange.EMPTY
 
-  fun getCoveredRange(extent: IRange): IRange {
+  fun getCoveredRange(extent: IntRange): IntRange {
     val coordinates = myCoordinates
-    val left = coordinates.find { it.end >= extent.start }?.start ?: return IRange.EMPTY_RANGE
-    val right = coordinates.findLast { it.start <= extent.end }?.end ?: return IRange.EMPTY_RANGE
-    return IRange(left, right)
+    val left = coordinates.find { it.end >= extent.start }?.start ?: return IntRange.EMPTY
+    val right = coordinates.findLast { it.start <= extent.end }?.end ?: return IntRange.EMPTY
+    return IntRange(left, right)
   }
 
   companion object {

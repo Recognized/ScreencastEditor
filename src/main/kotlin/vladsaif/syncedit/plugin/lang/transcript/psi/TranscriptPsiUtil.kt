@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.lang.transcript.psi
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
-import vladsaif.syncedit.plugin.util.IRange
+import vladsaif.syncedit.plugin.util.end
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.max
 import kotlin.math.min
@@ -21,7 +21,7 @@ fun wordsBetween(start: PsiElement, end: PsiElement) = buildSequence<TranscriptW
   }
 }
 
-fun getElementBounds(textRange: IRange, psiFile: TranscriptPsiFile): Pair<PsiElement, PsiElement>? {
+fun getElementBounds(textRange: IntRange, psiFile: TranscriptPsiFile): Pair<PsiElement, PsiElement>? {
   val startElement = psiFile.findElementAt(textRange.start).let {
     it as? PsiWhiteSpace ?: it?.parent
   }
@@ -32,11 +32,11 @@ fun getElementBounds(textRange: IRange, psiFile: TranscriptPsiFile): Pair<PsiEle
   return startElement to endElement
 }
 
-fun getEffectiveSelection(editor: Editor): IRange {
+fun getEffectiveSelection(editor: Editor): IntRange {
   with(editor.selectionModel) {
     val start = max(blockSelectionStarts[0] - 1, 0)
     val end = min(blockSelectionEnds[0], editor.document.textLength - 1)
-    return IRange(start, end)
+    return IntRange(start, end)
   }
 }
 
@@ -49,7 +49,7 @@ fun getSelectedWords(editor: Editor, psiFile: TranscriptPsiFile): List<Transcrip
 fun getWord(editor: Editor, psiFile: TranscriptPsiFile): TranscriptWord? {
   val start = max(editor.caretModel.offset - 1, 0)
   val end = min(editor.caretModel.offset, editor.document.textLength - 1)
-  val range = IRange(start, end)
+  val range = IntRange(start, end)
   val elementBounds = getElementBounds(range, psiFile) ?: return null
   return wordsBetween(elementBounds.first, elementBounds.second).firstOrNull()
 }

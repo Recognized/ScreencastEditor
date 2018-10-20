@@ -3,14 +3,13 @@ package vladsaif.syncedit.plugin.sound.impl
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import vladsaif.syncedit.plugin.sound.EditionModel
-import vladsaif.syncedit.plugin.util.LRange
 
 class DefaultEditionModelTest {
 
   @Test
   fun `test equals method`() {
     assertEquals(DefaultEditionModel(), DefaultEditionModel())
-    val range1 = LRange(10, 20)
+    val range1 = 10L..20L
     assertEquals(DefaultEditionModel().apply { cut(range1) }, DefaultEditionModel().apply { cut(range1) })
     assertEquals(DefaultEditionModel().apply { mute(range1) }, DefaultEditionModel().apply { mute(range1) })
     assertEquals(DefaultEditionModel().apply { cut(range1); undo(range1) }, DefaultEditionModel())
@@ -24,13 +23,13 @@ class DefaultEditionModelTest {
   @Test
   fun `test serialization`() {
     val model = DefaultEditionModel().apply {
-      cut(LRange(0, 200))
-      cut(LRange(400, 600))
-      cut(LRange(800, 900))
-      mute(LRange(1000, 1200))
-      mute(LRange(150, 450))
-      mute(LRange(10000, 40000))
-      undo(LRange(12000, 35000))
+      cut(0L..200L)
+      cut(400L..600L)
+      cut(800L..900L)
+      mute(1000L..1200L)
+      mute(150L..450L)
+      mute(10000L..40000L)
+      undo(12000L..35000L)
     }
     assertEquals(model, EditionModel.deserialize(model.serialize()))
   }

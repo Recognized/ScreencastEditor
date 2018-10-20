@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.model
 
-import vladsaif.syncedit.plugin.util.IRange
 import vladsaif.syncedit.plugin.util.TextFormatter
+import vladsaif.syncedit.plugin.util.end
 import java.io.InputStream
 import java.io.StringReader
 import java.io.StringWriter
@@ -21,7 +21,7 @@ class TranscriptData(words: List<WordData>) {
     get() = TextFormatter.formatLines(words.map { it.filteredText }, 120, separator = '\u00A0')
         .joinToString(separator = "\n") { it }
 
-  // JAXB needs to access default constructor via reflection and add elements
+  // JAXB needs to access default constructor via reflection and add element
   // so we may abuse fact that ArrayList can be assigned to kotlin List
   @Suppress("unused")
   private constructor() : this(ArrayList())
@@ -45,13 +45,13 @@ class TranscriptData(words: List<WordData>) {
     return replaceWord(index, newWord)
   }
 
-  fun concatenateWords(indexRange: IRange): TranscriptData {
+  fun concatenateWords(indexRange: IntRange): TranscriptData {
     val concat = words.subList(indexRange.start, indexRange.end + 1)
     if (concat.size < 2) return this
     val concatText = concat.joinToString(separator = " ") { it.filteredText }
     val newWord = WordData(
         concatText,
-        IRange(concat.first().range.start, concat.last().range.end)
+        IntRange(concat.first().range.start, concat.last().range.end)
     )
     val newWords = mutableListOf<WordData>()
     newWords.addAll(words.subList(0, indexRange.start))

@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.sound
 import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.util.LRange
+import vladsaif.syncedit.plugin.util.end
 import java.io.StringReader
 import java.util.*
 
@@ -15,26 +15,26 @@ interface EditionModel : ChangeNotifier {
   /**
    * @return Sorted by first element of pair list of editions that were made.
    */
-  val editions: List<Pair<LRange, EditionType>>
+  val editions: List<Pair<LongRange, EditionType>>
 
   /**
    * Cut a frame range.
    *
    * If [frameRange] intersects ranges that were muted, they become cut and not muted.
    */
-  fun cut(frameRange: LRange)
+  fun cut(frameRange: LongRange)
 
   /**
    * Mute a frame range.
    *
    * If [frameRange] intersects ranges that were cut, they become muted and not cut.
    */
-  fun mute(frameRange: LRange)
+  fun mute(frameRange: LongRange)
 
   /**
    * Undo all changes made to this [frameRange]
    */
-  fun undo(frameRange: LRange)
+  fun undo(frameRange: LongRange)
 
   /**
    * Reset all changes.
@@ -57,7 +57,7 @@ interface EditionModel : ChangeNotifier {
       with(DefaultEditionModel()) {
         val sc = Scanner(StringReader(String(bytes, Charsets.UTF_8)))
         while (sc.hasNext()) {
-          val range = LRange(sc.nextLong(), sc.nextLong())
+          val range = LongRange(sc.nextLong(), sc.nextLong())
           when (sc.next()) {
             CUT.name -> cut(range)
             MUTE.name -> mute(range)

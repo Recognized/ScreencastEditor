@@ -5,6 +5,7 @@ import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.SoundProvider
 import vladsaif.syncedit.plugin.sound.impl.modFloor
+import vladsaif.syncedit.plugin.util.length
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream

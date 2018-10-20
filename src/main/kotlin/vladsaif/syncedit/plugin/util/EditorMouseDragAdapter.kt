@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.diffview
+package vladsaif.syncedit.plugin.util
 
 import com.intellij.openapi.editor.event.EditorMouseEvent
 import com.intellij.openapi.editor.event.EditorMouseListener

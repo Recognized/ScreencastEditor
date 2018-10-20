@@ -4,7 +4,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import vladsaif.syncedit.plugin.RESOURCES_PATH
-import vladsaif.syncedit.plugin.util.IRange
 import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -58,7 +57,7 @@ class SimpleAudioModelTest(path: Path) {
 
   @Test
   fun `test frame range to milliseconds range`() {
-    val range = IRange(500, 1500)
+    val range = IntRange(500, 1500)
     assertEquals(range, myAudio.frameRangeToMsRange(myAudio.msRangeToFrameRange(range)))
   }
 

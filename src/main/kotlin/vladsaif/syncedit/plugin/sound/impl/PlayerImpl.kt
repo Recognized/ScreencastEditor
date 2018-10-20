@@ -9,6 +9,7 @@ import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.Player
 import vladsaif.syncedit.plugin.sound.SoundProvider
+import vladsaif.syncedit.plugin.util.length
 import java.io.InputStream
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem

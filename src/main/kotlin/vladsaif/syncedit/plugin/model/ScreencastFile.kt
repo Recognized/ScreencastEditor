@@ -39,7 +39,6 @@ import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.format.transferTo
-import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
@@ -204,7 +203,7 @@ class ScreencastFile(
    */
   fun getHardSaveFunction(): (progressUpdater: (Double) -> Unit, Path) -> Unit {
     val editionState = editionModel.copy()
-    val msDeleted = IRangeUnion()
+    val msDeleted = IntRangeUnion()
     if (isAudioSet) {
       for ((range, type) in editionState.editions) {
         if (type == CUT) {
@@ -292,7 +291,7 @@ class ScreencastFile(
     data = data?.renameWord(index, text)
   }
 
-  fun changeRange(index: Int, newRange: IRange) {
+  fun changeRange(index: Int, newRange: IntRange) {
     val word = data?.get(index) ?: return
     val newFrameRange = audioDataModel!!.msRangeToFrameRange(newRange)
     bulkChange {
@@ -308,7 +307,7 @@ class ScreencastFile(
     data = data?.replaceWords(listOf(index to word.copy(range = newRange)))
   }
 
-  fun concatenateWords(indexRange: IRange) {
+  fun concatenateWords(indexRange: IntRange) {
     data = data?.concatenateWords(indexRange)
   }
 
@@ -336,7 +335,7 @@ class ScreencastFile(
     data = data?.muteWords(indices)
   }
 
-  private fun applyEdition(indices: IntArray, action: EditionModel.(LRange) -> Unit) {
+  private fun applyEdition(indices: IntArray, action: EditionModel.(LongRange) -> Unit) {
     data?.let { data ->
       bulkChange {
         for (i in indices) {
@@ -350,34 +349,6 @@ class ScreencastFile(
     myBindings.clear()
     myBindings.putAll(newMapping)
     updateRangeHighlighters()
-  }
-
-  fun createDefaultBinding() {
-    val timedLines = TimeOffsetParser.parse(scriptPsi!!)
-    val doc = scriptDocument!!
-    val oldWords = data!!.words
-    val sorted = timedLines.sortedBy { it.time.length }
-    for ((index, word) in oldWords.withIndex()) {
-      var intersection = IRange.EMPTY_RANGE
-      var timeExtent = IRange.EMPTY_RANGE
-      if (!word.range.empty) {
-        for (x in sorted) {
-          if (word.range.intersects(x.time)) {
-            intersection += x.lines
-            timeExtent += x.time
-          }
-          if (word.range in timeExtent) break
-        }
-      }
-      val marker = if (word.range !in timeExtent || intersection.empty) {
-        null
-      } else {
-        doc.createRangeMarker(doc.getLineStartOffset(intersection.start), doc.getLineEndOffset(intersection.end))
-      }
-      if (marker != null) {
-        myBindings[index] = marker
-      }
-    }
   }
 
   private fun bulkChange(action: EditionModel.() -> Unit) {
@@ -478,7 +449,6 @@ class ScreencastFile(
     if (myTranscriptListenerEnabled) {
       if (transcriptPsi == null && data != null) {
         createTranscriptPsi(data!!)
-        createDefaultBinding()
       }
       with(UndoManager.getInstance(project)) {
         if (!isRedoInProgress && !isUndoInProgress) {

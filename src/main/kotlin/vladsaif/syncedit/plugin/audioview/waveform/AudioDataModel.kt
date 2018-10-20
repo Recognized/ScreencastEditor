@@ -1,7 +1,5 @@
 package vladsaif.syncedit.plugin.audioview.waveform
 
-import vladsaif.syncedit.plugin.util.IRange
-import vladsaif.syncedit.plugin.util.LRange
 import javax.sound.sampled.AudioFormat
 
 interface AudioDataModel {
@@ -27,7 +25,7 @@ interface AudioDataModel {
    * @return Averaged audio data for each chunk in [chunkRange].
    * Chunk is a sequence of XX or XX + 1 samples, where XX = [totalFrames] / [maxChunks].
    */
-  fun getAveragedSampleData(maxChunks: Int, chunkRange: IRange, isActive: () -> Boolean): List<AveragedSampleData>
+  fun getAveragedSampleData(maxChunks: Int, chunkRange: IntRange, isActive: () -> Boolean): List<AveragedSampleData>
 
   /**
    * @return Number of chunk (if all frame were split into [maxChunks] number of chunks)
@@ -40,9 +38,9 @@ interface AudioDataModel {
    */
   fun getStartFrame(maxChunks: Int, chunk: Int): Long
 
-  fun msRangeToFrameRange(range: IRange): LRange
+  fun msRangeToFrameRange(range: IntRange): LongRange
 
-  fun frameRangeToMsRange(range: LRange): IRange
+  fun frameRangeToMsRange(range: LongRange): IntRange
 }
 
 fun AudioFormat.toDecodeFormat() =

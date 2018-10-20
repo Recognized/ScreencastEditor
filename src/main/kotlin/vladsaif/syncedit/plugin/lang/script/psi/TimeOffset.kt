@@ -1,3 +1,3 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
-data class TimeOffset(val line: Int, val timeOffset: Int)
+data class TimeOffset(val textOffset: Int, val timeOffset: Int)

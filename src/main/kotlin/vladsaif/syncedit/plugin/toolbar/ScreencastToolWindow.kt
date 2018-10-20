@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.toolbar
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
@@ -59,9 +60,11 @@ object ScreencastToolWindow {
   }
 
   private fun createMainActionGroup(screencast: ScreencastFile): ActionGroup {
-    with(DefaultActionGroup()) group@ {
+    with(DefaultActionGroup()) group@{
       addAction("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
-
+        ApplicationManager.getApplication().invokeLater {
+          //          KotlinCompileUtil.compileAndRun(screencast.getPlayScript())
+        }
       })
       addAction("Open transcript", "Open transcript in editor", TRANSCRIPT, {
         openTranscript(screencast)
@@ -77,7 +80,7 @@ object ScreencastToolWindow {
   }
 
   private fun createAudioRelatedActionGroup(controller: WaveformController): ActionGroup {
-    with(DefaultActionGroup()) group@ {
+    with(DefaultActionGroup()) group@{
       with(controller) {
         addAction("Play", "Play audio", PLAY, this::play) {
           playState != PLAY

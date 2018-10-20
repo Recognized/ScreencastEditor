@@ -8,7 +8,6 @@ import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import vladsaif.syncedit.plugin.model.ScreencastFile
-import vladsaif.syncedit.plugin.util.IRange
 
 /**
  * Concatenates selected words into one big word.
@@ -20,7 +19,7 @@ class ConcatenateAction : TranscriptRefactoringAction() {
     val first = words.firstOrNull() ?: return
     val last = words.last()
     LOG.info("Concatenating: ${words.map { it.text }}")
-    model.concatenateWords(IRange(first.number, last.number))
+    model.concatenateWords(IntRange(first.number, last.number))
   }
 
   override fun update(e: AnActionEvent) {

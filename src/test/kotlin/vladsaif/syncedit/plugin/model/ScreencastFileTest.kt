@@ -5,7 +5,6 @@ import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.util.IRange
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -45,8 +44,8 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test changes applied during recognition`() {
     withModel {
-      editionModel.cut(audioDataModel!!.msRangeToFrameRange(IRange(900, 2100)))
-      editionModel.mute(audioDataModel!!.msRangeToFrameRange(IRange(2900, 4100)))
+      editionModel.cut(audioDataModel!!.msRangeToFrameRange(IntRange(900, 2100)))
+      editionModel.mute(audioDataModel!!.msRangeToFrameRange(IntRange(2900, 4100)))
       assertEquals(data!!, TRANSCRIPT_DATA.excludeWord(0).muteWords(IntArray(1) { 2 }))
     }
   }
@@ -54,8 +53,8 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test light save function`() {
     withModel {
-      editionModel.cut(audioDataModel!!.msRangeToFrameRange(IRange(900, 2100)))
-      editionModel.mute(audioDataModel!!.msRangeToFrameRange(IRange(2900, 4100)))
+      editionModel.cut(audioDataModel!!.msRangeToFrameRange(IntRange(900, 2100)))
+      editionModel.mute(audioDataModel!!.msRangeToFrameRange(IntRange(2900, 4100)))
       val func = getLightSaveFunction()
       val out = Paths.get("screencastSaved.scs")
       func(out)
@@ -68,16 +67,6 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
         Files.deleteIfExists(out)
         saved.dispose()
       }
-    }
-  }
-
-  @Test
-  fun `test default binding`() {
-    withModel {
-      loadTranscriptData(TRANSCRIPT_DATA)
-      createDefaultBinding()
-      data!!.words.forEach(::println)
-      // TODO
     }
   }
 }
