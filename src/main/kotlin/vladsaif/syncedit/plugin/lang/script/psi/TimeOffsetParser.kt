@@ -30,6 +30,8 @@ object TimeOffsetParser {
     }
     // Add initial (before whole script) timeOffset statement
     absoluteTimeOffsets.add(0, TimeOffset(-1, 0))
+    // Add last offset implicitly
+    absoluteTimeOffsets.add(TimeOffset(clone.textLength * 2, absoluteTimeOffsets.last().timeOffset))
     markElements(psiElements, absoluteTimeOffsets)
     val blocks = BlockVisitor.fold(clone) { element, list: List<CodeBlock>, isBlock ->
       if (isBlock) {

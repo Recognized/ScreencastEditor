@@ -32,13 +32,15 @@ import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
-import vladsaif.syncedit.plugin.audioview.waveform.AudioDataModel
-import vladsaif.syncedit.plugin.audioview.waveform.impl.SimpleAudioModel
+import vladsaif.syncedit.plugin.editor.audioview.waveform.AudioDataModel
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.SimpleAudioModel
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.format.transferTo
+import vladsaif.syncedit.plugin.lang.script.psi.CodeBlockModel
+import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
@@ -94,6 +96,7 @@ class ScreencastFile(
     private set
   val audioInputStream: InputStream
     get() = getInputStreamByType(AUDIO) ?: throw IllegalStateException("Audio is not set")
+  val codeBlockModel = CodeBlockModel(listOf())
   val isAudioSet: Boolean
     get() = isDataSet(AUDIO)
   val textMapping: TextRangeMapping
@@ -167,6 +170,8 @@ class ScreencastFile(
             readContents(myScriptInputStream),
             KotlinFileType.INSTANCE
         ).also { it.putUserData(KEY, this@ScreencastFile) }
+        PsiDocumentManager.getInstance(project).commitDocument(scriptDocument!!)
+        codeBlockModel.blocks = TimeOffsetParser.parse(scriptPsi!!).blocks
       }
       if (isTranscriptSet) {
         val newData = myTranscriptInputStream.let { TranscriptData.createFrom(it) }

@@ -3,8 +3,8 @@ package vladsaif.syncedit.plugin.sound.impl
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
-import vladsaif.syncedit.plugin.audioview.skipFramesMpeg
-import vladsaif.syncedit.plugin.audioview.waveform.toDecodeFormat
+import vladsaif.syncedit.plugin.editor.audioview.skipFramesMpeg
+import vladsaif.syncedit.plugin.editor.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.Player

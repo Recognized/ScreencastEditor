@@ -1,13 +1,19 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
+import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.util.empty
 
-class CodeBlockModel(blocks: List<CodeBlock>) {
+class CodeBlockModel(blocks: List<CodeBlock>) : ChangeNotifier by DefaultChangeNotifier() {
 
   var blocks: List<CodeBlock> = blocks.asSequence()
       .filter { !it.timeRange.empty }
       .sortedBy { it.timeRange.start }
       .toList()
+  set(value) {
+    field = value
+    fireStateChanged()
+  }
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

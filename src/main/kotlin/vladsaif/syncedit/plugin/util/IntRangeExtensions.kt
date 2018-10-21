@@ -48,6 +48,10 @@ fun IntRange.inside(x: Int) = when {
   else -> end
 }
 
+fun IntRange.msToNs(): LongRange = (start * 1_000_000L)..(end * 1_000_000L)
+
+fun IntRange.padded(padding: Int) = ((start + padding)..(end - padding)).let { if (it.empty) IntRange.EMPTY else it }
+
 fun IntRange.copy(start: Int = this.start, end: Int = this.end): IntRange {
   return start..end
 }

@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.sound
 
-import vladsaif.syncedit.plugin.audioview.waveform.ChangeNotifier
+import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.util.end

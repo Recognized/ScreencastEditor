@@ -35,14 +35,14 @@ class CodeBlock(
   }
 
   private fun toScript(builder: StringBuilder, indentation: Int = 0) {
-    builder.append("  " * indentation + code)
+    builder.append("  " * indentation + code.split("\n").joinToString(separator = "\n" + "  " * indentation))
     println(innerBlocks.size)
     if (innerBlocks.isNotEmpty()) {
       builder.append(" {\n")
       for (block in innerBlocks) {
         block.toScript(builder, indentation + 1)
       }
-      builder.append("} $timeRange\n")
+      builder.append("  " * indentation + "} $timeRange\n")
     } else {
       builder.append(" $timeRange\n")
     }

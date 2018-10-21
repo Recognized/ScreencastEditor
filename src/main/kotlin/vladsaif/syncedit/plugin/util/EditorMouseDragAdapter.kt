@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.util
 import com.intellij.openapi.editor.event.EditorMouseEvent
 import com.intellij.openapi.editor.event.EditorMouseListener
 import com.intellij.openapi.editor.event.EditorMouseMotionListener
-import vladsaif.syncedit.plugin.audioview.waveform.impl.MouseDragListener
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MouseDragListener
 
 class EditorMouseDragAdapter(private val delegate: MouseDragListener) : EditorMouseListener, EditorMouseMotionListener {
 

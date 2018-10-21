@@ -118,8 +118,8 @@
       <implementation-class>vladsaif.syncedit.plugin.util.LibrariesLoader</implementation-class>
     </component>
     <component>
-      <implementation-class>vladsaif.syncedit.plugin.audioview.ColorSettings$ColorState</implementation-class>
-      <interface-class>vladsaif.syncedit.plugin.audioview.ColorSettings$ColorState</interface-class>
+      <implementation-class>vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics$ColorState</implementation-class>
+      <interface-class>vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics$ColorState</interface-class>
     </component>
     <component>
       <interface-class>vladsaif.syncedit.plugin.recognition.CredentialsProvider</interface-class>
