@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.editor
 import com.intellij.openapi.ui.Divider
 import com.intellij.openapi.ui.Splitter
 import com.intellij.util.ui.UIUtil
+import gnu.trove.TLongObjectHashMap
 import vladsaif.syncedit.plugin.editor.scriptview.Coordinator
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptGraphics.BIG_MARK_HEIGHT
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptGraphics.SMALL_MARK_HEIGHT
@@ -12,6 +13,7 @@ import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Rectangle
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
 
@@ -20,6 +22,8 @@ class EditorSplitter(
     scriptView: JComponent,
     private val coordinator: Coordinator
 ) : Splitter(true, 0.5f, 0.0f, 1.0f) {
+  private var myInterval: Long = 1_000_000_000 // 1 second
+  private val myFormatCache = TLongObjectHashMap<SizedString>()
 
   init {
     firstComponent = waveformView
@@ -27,10 +31,14 @@ class EditorSplitter(
     dividerWidth = getFontMetrics(UIUtil.getLabelFont()).height + (BIG_MARK_HEIGHT * 2).toInt()
   }
 
+  fun updateInterval(time: Long, unit: TimeUnit) {
+    myInterval = TimeUnit.NANOSECONDS.convert(time, unit)
+    myFormatCache.clear()
+  }
+
   override fun createDivider(): Divider {
     return object : DividerImpl() {
       // Interval between adjacent time marks on time line in nanoseconds
-      private var myInterval: Long = 1_000_000_000 // 1 second
       private val myDivisor = BigDecimal.valueOf(1_000_000_000)
 
       override fun paint(g: Graphics) {
@@ -65,7 +73,11 @@ class EditorSplitter(
         while (timeStart <= timeEnd) {
           val currentPos = coordinator.toScreenPixel(timeStart, TimeUnit.NANOSECONDS)
           drawLine(currentPos, bounds.height, currentPos, (bounds.height - BIG_MARK_HEIGHT).toInt())
-          val sizedString = formatTime(timeStart)
+          var sizedString: SizedString? = myFormatCache.get(timeStart)
+          if (sizedString == null) {
+            sizedString = formatTime(timeStart)
+            myFormatCache.put(timeStart, sizedString)
+          }
           font = UIUtil.getLabelFont()
           drawString(
               sizedString.value,
@@ -79,7 +91,12 @@ class EditorSplitter(
       private infix fun Long.ceil(other: Long) = (this + other - 1) / other
 
       private fun Graphics2D.formatTime(ns: Long): SizedString {
-        val string = (BigDecimal.valueOf(ns) / myDivisor).toString()
+        var string = (BigDecimal.valueOf(ns).divide(myDivisor, 10, RoundingMode.HALF_UP))
+            .toString()
+            .trimEnd { it == '0' }
+        if (string.endsWith('.')) {
+          string += '0'
+        }
         val width = fontMetrics.stringWidth(string)
         val height = fontMetrics.height
         return SizedString(string, width, height)
@@ -89,9 +106,5 @@ class EditorSplitter(
 
   data class SizedString(val value: String, val width: Int, val height: Int) {
     override fun toString() = value
-  }
-
-  companion object {
-
   }
 }

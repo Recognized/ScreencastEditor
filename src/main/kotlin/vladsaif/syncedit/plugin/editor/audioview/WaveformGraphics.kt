@@ -13,12 +13,10 @@ object WaveformGraphics {
   private val LOG = logger<WaveformGraphics>()
 
   val AUDIO_PEAK_COLOR = STATE.audioPeak.toJBColor()
-  val AUDIO_PEAK_CUT_COLOR
-    get() = JBColor(STATE.audioPeak.getBright().muchBrighter(), STATE.audioPeak.getDark().muchDarker())
+  val AUDIO_PEAK_CUT_COLOR = JBColor(STATE.audioPeak.getBright().muchBrighter(), STATE.audioPeak.getDark().muchDarker())
   val AUDIO_PLAY_LINE_COLOR = STATE.audioPlayLine.toJBColor()
   val AUDIO_SELECTION_COLOR = STATE.audioSelectedRange.toJBColor()
-  val AUDIO_RMS_CUT_COLOR
-    get() = JBColor(STATE.audioRms.getBright().muchBrighter(), STATE.audioRms.getDark().muchBrighter().muchDarker())
+  val AUDIO_RMS_CUT_COLOR = JBColor(STATE.audioRms.getBright().muchBrighter(), STATE.audioRms.getDark().muchBrighter().muchDarker())
   val AUDIO_RMS_COLOR  = STATE.audioRms.toJBColor()
   val MAPPING_HIGHLIGHT_COLOR  = STATE.mappingHighlight.toJBColor()
   val WORD_COLOR  = STATE.word.toJBColor()
@@ -82,7 +80,7 @@ object WaveformGraphics {
 
     override fun loadState(state: ColorState) {
       LOG.info("Loading state...")
-      STATE = ColorState()
+      STATE = state
     }
   }
 }

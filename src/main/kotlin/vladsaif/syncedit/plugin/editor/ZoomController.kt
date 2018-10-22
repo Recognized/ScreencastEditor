@@ -1,6 +1,8 @@
 package vladsaif.syncedit.plugin.editor
 
+import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformView
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.editor.scriptview.LinearCoordinator
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptView
 import vladsaif.syncedit.plugin.util.end
@@ -9,7 +11,10 @@ import java.awt.Toolkit
 import java.util.concurrent.TimeUnit
 import javax.swing.JScrollPane
 
-class ZoomController(val view: WaveformView?, val scriptView: ScriptView) {
+class ZoomController(
+    private val view: WaveformView?,
+    private val scriptView: ScriptView
+) : ChangeNotifier by DefaultChangeNotifier() {
   private var myScrollPane: JScrollPane? = null
   private var myIgnoreBarChanges = false
   @Volatile
@@ -60,6 +65,7 @@ class ZoomController(val view: WaveformView?, val scriptView: ScriptView) {
       view.model.fireStateChanged()
       revalidateRepaint()
       myBlockScaling = false
+      fireStateChanged()
     }
   }
 
@@ -84,6 +90,7 @@ class ZoomController(val view: WaveformView?, val scriptView: ScriptView) {
       scrollPane.viewport.scrollRectToVisible(visible)
       scrollPane.horizontalScrollBar.value = visible.x
     }
+    fireStateChanged()
   }
 
   private fun revalidateRepaint() {

@@ -38,10 +38,11 @@ object TimeOffsetParser {
         CodeBlock(
             element.text.substringBefore("{").trim { it.isWhitespace() },
             element.getUserData(TIME_RANGE_KEY)!!,
+            true,
             list
         )
       } else {
-        CodeBlock(element.text, element.getUserData(TIME_RANGE_KEY)!!)
+        CodeBlock(element.text, element.getUserData(TIME_RANGE_KEY)!!, false)
       }
     }
     return CodeBlockModel(blocks)

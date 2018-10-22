@@ -11,7 +11,7 @@ import java.awt.Font
 object ScriptGraphics {
   val FONT_COLOR: Color get() = WaveformGraphics.WORD_COLOR
   val FONT: Font get() = UIUtil.getLabelFont()
-  val CODE_BLOCK_BACKGROUND = WaveformGraphics.MAPPING_HIGHLIGHT_COLOR
+  val CODE_BLOCK_BACKGROUND = Color(225, 249, 225) to Color(52, 78, 57)
   val CODE_BLOCK_BORDER: Color = WaveformGraphics.WORD_SEPARATOR_COLOR
   val BORDER_WIDTH = JBUI.scale(1.0f)
   val BORDER_STROKE = BasicStroke(WaveformGraphics.WORD_SEPARATOR_WIDTH,
@@ -24,6 +24,7 @@ object ScriptGraphics {
   val STROKE_WIDTH = JBUI.scale(1.0f)
   val BIG_MARK_HEIGHT = JBUI.scale(3.0f)
   val SMALL_MARK_HEIGHT = JBUI.scale(1.5f)
+  val BORDER_PRECISION = JBUI.scale(2)
 
   private val TEMP_BUFFER = FloatArray(3)
   fun rotate(it: Color): Color {

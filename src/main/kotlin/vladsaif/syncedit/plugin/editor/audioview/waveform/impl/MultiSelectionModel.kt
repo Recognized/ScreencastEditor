@@ -69,7 +69,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     override fun mouseMoved(e: MouseEvent?) {
       e ?: return
       super.mouseMoved(e)
-      if (isOverBorder(e) && !e.isControlKeyDown) {
+      if (!e.isShiftDown && !e.isControlKeyDown && isOverBorder(e)) {
         e.component?.cursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
       } else {
         e.component?.cursor = Cursor.getDefaultCursor()
@@ -84,14 +84,12 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       val rangeUnderClick = model.getContainingWordRange(e.x)
       if (rangeUnderClick.empty) return
       if (e.isShiftDown) {
+        resetSelection()
         if (rangeUnderClick in mySelectedRanges) {
           removeSelected(rangeUnderClick)
         } else {
           addSelection(rangeUnderClick)
         }
-      } else {
-        resetSelection()
-        addSelection(rangeUnderClick)
       }
       fireStateChanged()
     }
@@ -111,7 +109,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
         resetSelection()
         fireStateChanged()
       }
-      myIsPressedOverBorder = isOverBorder(start) && JBSwingUtilities.isRightMouseButton(start)
+      myIsPressedOverBorder = isOverBorder(start) && JBSwingUtilities.isLeftMouseButton(start)
       if (myIsPressedOverBorder) {
         val number = getBorderNumber(start)
         myStartDifference = point.x - getBorder(number)
@@ -133,7 +131,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       when {
         start.isControlKeyDown && start.isLeftMouseButton -> dragControlSelection(start.point, point)
         myIsPressedOverBorder -> dragBorder(point)
-        start.isLeftMouseButton -> dragSelection(start.point, point)
+        start.isLeftMouseButton && start.isShiftDown -> dragSelection(start.point, point)
       }
     }
 
@@ -142,7 +140,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       when {
         start.isControlKeyDown && start.isLeftMouseButton -> dragSelectionFinished()
         myIsPressedOverBorder -> dragBorderFinished()
-        start.isLeftMouseButton -> dragSelectionFinished()
+        start.isLeftMouseButton && start.isShiftDown -> dragSelectionFinished()
       }
     }
   }
