@@ -20,8 +20,6 @@
         language="TranscriptLanguage"
         id="transcriptAnnotator"
         implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
-    <guiRecorderListener
-        implementation="vladsaif.syncedit.plugin.actions.GuiRecorderListener"/>
     <generatedCodeReceiver
         implementation="vladsaif.syncedit.plugin.actions.GeneratedCodeReceiver"/>
     <fileTypeFactory
@@ -50,6 +48,18 @@
       <add-to-group
           group-id="ToolsMenu"
           anchor="last"/>
+      <group id="vladsaif.syncedit.plugin.recActions" popup="false" compact="false">
+        <action id="vladsaif.syncedit.plugin.actions.StartRecordingAction"
+                class="vladsaif.syncedit.plugin.actions.StartRecordingAction"
+                text="Start recording"
+                description="Start screencast recording"
+                icon="AllIcons.Ide.Macro.Recording_1"/>
+        <action id="vladsaif.syncedit.plugin.actions.StopRecordingAction"
+                class="vladsaif.syncedit.plugin.actions.StopRecordingAction"
+                text="Stop recording"
+                description="Stop screencast recording"
+                icon="AllIcons.Ide.Macro.Recording_2"/>
+      </group>
       <action id="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               class="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
               icon="ScreencastEditorIcons.SCREENCAST"
