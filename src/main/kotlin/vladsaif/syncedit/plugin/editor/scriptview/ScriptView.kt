@@ -5,7 +5,7 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import gnu.trove.THashMap
-import gnu.trove.TObjectHashingStrategy
+import gnu.trove.TObjectIdentityHashingStrategy
 import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.CodeBlock
@@ -15,7 +15,6 @@ import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.MouseEvent
-import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.swing.event.ChangeListener
 
@@ -26,6 +25,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   private val myBordersRectangles = Cache { calculateBorders(screencast.codeBlockModel.blocks) }
   private val myBlockAreas = Cache { calculateBlockAreas(screencast.codeBlockModel.blocks) }
   private var myTempBorder: DraggedBorder? = null
+  private val myShortenedCode = THashMap<CodeBlock, String>(TObjectIdentityHashingStrategy())
   private val myDepthDelta: Int = calculateDepthDelta()
 
   init {
@@ -136,9 +136,15 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       if (dragStartEvent!!.let { JBSwingUtilities.isLeftMouseButton(it) && !it.isShiftDown && !UIUtil.isControlKeyDown(it) }) {
         val hovered = overBorder(point)
         if (hovered != null) {
+          val time = TimeUnit.MILLISECONDS.convert(coordinator.toNanoseconds(point.x), TimeUnit.NANOSECONDS)
+          val (left, right) = screencast.codeBlockModel.findAdjacentBorders(time.toInt())
+          val trueLeft = if (left == -1) 0 else left
+          val trueRight = if (right == -1) width else right
+          val allowedRange = coordinator.toScreenPixel((trueLeft..trueRight).msToNs(), TimeUnit.NANOSECONDS)
           myTempBorder = DraggedBorder(
               point.x,
               screencast.codeBlockModel.findDepth(hovered.codeBlock) * myDepthDelta,
+              allowedRange,
               hovered.codeBlock
           )
           repaint()
@@ -149,28 +155,21 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     override fun onDrag(point: Point) {
       super.onDrag(point)
       if (myTempBorder != null) {
-        myTempBorder!!.x = point.x
+        myTempBorder!!.x = point.x.coerceIn(myTempBorder!!.allowedRange)
         repaint()
       }
     }
 
     override fun onDragFinished(point: Point) {
       super.onDragFinished(point)
-      myTempBorder?.let { }
+      myTempBorder?.let { updateBlock(it) }
       myTempBorder = null
       repaint()
     }
   }
 
-  private val myShortenedCode = THashMap<CodeBlock, String>(object : TObjectHashingStrategy<CodeBlock> {
-    override fun equals(p0: CodeBlock?, p1: CodeBlock?): Boolean {
-      return p0?.timeRange == p1?.timeRange && p0?.code == p1?.code
-    }
-
-    override fun computeHashCode(p0: CodeBlock): Int {
-      return Objects.hash(p0.timeRange, p0.code)
-    }
-  })
+  private fun updateBlock(newBorder: DraggedBorder) {
+  }
 
   private fun Graphics2D.drawTempBorder(border: DraggedBorder) {
     stroke = ScriptGraphics.BORDER_STROKE
@@ -211,6 +210,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   private data class DraggedBorder(
       var x: Int,
       val y: Int,
+      val allowedRange: IntRange,
       val source: CodeBlock
   )
 
