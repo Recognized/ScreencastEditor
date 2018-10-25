@@ -29,16 +29,13 @@ sealed class Code(val code: String) {
     const val indentationUnit = "  "
 
     @JvmStatic
-    protected fun mergeWithSameRange(innerBlocks: List<Code>): List<Code> {
+    fun mergeWithSameRange(innerBlocks: List<Code>): List<Code> {
       val list = mutableListOf<Code>()
       for (block in innerBlocks) {
         if (!list.isEmpty() && block.startTime == list.last().startTime) {
           val newCode = list.last().code + "\n" + block.code
           val captured = list.last()
-          val newEnd = when (captured) {
-            is Block -> captured.timeRange.end
-            is Statement -> captured.timeOffset
-          }
+          val newEnd = captured.endTime
           list[list.size - 1] = when {
             block is Statement && captured is Statement -> Statement(newCode, newEnd)
             else -> Block(newCode, block.startTime..newEnd,

@@ -88,4 +88,34 @@ class CodeModelTest {
     assertEquals(expectedLeft, model.findDragBoundary(beingFind, true))
     assertEquals(expectedRight, model.findDragBoundary(beingFind, false))
   }
+
+  @Test
+  fun `test merging statement with same time`() {
+    val model = codeBlockModel {
+      statement("code1", 200)
+      statement("code2", 200)
+    }
+    assertEquals(1, model.blocks.size)
+    assertEquals("code1\ncode2", model.blocks[0].code)
+  }
+
+  @Test
+  fun `test merging statement with block`() {
+    val model = codeBlockModel {
+      statement("code1", 200)
+      block("block2", 200..300) {
+      }
+    }
+    assertEquals(1, model.blocks.size)
+    assertEquals("code1\nblock2", model.blocks[0].code)
+  }
+
+  @Test
+  fun `test replace statement`() {
+    val model = codeBlockModel {
+      block("block1", 200..300) {
+        statement("code1", 250)
+      }
+    }
+  }
 }

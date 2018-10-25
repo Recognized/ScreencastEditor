@@ -19,12 +19,14 @@ import java.awt.event.ComponentEvent
 import java.awt.event.MouseEvent
 import java.util.concurrent.TimeUnit
 import javax.swing.event.ChangeListener
+import kotlin.math.max
+import kotlin.math.min
 
 class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?) : JBPanel<ScriptView>() {
   val coordinator = givenCoordinator ?: LinearCoordinator().apply {
     setTimeUnitsPerPixel(50, TimeUnit.MILLISECONDS)
   }
-  private val myBordersRectangles = Cache { calculateBorders(screencast.codeModel.blocks) }
+  private val myBordersRectangles = Cache { calculateBorders(screencast.codeModel.blocks).sortedByDescending { it.area.y } }
   private val myBlockAreas = Cache { calculateCodeAreas(screencast.codeModel.blocks) }
   private var myTempBorder: DraggedBorder? = null
   private val myShortenedCode = THashMap<Code, String>(TObjectIdentityHashingStrategy())
@@ -72,7 +74,22 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       for (block in myBlockAreas.get()) {
         drawCode(block, getLength, metrics)
       }
+      color = ScriptGraphics.CODE_BLOCK_BORDER
+      stroke = BasicStroke(ScriptGraphics.BORDER_WIDTH)
+      for (block in myBlockAreas.get()) {
+        drawBorderMark(block is CodeArea.BlockArea, block.x1, block.x2, block.y)
+      }
       myTempBorder?.let { drawTempBorder(it) }
+    }
+  }
+
+  private fun Graphics2D.drawBorderMark(isBlock: Boolean, x1: Int, x2: Int, y: Int) {
+    if (isBlock) {
+      drawLine(x1, y, min(x1 + ScriptGraphics.PADDING.toInt(), x2), y)
+      drawLine(max(x1, x2 - ScriptGraphics.PADDING.toInt()), y, x2, y)
+    } else {
+      drawLine(x1 - (ScriptGraphics.PADDING / 2).toInt(), y,
+          x1 + (ScriptGraphics.PADDING / 2).toInt(), y)
     }
   }
 
@@ -156,7 +173,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       if (dragStartEvent!!.let { JBSwingUtilities.isLeftMouseButton(it) && !it.isShiftDown && !UIUtil.isControlKeyDown(it) }) {
         val hovered = overBorder(point)
         if (hovered != null) {
-          val (left, right) = when(hovered.codeBlock) {
+          val (left, right) = when (hovered.codeBlock) {
             is Block -> screencast.codeModel.findDragBoundary(hovered.codeBlock, hovered.isLeft)
             is Statement -> screencast.codeModel.findDragBoundary(hovered.codeBlock)
           }
@@ -166,6 +183,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
           myTempBorder = DraggedBorder(
               point.x,
               screencast.codeModel.findDepth(hovered.codeBlock) * myDepthDelta,
+              hovered.isLeft,
               allowedRange,
               hovered.codeBlock
           )
@@ -191,12 +209,31 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   private fun updateBlock(newBorder: DraggedBorder) {
+    val newPoint = (coordinator.toNanoseconds(newBorder.x) / 1000).toInt()
+    val newCode = when (newBorder.source) {
+      is Statement -> Statement(newBorder.source.code, newPoint)
+      is Block -> {
+        Block(
+            newBorder.source.code,
+            newBorder.source.timeRange.let { if (newBorder.isLeft) newPoint..it.end else it.start..newPoint },
+            newBorder.source.innerBlocks
+        )
+      }
+    }
+    screencast.codeModel.replace(newBorder.source, newCode)
   }
 
   private fun Graphics2D.drawTempBorder(border: DraggedBorder) {
     stroke = ScriptGraphics.BORDER_STROKE
     color = WaveformGraphics.WORD_MOVING_SEPARATOR_COLOR
     drawLine(border.x, border.y, border.x, height)
+    if (border.source is Statement) {
+      drawBorderMark(false, border.x, 0, border.y)
+    } else if (border.isLeft) {
+      drawLine(border.x, border.y, border.x + ScriptGraphics.PADDING.toInt(), border.y)
+    } else {
+      drawLine(border.x - ScriptGraphics.PADDING.toInt(), border.y, border.x, border.y)
+    }
   }
 
   private fun Graphics2D.drawCode(
@@ -232,6 +269,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   private data class DraggedBorder(
       var x: Int,
       val y: Int,
+      val isLeft: Boolean,
       val allowedRange: IntRange,
       val source: Code
   )

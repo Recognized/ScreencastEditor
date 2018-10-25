@@ -13,7 +13,7 @@ object ScriptGraphics {
   val FONT: Font get() = UIUtil.getLabelFont()
   val CODE_BLOCK_BACKGROUND = Color(225, 249, 225) to Color(52, 78, 57)
   val CODE_BLOCK_BORDER: Color = WaveformGraphics.WORD_SEPARATOR_COLOR
-  val BORDER_WIDTH = JBUI.scale(1.0f)
+  val BORDER_WIDTH = WaveformGraphics.WORD_SEPARATOR_WIDTH
   val BORDER_STROKE = BasicStroke(WaveformGraphics.WORD_SEPARATOR_WIDTH,
       BasicStroke.CAP_BUTT,
       BasicStroke.JOIN_BEVEL,

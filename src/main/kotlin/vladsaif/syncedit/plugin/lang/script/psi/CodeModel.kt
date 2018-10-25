@@ -11,10 +11,10 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   var blocks: List<Code> = listOf()
     set(value) {
-      field = value.asSequence()
+      field = Code.mergeWithSameRange(value.asSequence()
           .filter { it !is Block || !it.timeRange.empty }
           .sortedBy { it.startTime }
-          .toList()
+          .toList())
       myDepthCache.clear()
       recalculateDepth(field)
       fireStateChanged()
@@ -42,6 +42,37 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   fun findDepth(code: Code): Int {
     return if (myDepthCache.containsKey(code)) myDepthCache[code] else -1
+  }
+
+  fun replace(oldCode: Code, newCode: Code) {
+    val (changed, newBlocks) = replaceImpl(blocks, oldCode, newCode)
+    if (changed) {
+      blocks = newBlocks
+    }
+  }
+
+  private fun replaceImpl(currentLevel: List<Code>, oldCode: Code, newCode: Code): Pair<Boolean, List<Code>> {
+    val list = mutableListOf<Code>()
+    var somethingChanged = false
+    for (code in currentLevel) {
+      if (code === oldCode) {
+        list.add(newCode)
+      } else {
+        when (code){
+          is Statement -> list.add(code)
+          is Block -> {
+            val (changed, newInner) = replaceImpl(code.innerBlocks, oldCode, newCode)
+            if (changed) {
+              list.add(Block(code.code, code.timeRange, newInner))
+              somethingChanged = true
+            } else {
+              list.add(code)
+            }
+          }
+        }
+      }
+    }
+    return somethingChanged to if (somethingChanged) list else currentLevel
   }
 
   private fun findParent(ofThis: Code, currentParent: Block? = null): Block? {
