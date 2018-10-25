@@ -13,7 +13,7 @@ object TimeOffsetParser {
   private val TIME_RANGE_KEY = Key.create<IntRange>("IRANGE-KEY")
   private val TIME_OFFSET_ARGUMENT_REGEX = "(ms=)?[0-9]+L".toRegex()
 
-  fun parse(psiFile: KtFile): CodeBlockModel {
+  fun parse(psiFile: KtFile): CodeModel {
     if (PsiTreeUtil.hasErrorElements(psiFile)) throw IllegalArgumentException("File must not contain error element.")
     val psiElements = mutableListOf<PsiElement>()
     val absoluteTimeOffsets = mutableListOf<TimeOffset>()
@@ -33,19 +33,19 @@ object TimeOffsetParser {
     // Add last offset implicitly
     absoluteTimeOffsets.add(TimeOffset(clone.textLength * 2, absoluteTimeOffsets.last().timeOffset))
     markElements(psiElements, absoluteTimeOffsets)
-    val blocks = BlockVisitor.fold(clone) { element, list: List<CodeBlock>, isBlock ->
+    val blocks = BlockVisitor.fold(clone) { element, list: List<Code>, isBlock ->
       if (isBlock) {
-        CodeBlock(
+        Block(
             element.text.substringBefore("{").trim { it.isWhitespace() },
             element.getUserData(TIME_RANGE_KEY)!!,
-            true,
             list
         )
       } else {
-        CodeBlock(element.text, element.getUserData(TIME_RANGE_KEY)!!, false)
+        val start = element.getUserData(TIME_RANGE_KEY)!!.start
+        Statement(element.text, start)
       }
     }
-    return CodeBlockModel(blocks)
+    return CodeModel(blocks)
   }
 
   /**
@@ -100,4 +100,6 @@ object TimeOffsetParser {
   fun parseOffset(string: String): Int {
     return string.filter { it.isDigit() }.toInt()
   }
+
+  private data class TimeOffset(val textOffset: Int, val timeOffset: Int)
 }

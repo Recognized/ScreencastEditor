@@ -5,7 +5,6 @@ import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformView
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.editor.scriptview.LinearCoordinator
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptView
-import vladsaif.syncedit.plugin.util.end
 import java.awt.Dimension
 import java.awt.Toolkit
 import java.util.concurrent.TimeUnit
@@ -76,7 +75,7 @@ class ZoomController(
         (oldValue * factor).toLong().coerceIn(myAcceptableScale),
         TimeUnit.NANOSECONDS
     )
-    val endTime = scriptView.screencast.codeBlockModel.blocks.lastOrNull()?.timeRange?.end ?: 0
+    val endTime = scriptView.screencast.codeModel.blocks.lastOrNull()?.endTime ?: 0
     val scrollPane = myScrollPane
     if (scrollPane != null) {
       val currentPos = linearCoordinator.toNanoseconds(scrollPane.horizontalScrollBar.value)

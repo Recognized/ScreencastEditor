@@ -5,17 +5,18 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBSwingUtilities
 import com.intellij.util.ui.UIUtil
 import gnu.trove.THashMap
-import gnu.trove.TObjectHashingStrategy
+import gnu.trove.TObjectIdentityHashingStrategy
 import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MouseDragListener
-import vladsaif.syncedit.plugin.lang.script.psi.CodeBlock
+import vladsaif.syncedit.plugin.lang.script.psi.Block
+import vladsaif.syncedit.plugin.lang.script.psi.Code
+import vladsaif.syncedit.plugin.lang.script.psi.Statement
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.util.*
 import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.MouseEvent
-import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.swing.event.ChangeListener
 
@@ -23,13 +24,14 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   val coordinator = givenCoordinator ?: LinearCoordinator().apply {
     setTimeUnitsPerPixel(50, TimeUnit.MILLISECONDS)
   }
-  private val myBordersRectangles = Cache { calculateBorders(screencast.codeBlockModel.blocks) }
-  private val myBlockAreas = Cache { calculateBlockAreas(screencast.codeBlockModel.blocks) }
+  private val myBordersRectangles = Cache { calculateBorders(screencast.codeModel.blocks) }
+  private val myBlockAreas = Cache { calculateCodeAreas(screencast.codeModel.blocks) }
   private var myTempBorder: DraggedBorder? = null
+  private val myShortenedCode = THashMap<Code, String>(TObjectIdentityHashingStrategy())
   private val myDepthDelta: Int = calculateDepthDelta()
 
   init {
-    screencast.codeBlockModel.addChangeListener(ChangeListener {
+    screencast.codeModel.addChangeListener(ChangeListener {
       resetCache()
       revalidate()
       repaint()
@@ -68,38 +70,56 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       font = ScriptGraphics.FONT
       val getLength = { string: String -> metrics.stringWidth(string) }
       for (block in myBlockAreas.get()) {
-        drawCodeBlock(block, getLength, metrics)
+        drawCode(block, getLength, metrics)
       }
       myTempBorder?.let { drawTempBorder(it) }
     }
   }
 
-  private fun calculateBorders(blocks: List<CodeBlock>, depth: Int = 0): List<Border> {
+  private fun calculateBorders(codeList: List<Code>, depth: Int = 0): List<Border> {
     val borders = mutableListOf<Border>()
-    for (block in blocks) {
-      borders.add(Border(createArea(block.timeRange.start, depth), block, true))
-      if (block.isBlock) {
-        borders.add(Border(createArea(block.timeRange.end, depth), block, false))
-        borders.addAll(calculateBorders(block.innerBlocks, depth + 1))
+    for (code in codeList) {
+      borders.add(Border(createArea(code.startTime, depth), code, true))
+      if (code is Block) {
+        borders.add(Border(createArea(code.endTime, depth), code, false))
+        borders.addAll(calculateBorders(code.innerBlocks, depth + 1))
       }
     }
     return borders
   }
 
-  private fun calculateBlockAreas(
-      blocks: List<CodeBlock>,
+  private fun calculateCodeAreas(
+      codeList: List<Code>,
       colors: Pair<Color, Color> = ScriptGraphics.CODE_BLOCK_BACKGROUND,
+      parent: Block? = null,
       depth: Int = 0
-  ): List<BlockArea> {
-    val areas = mutableListOf<BlockArea>()
+  ): List<CodeArea> {
+    val areas = mutableListOf<CodeArea>()
     val (bright, dark) = colors
     val newBright = ScriptGraphics.rotate(bright)
     val newDark = ScriptGraphics.rotate(dark)
     val color = JBColor(bright, dark)
-    for (block in blocks) {
-      val borders = coordinator.toScreenPixel(block.timeRange.msToNs(), TimeUnit.NANOSECONDS)
-      areas.add(BlockArea(borders.start, borders.end, myDepthDelta * depth, block, depth, color))
-      areas.addAll(calculateBlockAreas(block.innerBlocks, newBright to newDark, depth + 1))
+    for ((index, code) in codeList.withIndex()) {
+      val y = myDepthDelta * depth
+      when (code) {
+        is Block -> {
+          val borders = coordinator.toScreenPixel(code.timeRange.msToNs(), TimeUnit.NANOSECONDS)
+          areas.add(CodeArea.BlockArea(borders.start, borders.end, y, code, color))
+          areas.addAll(calculateCodeAreas(code.innerBlocks, newBright to newDark, code, depth + 1))
+        }
+        is Statement -> {
+          val borderLeft = coordinator.toScreenPixel(code.timeOffset.toLong(), TimeUnit.MILLISECONDS)
+          val borderRight = if (index + 1 < codeList.size) {
+            coordinator.toScreenPixel(codeList[index + 1].startTime.toLong(), TimeUnit.MILLISECONDS)
+          } else {
+            coordinator.toScreenPixel(
+                parent?.timeRange?.end?.toLong() ?: coordinator.toNanoseconds(width) / 1000,
+                TimeUnit.MILLISECONDS
+            )
+          }
+          areas.add(CodeArea.StatementArea(borderLeft, borderRight, y, code))
+        }
+      }
     }
     return areas
   }
@@ -136,9 +156,17 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       if (dragStartEvent!!.let { JBSwingUtilities.isLeftMouseButton(it) && !it.isShiftDown && !UIUtil.isControlKeyDown(it) }) {
         val hovered = overBorder(point)
         if (hovered != null) {
+          val (left, right) = when(hovered.codeBlock) {
+            is Block -> screencast.codeModel.findDragBoundary(hovered.codeBlock, hovered.isLeft)
+            is Statement -> screencast.codeModel.findDragBoundary(hovered.codeBlock)
+          }
+          val trueLeft = if (left == -1) 0 else left
+          val trueRight = if (right == -1) (coordinator.toNanoseconds(width) / 1000).toInt() else right
+          val allowedRange = coordinator.toScreenPixel((trueLeft..trueRight).msToNs(), TimeUnit.NANOSECONDS)
           myTempBorder = DraggedBorder(
               point.x,
-              screencast.codeBlockModel.findDepth(hovered.codeBlock) * myDepthDelta,
+              screencast.codeModel.findDepth(hovered.codeBlock) * myDepthDelta,
+              allowedRange,
               hovered.codeBlock
           )
           repaint()
@@ -149,28 +177,21 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     override fun onDrag(point: Point) {
       super.onDrag(point)
       if (myTempBorder != null) {
-        myTempBorder!!.x = point.x
+        myTempBorder!!.x = point.x.coerceIn(myTempBorder!!.allowedRange)
         repaint()
       }
     }
 
     override fun onDragFinished(point: Point) {
       super.onDragFinished(point)
-      myTempBorder?.let { }
+      myTempBorder?.let { updateBlock(it) }
       myTempBorder = null
       repaint()
     }
   }
 
-  private val myShortenedCode = THashMap<CodeBlock, String>(object : TObjectHashingStrategy<CodeBlock> {
-    override fun equals(p0: CodeBlock?, p1: CodeBlock?): Boolean {
-      return p0?.timeRange == p1?.timeRange && p0?.code == p1?.code
-    }
-
-    override fun computeHashCode(p0: CodeBlock): Int {
-      return Objects.hash(p0.timeRange, p0.code)
-    }
-  })
+  private fun updateBlock(newBorder: DraggedBorder) {
+  }
 
   private fun Graphics2D.drawTempBorder(border: DraggedBorder) {
     stroke = ScriptGraphics.BORDER_STROKE
@@ -178,25 +199,25 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     drawLine(border.x, border.y, border.x, height)
   }
 
-  private fun Graphics2D.drawCodeBlock(
-      block: BlockArea,
+  private fun Graphics2D.drawCode(
+      block: CodeArea,
       getLength: (String) -> Int,
       metrics: FontMetrics
   ) {
     val screenRange = block.x1..block.x2
     val innerRange = screenRange.padded(ScriptGraphics.PADDING.toInt())
-    if (block.codeBlock.isBlock) {
+    if (block is CodeArea.BlockArea) {
       color = block.color
       fillRect(screenRange.start, block.y, screenRange.length, height - block.y)
     }
     stroke = ScriptGraphics.BORDER_STROKE
     color = ScriptGraphics.CODE_BLOCK_BORDER
     drawLine(screenRange.start, block.y, screenRange.start, height)
-    if (block.codeBlock.isBlock) {
+    if (block is CodeArea.BlockArea) {
       drawLine(screenRange.end, block.y, screenRange.end, height)
     }
-    val string = myShortenedCode.getOrPut(block.codeBlock) {
-      TextFormatter.createEllipsis(block.codeBlock.code, innerRange.length, getLength)
+    val string = myShortenedCode.getOrPut(block.code) {
+      TextFormatter.createEllipsis(block.code.code, innerRange.length, getLength)
     }
     color = ScriptGraphics.FONT_COLOR
     drawString(string, innerRange.start, block.y + metrics.height + ScriptGraphics.PADDING.toInt())
@@ -204,24 +225,34 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
 
   data class Border(
       val area: Rectangle,
-      val codeBlock: CodeBlock,
+      val codeBlock: Code,
       val isLeft: Boolean
   )
 
   private data class DraggedBorder(
       var x: Int,
       val y: Int,
-      val source: CodeBlock
+      val allowedRange: IntRange,
+      val source: Code
   )
 
-  private data class BlockArea(
-      val x1: Int,
-      val x2: Int,
-      val y: Int,
-      val codeBlock: CodeBlock,
-      val depth: Int,
-      val color: Color
-  )
+  private sealed class CodeArea(val x1: Int, val x2: Int, val y: Int, val code: Code) {
+
+    class BlockArea(
+        x1: Int,
+        x2: Int,
+        y: Int,
+        block: Block,
+        val color: Color
+    ) : CodeArea(x1, x2, y, block)
+
+    class StatementArea(
+        x1: Int,
+        x2: Int,
+        y: Int,
+        statement: Statement
+    ) : CodeArea(x1, x2, y, statement)
+  }
 
   private class Cache<T>(private val recalculate: () -> T) {
     private var myStorage: T? = null

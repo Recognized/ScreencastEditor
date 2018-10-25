@@ -39,7 +39,7 @@ import vladsaif.syncedit.plugin.format.ScreencastZipper
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.format.transferTo
-import vladsaif.syncedit.plugin.lang.script.psi.CodeBlockModel
+import vladsaif.syncedit.plugin.lang.script.psi.CodeModel
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
@@ -96,7 +96,7 @@ class ScreencastFile(
     private set
   val audioInputStream: InputStream
     get() = getInputStreamByType(AUDIO) ?: throw IllegalStateException("Audio is not set")
-  val codeBlockModel = CodeBlockModel(listOf())
+  val codeModel = CodeModel(listOf())
   val isAudioSet: Boolean
     get() = isDataSet(AUDIO)
   val textMapping: TextRangeMapping
@@ -171,7 +171,7 @@ class ScreencastFile(
             KotlinFileType.INSTANCE
         ).also { it.putUserData(KEY, this@ScreencastFile) }
         PsiDocumentManager.getInstance(project).commitDocument(scriptDocument!!)
-        codeBlockModel.blocks = TimeOffsetParser.parse(scriptPsi!!).blocks
+        codeModel.blocks = TimeOffsetParser.parse(scriptPsi!!).blocks
       }
       if (isTranscriptSet) {
         val newData = myTranscriptInputStream.let { TranscriptData.createFrom(it) }

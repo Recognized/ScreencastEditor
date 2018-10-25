@@ -75,11 +75,11 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
     val expected = codeBlockModel {
-      statement("statement()", 2000..3000)
-      statement("call()", 2000..3000)
-      statement("anotherCall()", 2000..3000)
+      statement("statement()", 2000)
+      statement("call()", 2000)
+      statement("anotherCall()", 2000)
       block("startBlock", 3000..5000) {
-        statement("call()", 3000..4000)
+        statement("call()", 3000)
       }
     }
     assertEquals(expected, actual)
@@ -96,9 +96,9 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
     val expected = codeBlockModel {
-      statement("statement()", 0..3000)
-      statement("call()", 0..3000)
-      statement("anotherCall()", 0..3000)
+      statement("statement()", 0)
+      statement("call()", 0)
+      statement("anotherCall()", 0)
     }
     assertEquals(expected, actual)
   }
