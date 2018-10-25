@@ -130,7 +130,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
             coordinator.toScreenPixel(codeList[index + 1].startTime.toLong(), TimeUnit.MILLISECONDS)
           } else {
             coordinator.toScreenPixel(
-                parent?.timeRange?.end?.toLong() ?: coordinator.toNanoseconds(width) / 1000,
+                parent?.timeRange?.end?.toLong() ?: coordinator.toNanoseconds(width) / 1_000_000,
                 TimeUnit.MILLISECONDS
             )
           }
@@ -178,7 +178,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
             is Statement -> screencast.codeModel.findDragBoundary(hovered.codeBlock)
           }
           val trueLeft = if (left == -1) 0 else left
-          val trueRight = if (right == -1) (coordinator.toNanoseconds(width) / 1000).toInt() else right
+          val trueRight = if (right == -1) (coordinator.toNanoseconds(width) / 1_000_000).toInt() else right
           val allowedRange = coordinator.toScreenPixel((trueLeft..trueRight).msToNs(), TimeUnit.NANOSECONDS)
           myTempBorder = DraggedBorder(
               point.x,
@@ -209,7 +209,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   private fun updateBlock(newBorder: DraggedBorder) {
-    val newPoint = (coordinator.toNanoseconds(newBorder.x) / 1000).toInt()
+    val newPoint = (coordinator.toNanoseconds(newBorder.x) / 1_000_000).toInt()
     val newCode = when (newBorder.source) {
       is Statement -> Statement(newBorder.source.code, newPoint)
       is Block -> {

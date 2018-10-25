@@ -56,6 +56,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     var somethingChanged = false
     for (code in currentLevel) {
       if (code === oldCode) {
+        somethingChanged = true
         list.add(newCode)
       } else {
         when (code){

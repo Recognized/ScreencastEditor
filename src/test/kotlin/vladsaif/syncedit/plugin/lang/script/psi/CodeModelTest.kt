@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -117,5 +118,36 @@ class CodeModelTest {
         statement("code1", 250)
       }
     }
+    model.replace(model.blocks[0].cast<Block>().innerBlocks[0], Statement("newCode", 222))
+    val expected = codeBlockModel {
+      block("block1", 200..300) {
+        statement("newCode", 222)
+      }
+    }
+    assertEquals(expected, model)
+  }
+
+  @Test
+  fun `test replace block`() {
+    val model = codeBlockModel {
+      block("block1", 200..300) {
+        statement("code1", 250)
+      }
+      block("block2", 300..500) {
+        block("block3", 400..450) {
+          statement("hello", 430)
+        }
+      }
+    }
+    model.replace(model.blocks[1].cast<Block>().innerBlocks[0], Statement("newCode", 350))
+    val expected = codeBlockModel {
+      block("block1", 200..300) {
+        statement("code1", 250)
+      }
+      block("block2", 300..500) {
+        statement("newCode", 350)
+      }
+    }
+    assertEquals(expected, model)
   }
 }
