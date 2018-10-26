@@ -4,7 +4,7 @@ import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import vladsaif.syncedit.plugin.createKtFile
 import java.util.*
 
-open class ScriptPsiTest : LightCodeInsightFixtureTestCase() {
+open class BlockVisitorTest : LightCodeInsightFixtureTestCase() {
 
   fun `test block structure`() {
     val code = """

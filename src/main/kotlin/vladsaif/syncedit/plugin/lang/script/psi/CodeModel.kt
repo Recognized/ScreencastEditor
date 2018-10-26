@@ -1,6 +1,9 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
+import com.intellij.application.options.CodeStyle
 import gnu.trove.TObjectIntHashMap
+import org.jetbrains.kotlin.idea.KotlinFileType
+import vladsaif.syncedit.plugin.actions.times
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.util.empty
@@ -59,7 +62,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
         somethingChanged = true
         list.add(newCode)
       } else {
-        when (code){
+        when (code) {
           is Statement -> list.add(code)
           is Block -> {
             val (changed, newInner) = replaceImpl(code.innerBlocks, oldCode, newCode)
@@ -74,6 +77,45 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
       }
     }
     return somethingChanged to if (somethingChanged) list else currentLevel
+  }
+
+  fun serialize(): String {
+    return buildString {
+      val indent = " " * CodeStyle.getDefaultSettings().getIndentOptions(KotlinFileType.INSTANCE).INDENT_SIZE
+      var lastOffset = 0
+      for (code in blocks) {
+        lastOffset = serializeImpl(this@buildString, code, lastOffset, indent)
+      }
+    }
+  }
+
+  private fun serializeImpl(
+      builder: StringBuilder,
+      code: Code,
+      lastOffset: Int,
+      indent: String,
+      indentation: Int = 0
+  ): Int {
+    with(builder) {
+      var localLastOffset = lastOffset
+      append(indent * indentation)
+      append(TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset))
+      localLastOffset = code.startTime
+      append("\n")
+      when (code) {
+        is Statement -> append(indent * indentation + code.code + "\n")
+        is Block -> {
+          append(indent * indentation + code.code + " {\n")
+          for (inner in code.innerBlocks) {
+            localLastOffset = serializeImpl(builder, inner, localLastOffset, indent, indentation + 1)
+          }
+          append(indent * indentation + "}\n")
+          append(indent * indentation + TimeOffsetParser.createTimeOffset(code.endTime - localLastOffset) + "\n")
+          localLastOffset = code.endTime
+        }
+      }
+      return localLastOffset
+    }
   }
 
   private fun findParent(ofThis: Code, currentParent: Block? = null): Block? {

@@ -2,12 +2,13 @@ package vladsaif.syncedit.plugin.lang.script.psi
 
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
+import junit.framework.TestCase
 import org.junit.Test
 import vladsaif.syncedit.plugin.createKtFile
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
+class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
 
   private fun extractPsiElement(text: String): PsiElement? {
     val file = createKtFile(text)
@@ -151,5 +152,26 @@ class ScriptOffsetsTest : LightCodeInsightFixtureTestCase() {
       }
     }
     assertEquals(expected, actual)
+  }
+
+  @Test
+  fun `test block model serialization`() {
+    val expected = codeBlockModel {
+      block("outer", 30..900) {
+        block("a", 50..100) {
+        }
+
+        block("block", 200..250) {
+          statement("hello", 210)
+          block("block2", 220..230) {
+          }
+        }
+
+        block("b", 300..400) {
+        }
+      }
+    }
+    val actual = TimeOffsetParser.parse(createKtFile(expected.serialize()))
+    TestCase.assertEquals(expected, actual)
   }
 }

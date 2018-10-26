@@ -101,5 +101,9 @@ object TimeOffsetParser {
     return string.filter { it.isDigit() }.toInt()
   }
 
+  fun createTimeOffset(time: Int): String {
+    return "timeOffset(ms = ${time}L)"
+  }
+
   private data class TimeOffset(val textOffset: Int, val timeOffset: Int)
 }
