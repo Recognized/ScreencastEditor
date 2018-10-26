@@ -116,7 +116,7 @@ class IntRangeUnion {
   }
 
   override fun equals(other: Any?): Boolean {
-    return other is IntRangeUnion && other.myRanges.equals(myRanges)
+    return other is IntRangeUnion && other.myRanges == myRanges
   }
 
   override fun hashCode(): Int {

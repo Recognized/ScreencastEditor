@@ -27,7 +27,6 @@ internal class TranscriptWordImpl(node: ASTNode) : ASTWrapperPsiElement(node), T
   override fun getNameIdentifier() = this
 
   override fun setName(name: String): PsiElement {
-    println("name = [${name}]")
     containingFile
     return this
   }

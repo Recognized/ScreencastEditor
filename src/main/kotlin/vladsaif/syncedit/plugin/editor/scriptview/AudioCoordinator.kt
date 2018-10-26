@@ -18,7 +18,7 @@ class AudioCoordinator(private val audioDataModel: AudioDataModel) : Coordinator
     return ((startFrame / audioDataModel.framesPerMillisecond) * 1_000_000).toLong()
   }
 
-  fun getPixel(frame: Long) = audioDataModel.getChunk(maxPixels, frame) ?: 0
+  fun getPixel(frame: Long) = audioDataModel.getChunk(maxPixels, frame)
 
   fun pixelRangeToFrameRange(pixelRange: IntRange): LongRange {
     return LongRange(audioDataModel.getStartFrame(maxPixels, pixelRange.start),

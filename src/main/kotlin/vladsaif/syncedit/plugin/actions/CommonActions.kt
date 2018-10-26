@@ -8,13 +8,12 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.channels.actor
-import kotlinx.coroutines.experimental.withContext
 import vladsaif.syncedit.plugin.editor.toolbar.ScreencastToolWindow
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
-import vladsaif.syncedit.plugin.util.ExEDT
 import java.io.IOException
 import javax.sound.sampled.UnsupportedAudioFileException
 import javax.swing.Icon
@@ -54,7 +53,7 @@ fun saveChanges(screencast: ScreencastFile) {
   lightSavingActor.offer(screencast)
 }
 
-val lightSavingActor = actor<ScreencastFile>(CommonPool) {
+val lightSavingActor = GlobalScope.actor<ScreencastFile>(Dispatchers.Default) {
   for (screencast in channel) {
     val savingFun = screencast.getLightSaveFunction()
     val saveTask = object : Task.Modal(screencast.project, "Saving ${screencast.name}...", false) {
@@ -72,9 +71,6 @@ val lightSavingActor = actor<ScreencastFile>(CommonPool) {
       }
     }
     ProgressManager.getInstance().run(saveTask)
-    withContext(ExEDT) {
-
-    }
   }
 }
 

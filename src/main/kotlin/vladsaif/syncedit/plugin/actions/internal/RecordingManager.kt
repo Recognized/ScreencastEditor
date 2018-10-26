@@ -44,16 +44,6 @@ object RecordingManager {
   private var CURRENT_RAW_AUDIO_PATH: Path? = null
 
   init {
-//    SoundRecorder.addListener(object : SoundRecorder.StateListener {
-//      override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
-//        CURRENT_OUTLINE_PANEL?.updateState(newValue)
-//        if (newValue == IDLE) {
-//          CURRENT_GLASS_PANE?.let { CURRENT_OUTLINE_PANEL?.let(it::remove) }
-//          CURRENT_GLASS_PANE?.revalidate()
-//          CURRENT_GLASS_PANE?.repaint()
-//        }
-//      }
-//    })
     SoundRecorder.addListener(object : SoundRecorder.StateListener {
       override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
         if (oldValue == IDLE && newValue == RECORDING) {
@@ -88,18 +78,6 @@ object RecordingManager {
     val glassPane = IdeGlassPaneUtil.find(ideFrame.component) as IdeGlassPaneImpl
     CURRENT_GLASS_PANE = glassPane
     glassPane.layout = GridBagLayout()
-//    glassPane.add(
-//        CURRENT_OUTLINE_PANEL!!,
-//        GridBagBuilder()
-//            .weightx(1.0)
-//            .weighty(1.0)
-//            .gridx(0)
-//            .gridy(0)
-//            .fill(GridBagConstraints.BOTH)
-//            .done()
-//    )
-//    glassPane.revalidate()
-//    glassPane.repaint()
     val rawAudioPath = Files.createTempFile("rawAudio", ".wave")
     CURRENT_RAW_AUDIO_PATH = rawAudioPath
     LOG.info("Raw audio path: $rawAudioPath")
@@ -124,7 +102,6 @@ object RecordingManager {
     var read: Int
     while (line.isOpen) {
       read = line.read(buffer, 0, DEFAULT_BUFFER_SIZE)
-      println(read)
       if (read < 0) break
       out.write(buffer, 0, read)
       transferred += read.toLong()

@@ -3,7 +3,7 @@ package vladsaif.syncedit.plugin.actions
 import com.intellij.testGuiFramework.recorder.GeneratedCodeReceiver
 
 object GeneratedCodeReceiver : GeneratedCodeReceiver {
-  private var myBuilder = StringBuilder();
+  private var myBuilder = StringBuilder()
 
   @Synchronized
   override fun receiveCode(code: String, indentation: Int) {

@@ -227,12 +227,10 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     stroke = ScriptGraphics.BORDER_STROKE
     color = WaveformGraphics.WORD_MOVING_SEPARATOR_COLOR
     drawLine(border.x, border.y, border.x, height)
-    if (border.source is Statement) {
-      drawBorderMark(false, border.x, 0, border.y)
-    } else if (border.isLeft) {
-      drawLine(border.x, border.y, border.x + ScriptGraphics.PADDING.toInt(), border.y)
-    } else {
-      drawLine(border.x - ScriptGraphics.PADDING.toInt(), border.y, border.x, border.y)
+    when {
+      border.source is Statement -> drawBorderMark(false, border.x, 0, border.y)
+      border.isLeft -> drawLine(border.x, border.y, border.x + ScriptGraphics.PADDING.toInt(), border.y)
+      else -> drawLine(border.x - ScriptGraphics.PADDING.toInt(), border.y, border.x, border.y)
     }
   }
 

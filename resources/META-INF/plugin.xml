@@ -1,18 +1,19 @@
 <idea-plugin>
   <id>vladsaif.syncedit.plugin</id>
   <name>Screencast Editor</name>
-  <version>0.4</version>
+  <version>0.9</version>
   <vendor email="vladsayf@gmail.com" url="vk.com/recog">Me</vendor>
 
   <description><![CDATA[
-    Plugin for editing combined audio/video data.
-    Provides audio editor, audio player.
+    Plugin for recording and editing IDE screencasts.
     <br>
-    Usage: Tools -> Open Audio
+    See GitHub <a href=https://github.com/Recognized/ScreencastEditor>repository</a> for complete description.
     <br>
     ]]></description>
 
   <depends>org.jetbrains.kotlin</depends>
+  <depends>com.intellij.modules.lang</depends>
+  <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.testGuiFramework</depends>
 
   <extensions defaultExtensionNs="com.intellij">

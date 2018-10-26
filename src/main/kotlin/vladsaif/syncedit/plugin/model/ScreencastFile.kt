@@ -21,14 +21,13 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFileFactory
 import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.io.exists
 import com.intellij.util.io.isFile
-import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
@@ -144,7 +143,7 @@ class ScreencastFile(
   }
 
   suspend fun initialize() {
-    withContext(CommonPool) {
+    withContext(Dispatchers.Default) {
       if (isAudioSet) {
         audioDataModel = SimpleAudioModel { audioInputStream }
       }
@@ -191,7 +190,7 @@ class ScreencastFile(
     })
     scriptDocument?.addDocumentListener(object : DocumentListener {
       override fun documentChanged(event: DocumentEvent) {
-        synchronizeByScript()
+        // TODO
       }
     })
     editionModel.addChangeListener(ChangeListener {
@@ -258,25 +257,6 @@ class ScreencastFile(
 
       Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
     }
-  }
-
-  private fun synchronizeByScript() {
-    textMapping.values.forEach {
-      println(scriptDocument!!.getText(TextRange(it.startOffset, it.endOffset)))
-      println(it.isValid)
-    }
-    val indices = textMapping
-        .filter { (_, marker) -> !marker.isValid || marker.startOffset == marker.endOffset || isTextCommented(marker) }
-        .keys
-        .sorted()
-        .toIntArray()
-    if (!indices.isEmpty()) {
-      excludeWords(indices)
-    }
-  }
-
-  private fun isTextCommented(rangeMarker: RangeMarker): Boolean {
-    return false
   }
 
   fun addTranscriptDataListener(listener: Listener) {
@@ -348,12 +328,6 @@ class ScreencastFile(
         }
       }
     }
-  }
-
-  fun applyWordMapping(newMapping: TextRangeMapping) {
-    myBindings.clear()
-    myBindings.putAll(newMapping)
-    updateRangeHighlighters()
   }
 
   private fun bulkChange(action: EditionModel.() -> Unit) {

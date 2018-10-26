@@ -60,7 +60,7 @@ interface SpeechRecognizer {
 
     fun runRecognitionTask(model: ScreencastFile) = TASK_RUNNER.offer(model)
 
-    private val TASK_RUNNER = actor<ScreencastFile> {
+    private val TASK_RUNNER = GlobalScope.actor<ScreencastFile> {
       for (file in channel) {
         val task = RecognizeTask(file, launch { runRecognition(file) })
         ProgressManager.getInstance().run(task)
@@ -73,7 +73,7 @@ interface SpeechRecognizer {
 
     private suspend fun runRecognition(file: ScreencastFile) {
       try {
-        val data = withContext(CommonPool) {
+        val data = withContext(Dispatchers.Default) {
           try {
             SpeechRecognizer.getCurrentRecognizer().recognize(Supplier { file.audioInputStream }).await()
           } finally {

@@ -7,6 +7,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.withContext
 import vladsaif.syncedit.plugin.actions.openScreencast
@@ -27,7 +28,7 @@ open class OpenScreencast : AnAction() {
   }
 
   protected fun open(project: Project, file: VirtualFile) {
-    launch {
+    GlobalScope.launch {
       withContext(ExEDT) {
         val path = file.toPath()
         val screencast = ScreencastFile.get(path) ?: ScreencastFile.create(project, file.toPath())

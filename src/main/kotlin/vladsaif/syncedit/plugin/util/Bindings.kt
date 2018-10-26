@@ -20,7 +20,7 @@ typealias LineMapping = Map<Int, IntRange>
 typealias TextRangeMapping = Map<Int, RangeMarker>
 
 fun mergeLineMappings(mergedLineMappings: List<MergedLineMapping>): List<MergedLineMapping> {
-  val sorted = mergedLineMappings.filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange.start }
+  val sorted = mergedLineMappings.asSequence().filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange.start }
   return sorted.fold(mutableListOf()) { acc, x ->
     when {
       x.itemRange.empty -> Unit

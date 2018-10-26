@@ -8,59 +8,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import java.nio.file.Path
 
-fun errorNoModelForFile(project: Project, file: VirtualFile) {
-  Messages.showErrorDialog(
-      project,
-      "File (\"$file\") is not bound with anything.",
-      "No associations found"
-  )
-}
-
-fun errorNoTranscriptBound(project: Project, file: VirtualFile) {
-  Messages.showErrorDialog(
-      project,
-      "File (\"$file\") is not bound with any transcript.",
-      "No transcript bound"
-  )
-}
-
-fun errorNoScriptBound(project: Project, file: VirtualFile) {
-  Messages.showErrorDialog(
-      project,
-      "File (\"$file\") is not bound with any script.",
-      "No script bound"
-  )
-}
-
-fun errorAlreadyBoundToDifferent(project: Project) {
-  Messages.showErrorDialog(
-      project,
-      "Cannot bind files already bound to other files.",
-      "Bind error"
-  )
-}
-
-fun infoAlreadyBound(project: Project, script: VirtualFile, audio: VirtualFile) {
-  Messages.showInfoMessage(
-      project,
-      "Audio: \"${audio.path}\" \n" +
-          "Script: \"${script.path}\" \n" +
-          "are already bound.",
-      "Bind audio and script"
-  )
-}
-
-fun notifySuccessfullyBound(project: Project, script: VirtualFile, audio: VirtualFile) {
-  Notification(
-      "Screencast Editor",
-      "Audio and script are bound",
-      "Successfully bound\n" +
-          "Audio: \"${audio.path}\" \n" +
-          "Script: \"${script.path}\" \n",
-      NotificationType.INFORMATION
-  ).notify(project)
-}
-
 fun notifySuccessfullySaved(screencastFile: ScreencastFile) {
   Notification(
       "Screencast Editor",

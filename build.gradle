@@ -98,6 +98,15 @@ intellij {
     instrumentCode true
 }
 
+patchPluginXml {
+    sinceBuild "182"
+    version "0.9"
+}
+
+publishPlugin {
+    enabled = true
+}
+
 repositories {
     mavenCentral()
 }
@@ -128,16 +137,16 @@ dependencies {
     compile group: "javazoom", name: "jlayer", version: "1.0.1"
     compile group: "com.googlecode.soundlibs", name: "mp3spi", version: "1.9.5.4"
     compile "com.google.cloud:google-cloud-speech:0.56.0-beta"
-    compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.2.61") {
-        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
-    }
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:0.26.1") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-guava:0.26.1") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
     testCompile("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
 }

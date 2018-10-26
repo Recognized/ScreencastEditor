@@ -2,7 +2,7 @@ package vladsaif.syncedit.plugin.editor.scriptview
 
 import java.util.concurrent.TimeUnit
 
-class LinearCoordinator() : Coordinator {
+class LinearCoordinator : Coordinator {
   // Number of nanoseconds per pixel
   private var myNsPerDot: Long = 1_000_000_000
 

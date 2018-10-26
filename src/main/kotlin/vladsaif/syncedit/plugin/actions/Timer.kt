@@ -4,8 +4,8 @@ object Timer {
 
   private var myLastStatementTime = 0L
   private var myPausedTime = 0L
-  val isStarted get() = myLastStatementTime != 0L
-  val isPaused get() = myPausedTime != 0L
+  private val isStarted get() = myLastStatementTime != 0L
+  private val isPaused get() = myPausedTime != 0L
   val offsetToLastStatement: Long
     get() = when {
       !isStarted -> throw IllegalStateException("Timer has not been started")
@@ -34,9 +34,6 @@ object Timer {
 
   /**
    * Create 'timeOffset(Long)' statement using current time and time of previous statement.
-   *
-   * @return null if time pasted since last created statement or since start of [Timer] less than [THRESHOLD],
-   * or if [Timer] is not active.
    */
   fun newTimeOffsetStatement(): String {
     val statement = "timeOffset(ms = ${offsetToLastStatement}L)"
