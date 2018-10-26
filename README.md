@@ -4,10 +4,20 @@ Intellij IDEA plugin for recording and editing IDE screencasts.
 [Test GUI Framework](https://plugins.jetbrains.com/plugin/11114-test-gui-framework) plugin is required to be installed.
 <hr>
 
-**Screencast** is a set of:
+## Features
+
+**Screencast** is a zip (but with **.scs** extension) of:
 1. Recorded speech (optional)
 2. Transcript of this speech (optional)
 3. UI automation script
+
+Screencast Editor allows user to record their actions inside IDE along with recording sound from microphone,
+then user can edit screencast and reproduce it.
+
+Screencast Editor has built-in audio editor/player enhanced with transcript based editing.
+User can cut or mute pieces of audio and play edited audio.
+If transcript is absent it can be obtained by transcribing recorded speech (if it is present).
+using external speech recognition service. Now, only Google Speech-to-text API is supported. (See section below)
 
 UI automation script is a Kotlin DSL script that contains information about user actions within IDE
 (such as clicking on buttons, typing, invoking actions, etc.)
@@ -29,31 +39,20 @@ ideFrame {
 }
 ```
 
-If transcript is absent it can be obtained by transcribing recorded speech (if it is present).
-using external speech recognition service. Now, only Google Speech-to-text API is supported. (See section below)
-
-## Features
-
-This plugin has simple built-in audio editor/player enhanced with transcript based editing.
-
-![audio-editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/audio_editor1.gif)
-
-Also you can edit script as regular kotlin file.
-(But script editing will be significantly enhanced in near future).
-
-Using this and recorded audio we can reproduce screencast in IDE.
+Script can be edited as regular Kotlin file, but Screencast Editor also knows time ranges of every code block
+or statement in this script. You can edit them in the bottom of toolbar by dragging corresponding borders.
 
 ## Usage
 <hr>
 
 ### Recording
 
-Recording are synchronized with Test GUI Framework recording. 
+User interactions with IDE are recorded using [Test GUI Framework](https://plugins.jetbrains.com/plugin/11114-test-gui-framework)'s functionality.
+Sound is recorded using java.sound package.
 
 Current controls:
-- Start/Pause: **Control**+**Alt**+**Meta**+**S** (Mac)
-- Pause: **Control**+**Alt**+**Meta**+**P**
-- Stop: **Control**+**Alt**+**Meta**+**S**
+- Start: _Tools_ menu → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Screencast Editor_ →  _Start recording_
+- Stop: _Tools_ menu → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Screencast Editor_ → _Stop recording_
 
 After recording has been finished, you can san save or discard recorded screencast.
 
@@ -63,15 +62,9 @@ After recording has been finished, you can san save or discard recorded screenca
 1. _Tools_ menu → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Screencast Editor_ → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Open Screencast_
 2. Right click on file in Project Tree → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Open Screencast_
 
-**Audio editor**:
+**Editor**:
 
-- Use **Left Mouse Button** to select audio range by words.
-- Hold **Control/Meta** and drag mouse with pressed **Left Mouse Button**
-to select range precisely (not by words).
-- Hold **Shift** to prevent resetting current selection.
-- You may also drag word borders holding **Right Mouse Button**.
-
-![audio-editor2](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/audio_editor2.png)
+![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.png)
 
 * <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/play@2x.png" alt="play" width="16"/> Play whole audio file or selected range only.
 * <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/pause@2x.png" alt="pause" width="16"/> Pause audio.
@@ -85,9 +78,13 @@ to select range precisely (not by words).
 * <img src="https://raw.githubusercontent.com/JetBrains/kotlin/1.2.70/idea/resources/org/jetbrains/kotlin/idea/icons/kotlin_script%402x.png" alt="transcript" width="16"/> Open UI script.
 * <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/menu-saveall.svg?sanitize=true" width="16"> Save changes made to this screencast.
 
-Editions that are made to an audio synchronously adjust script timings.
+- Hold **Shift**+**Left Mouse Button** to select audio range by words.
+- Hold **Shift**+**Control/Meta** and drag mouse with pressed **Left Mouse Button**
+to select range precisely (not by words).
+- Hold **Shift** to prevent resetting current selection.
+- Drag word's or script's borders with **Left Mouse Button** to change their time range.
 
-**Transcript editor**:
+Editions that are made to an audio synchronously adjust script timings.
 
 Transcript can be edited via refactoring actions:
 

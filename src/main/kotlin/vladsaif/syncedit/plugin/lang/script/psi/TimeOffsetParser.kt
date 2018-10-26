@@ -34,14 +34,16 @@ object TimeOffsetParser {
     absoluteTimeOffsets.add(TimeOffset(clone.textLength * 2, absoluteTimeOffsets.last().timeOffset))
     markElements(psiElements, absoluteTimeOffsets)
     val blocks = BlockVisitor.fold(clone) { element, list: List<Code>, isBlock ->
+      val range = element.getUserData(TIME_RANGE_KEY)!!
+      element.putUserData(TIME_RANGE_KEY, null)
       if (isBlock) {
         Block(
             element.text.substringBefore("{").trim { it.isWhitespace() },
-            element.getUserData(TIME_RANGE_KEY)!!,
+            range,
             list
         )
       } else {
-        val start = element.getUserData(TIME_RANGE_KEY)!!.start
+        val start = range.start
         Statement(element.text, start)
       }
     }
