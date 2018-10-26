@@ -86,7 +86,10 @@ to select range precisely (not by words).
 
 Editions that are made to an audio synchronously adjust script timings.
 
-Transcript can be edited via refactoring actions:
+![audio-editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/audio_editor1.gif)
+```(Demo is a little bit old)```
+
+Transcript in editor can be edited via refactoring actions:
 
 - Exclude: **Control**+**Alt**+**E**
 - Mute: **Control**+**Alt**+**M**
