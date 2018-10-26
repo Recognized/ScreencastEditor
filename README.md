@@ -64,7 +64,7 @@ After recording has been finished, you can san save or discard recorded screenca
 
 **Editor**:
 
-![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.png)
+![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.PNG)
 
 * <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/play@2x.png" alt="play" width="16"/> Play whole audio file or selected range only.
 * <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/pause@2x.png" alt="pause" width="16"/> Pause audio.
