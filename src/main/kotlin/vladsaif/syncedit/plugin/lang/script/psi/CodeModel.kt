@@ -1,8 +1,6 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
-import com.intellij.application.options.CodeStyle
 import gnu.trove.TObjectIntHashMap
-import org.jetbrains.kotlin.idea.KotlinFileType
 import vladsaif.syncedit.plugin.actions.times
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
@@ -80,17 +78,27 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   }
 
   fun serialize(): String {
-    return buildString {
-      val indent = " " * CodeStyle.getDefaultSettings().getIndentOptions(KotlinFileType.INSTANCE).INDENT_SIZE
-      var lastOffset = 0
-      for (code in blocks) {
-        lastOffset = serializeImpl(this@buildString, code, lastOffset, indent)
-      }
+    val builder = MarkedTextBuilder(true)
+    val indent = Code.indentationUnit
+    var lastOffset = 0
+    for (code in blocks) {
+      lastOffset = serializeImpl(builder, code, lastOffset, indent)
     }
+    return builder.done().text
+  }
+
+  fun createTextWithoutOffsets(): MarkedText {
+    val builder = MarkedTextBuilder(false)
+    val indent = Code.indentationUnit
+    var lastOffset = 0
+    for (code in blocks) {
+      lastOffset = serializeImpl(builder, code, lastOffset, indent)
+    }
+    return builder.done()
   }
 
   private fun serializeImpl(
-      builder: StringBuilder,
+      builder: MarkedTextBuilder,
       code: Code,
       lastOffset: Int,
       indent: String,
@@ -98,19 +106,29 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   ): Int {
     with(builder) {
       var localLastOffset = lastOffset
-      append(indent * indentation)
-      append(TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset))
+      if (withOffsets) {
+        append(indent * indentation)
+        append(TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset))
+        append("\n")
+      }
       localLastOffset = code.startTime
-      append("\n")
       when (code) {
-        is Statement -> append(indent * indentation + code.code + "\n")
+        is Statement -> {
+          append(indent * indentation)
+          append(code.code, code)
+          append("\n")
+        }
         is Block -> {
-          append(indent * indentation + code.code + " {\n")
+          append(indent * indentation)
+          append(code.code, code)
+          append(" {\n")
           for (inner in code.innerBlocks) {
             localLastOffset = serializeImpl(builder, inner, localLastOffset, indent, indentation + 1)
           }
           append(indent * indentation + "}\n")
-          append(indent * indentation + TimeOffsetParser.createTimeOffset(code.endTime - localLastOffset) + "\n")
+          if (withOffsets) {
+            append(indent * indentation + TimeOffsetParser.createTimeOffset(code.endTime - localLastOffset) + "\n")
+          }
           localLastOffset = code.endTime
         }
       }
@@ -171,7 +189,25 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
       }
     }
   }
+
+  class MarkedTextBuilder(val withOffsets: Boolean = true) {
+    private val myBuilder = StringBuilder()
+    private val myMap = mutableMapOf<Code, IntRange>()
+
+    fun append(str: String) {
+      myBuilder.append(str)
+    }
+
+    fun append(str: String, code: Code) {
+      myMap[code] = myBuilder.length until myBuilder.length + str.length
+      myBuilder.append(str)
+    }
+
+    fun done() = MarkedText(myBuilder.toString(), myMap)
+  }
 }
+
+data class MarkedText(val text: String, val map: Map<Code, IntRange>)
 
 class CodeBlockBuilder {
   private val myBlocks = mutableListOf<Code>()

@@ -77,8 +77,6 @@ class Statement(code: String, val timeOffset: Int) : Code(code) {
     result = 31 * result + timeOffset
     return result
   }
-
-
 }
 
 class Block(
