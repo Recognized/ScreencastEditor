@@ -111,7 +111,7 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
    */
   private fun Graphics2D.drawHorizontalLine() {
     color = Color.BLACK
-    drawLine(model.drawRange.start, height / 2, model.drawRange.end, height / 2)
+    drawLine(0, height / 2, width, height / 2)
   }
 
   /**

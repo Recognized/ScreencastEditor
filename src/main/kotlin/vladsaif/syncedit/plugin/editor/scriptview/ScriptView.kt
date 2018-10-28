@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.editor.scriptview
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBSwingUtilities
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import gnu.trove.THashMap
 import gnu.trove.TObjectIdentityHashingStrategy
@@ -31,6 +32,16 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   private var myTempBorder: DraggedBorder? = null
   private val myShortenedCode = THashMap<Code, String>(TObjectIdentityHashingStrategy())
   private val myDepthDelta: Int = calculateDepthDelta()
+  private val myFurtherMostBorder = Cache { findPreferredWidth() }
+
+  val preferredWidth get() = myFurtherMostBorder.get()
+
+  private fun findPreferredWidth(): Int {
+    return coordinator.toScreenPixel(
+        screencast.codeModel.blocks.lastOrNull()?.endTime?.toLong() ?: 0L,
+        TimeUnit.MILLISECONDS
+    )
+  }
 
   init {
     screencast.codeModel.addChangeListener(ChangeListener {
@@ -43,6 +54,13 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
         myBordersRectangles.resetCache()
       }
     })
+  }
+
+  override fun getPreferredSize(): Dimension {
+    return Dimension(
+        preferredWidth + JBUI.scale(200),
+        (myBordersRectangles.get().lastOrNull()?.area?.y ?: 0) + myDepthDelta
+    )
   }
 
   fun installListeners() {
@@ -64,6 +82,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     myBordersRectangles.resetCache()
     myBlockAreas.resetCache()
     myShortenedCode.clear()
+    myFurtherMostBorder.resetCache()
   }
 
   override fun paint(g: Graphics) {

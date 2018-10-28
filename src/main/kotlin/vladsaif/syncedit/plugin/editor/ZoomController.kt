@@ -33,7 +33,7 @@ class ZoomController(
     val brm = scrollPane.horizontalScrollBar.model
     scrollPane.horizontalScrollBar.addAdjustmentListener {
       if (myIgnoreBarChanges) return@addAdjustmentListener
-      view?.model?.setRangeProperties(visibleChunks = brm.extent, firstVisibleChunk = brm.value, maxChunks = brm.maximum)
+      view?.model?.setRangeProperties(visibleChunks = brm.extent, firstVisibleChunk = brm.value)
       view?.model?.updateData()
     }
   }
