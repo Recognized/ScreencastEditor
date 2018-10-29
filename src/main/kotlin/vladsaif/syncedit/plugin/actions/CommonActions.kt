@@ -33,7 +33,7 @@ fun openTranscript(screencast: ScreencastFile) {
 }
 
 fun openScript(screencast: ScreencastFile) {
-  val script = screencast.scriptFile
+  val script = screencast.scriptViewFile
   if (script != null) {
     FileEditorManager.getInstance(screencast.project).openFile(script, true, true)
   }

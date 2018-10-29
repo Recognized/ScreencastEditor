@@ -29,9 +29,9 @@ class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
     screencast
   }
 
-  fun `test script preserved`() {
-    assertEquals(SCRIPT_TEXT, myScreencast.scriptDocument!!.text)
-  }
+//  fun `test script preserved`() {
+//    assertEquals(SCRIPT_TEXT, myScreencast.scriptDocument!!.text)
+//  }
 
   fun `test transcript preserved`() {
     assertEquals(TRANSCRIPT_DATA, myScreencast.data!!)

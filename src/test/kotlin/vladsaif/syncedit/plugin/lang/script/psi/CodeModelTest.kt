@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.lang.script.psi
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import vladsaif.syncedit.plugin.util.end
 
 class CodeModelTest {
 
@@ -153,18 +152,21 @@ class CodeModelTest {
   }
 
   @Test
-  fun `test marked text`() {
-    val model = codeBlockModel {
-      statement("hello", 100)
-      statement("hello2", 200)
-      block("block3", 300..400) {
-        statement("hello4", 330)
-        statement("hello5", 360)
+  fun `test offset offsets`() {
+    val expected = codeBlockModel {
+      block("block1", 200..300) {
+        statement("code1", 250)
+      }
+      block("block2", 300..500) {
+        statement("newCode", 350)
       }
     }
-    val markedText = model.createTextWithoutOffsets()
-    for ((code, range) in markedText.map) {
-      assertEquals(markedText.text, code.code, markedText.text.substring(range.start, range.end + 1))
+    val markedText = expected.createTextWithoutOffsets()
+    var newText = expected.serialize()
+    for (range in markedText.ranges) {
+      println(newText.substring(range))
+      newText = newText.replaceRange(range, "")
     }
+    assertEquals(markedText.text, newText)
   }
 }

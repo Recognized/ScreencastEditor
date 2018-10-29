@@ -32,7 +32,7 @@ open class OpenScreencast : AnAction() {
       withContext(ExEDT) {
         val path = file.toPath()
         val screencast = ScreencastFile.get(path) ?: ScreencastFile.create(project, file.toPath())
-        screencast.scriptPsi?.let {
+        screencast.scriptViewPsi?.let {
           FileEditorManager.getInstance(project).openFile(it.virtualFile, true, true)
         }
         openScreencast(screencast)

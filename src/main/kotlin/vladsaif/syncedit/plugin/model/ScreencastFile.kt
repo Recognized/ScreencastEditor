@@ -11,19 +11,17 @@ import com.intellij.openapi.command.undo.UndoableAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.RangeMarker
-import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
-import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.io.exists
 import com.intellij.util.io.isFile
@@ -76,7 +74,6 @@ class ScreencastFile(
   private val myListeners: MutableSet<Listener> = ContainerUtil.newConcurrentSet()
   private var myEditionListenerEnabled = true
   private var myTranscriptListenerEnabled = true
-  private val myBindings: MutableMap<Int, RangeMarker> = mutableMapOf()
   private val myTranscriptInputStream: InputStream
     get() = getInputStreamByType(TRANSCRIPT_DATA) ?: throw IllegalStateException("Transcript is not set")
   private val isTranscriptSet: Boolean
@@ -98,14 +95,17 @@ class ScreencastFile(
   val codeModel = CodeModel(listOf())
   val isAudioSet: Boolean
     get() = isDataSet(AUDIO)
-  val textMapping: TextRangeMapping
-    get() = myBindings
   val transcriptPsi: TranscriptPsiFile?
     get() = getPsi(transcriptFile)
   var transcriptFile: VirtualFile? = null
     private set
-  var scriptFile: VirtualFile? = null
+  private var scriptFile: VirtualFile? = null
+  var scriptViewFile: VirtualFile? = null
     private set
+  val scriptViewDoc: Document?
+    get() = scriptViewPsi?.viewProvider?.document
+  val scriptViewPsi: KtFile?
+    get() = getPsi(scriptViewFile)
   val scriptDocument: Document?
     get() = scriptPsi?.viewProvider?.document
   val scriptPsi: KtFile?
@@ -164,13 +164,26 @@ class ScreencastFile(
         }
       }
       if (isScriptSet) {
-        scriptFile = createVirtualFile(
+        val tempFile = createVirtualFile(
             "$name.kts",
             readContents(myScriptInputStream),
             KotlinFileType.INSTANCE
         ).also { it.putUserData(KEY, this@ScreencastFile) }
+        PsiDocumentManager.getInstance(project).commitDocument(getPsi<KtFile>(tempFile)!!.viewProvider.document!!)
+        codeModel.blocks = TimeOffsetParser.parse(getPsi(tempFile)!!).blocks
+        scriptFile = createVirtualFile(
+            "$name.kts",
+            codeModel.serialize(),
+            KotlinFileType.INSTANCE
+        )
         PsiDocumentManager.getInstance(project).commitDocument(scriptDocument!!)
-        codeModel.blocks = TimeOffsetParser.parse(scriptPsi!!).blocks
+        val markedText = codeModel.createTextWithoutOffsets()
+        scriptViewFile = createVirtualFile(
+            "$name.kts",
+            markedText.text,
+            KotlinFileType.INSTANCE
+        )
+        scriptViewDoc!!.addDocumentListener(ChangesReproducer(markedText.ranges))
       }
       if (isTranscriptSet) {
         val newData = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
@@ -186,11 +199,6 @@ class ScreencastFile(
       override fun onTranscriptDataChanged() {
         val files = listOfNotNull(transcriptFile, scriptFile)
         PsiDocumentManager.getInstance(project).reparseFiles(files, true)
-      }
-    })
-    scriptDocument?.addDocumentListener(object : DocumentListener {
-      override fun documentChanged(event: DocumentEvent) {
-        // TODO
       }
     })
     editionModel.addChangeListener(ChangeListener {
@@ -342,20 +350,20 @@ class ScreencastFile(
     }
   }
 
-  private fun updateRangeHighlighters() {
-    val document = scriptDocument ?: return
-    for (editor in EditorFactory.getInstance().getEditors(document)) {
-      for ((_, marker) in textMapping) {
-        (editor as EditorEx).markupModel.addRangeHighlighter(
-            marker.startOffset,
-            marker.endOffset,
-            10000,
-            editor.colorsScheme.getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES),
-            HighlighterTargetArea.EXACT_RANGE
-        )
-      }
-    }
-  }
+//  private fun updateRangeHighlighters() {
+//    val document = scriptDocument ?: return
+//    for (editor in EditorFactory.getInstance().getEditors(document)) {
+//      for ((_, marker) in textMapping) {
+//        (editor as EditorEx).markupModel.addRangeHighlighter(
+//            marker.startOffset,
+//            marker.endOffset,
+//            10000,
+//            editor.colorsScheme.getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES),
+//            HighlighterTargetArea.EXACT_RANGE
+//        )
+//      }
+//    }
+//  }
 
   private fun onEditionModelChanged() {
     val preparedEditions = data?.let { getWordReplacements(it) } ?: return
@@ -569,6 +577,49 @@ class ScreencastFile(
     override fun getAffectedDocuments() = myAffectedDocuments.toTypedArray()
   }
 
+
+  private inner class ChangesReproducer(list: List<IntRange>) : DocumentListener {
+    private var myOffsets = list.map { Offset(it.start, it.length) }
+
+    override fun documentChanged(event: DocumentEvent) {
+      val startOffset = convertOffset(event.offset)
+      val oldEnd = convertOffset(event.offset + event.oldLength - 1)
+      val newEnd = convertOffset(event.offset + event.newLength - 1)
+      val deleteRange = startOffset..oldEnd
+      val insertRange = startOffset..newEnd
+      val delta = insertRange.length - deleteRange.length
+      deleteText(deleteRange)
+      insertText(startOffset, event.newFragment)
+      myOffsets = myOffsets.asSequence().filter { it.startOffset !in deleteRange }.map {
+        if (it.startOffset < startOffset) it
+        else Offset(it.startOffset + delta, it.length)
+      }.toList()
+      PsiDocumentManager.getInstance(project).performForCommittedDocument(scriptDocument!!) {
+        if (!PsiTreeUtil.hasErrorElements(scriptPsi!!)) {
+          codeModel.blocks = TimeOffsetParser.parse(scriptPsi!!).blocks
+        }
+      }
+    }
+
+    private fun insertText(offset: Int, text: CharSequence) {
+      if (text.isEmpty()) return
+      LOG.info("Is about to insert: $text at $offset")
+      scriptDocument?.insertString(offset, text)
+    }
+
+    private fun deleteText(range: IntRange) {
+      if (range.isEmpty()) return
+      LOG.info("Is about to delete: ${scriptDocument?.getText(TextRange(range.start, range.endInclusive))}")
+      scriptDocument?.deleteString(range.start, range.endInclusive)
+    }
+
+    private fun convertOffset(offset: Int): Int {
+      return myOffsets.asSequence().takeWhile { it.startOffset <= offset }.sumBy { it.length } + offset
+    }
+  }
+
+
+  private data class Offset(val startOffset: Int, val length: Int)
 
   companion object {
     private val FILES: MutableMap<Path, ScreencastFile> = ConcurrentHashMap()

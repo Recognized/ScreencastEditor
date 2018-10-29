@@ -106,29 +106,25 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   ): Int {
     with(builder) {
       var localLastOffset = lastOffset
-      if (withOffsets) {
-        append(indent * indentation)
-        append(TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset))
-        append("\n")
-      }
+      appendOffset(indent * indentation
+          + TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset)
+          + "\n")
       localLastOffset = code.startTime
       when (code) {
         is Statement -> {
           append(indent * indentation)
-          append(code.code, code)
+          append(code.code)
           append("\n")
         }
         is Block -> {
           append(indent * indentation)
-          append(code.code, code)
+          append(code.code)
           append(" {\n")
           for (inner in code.innerBlocks) {
             localLastOffset = serializeImpl(builder, inner, localLastOffset, indent, indentation + 1)
           }
           append(indent * indentation + "}\n")
-          if (withOffsets) {
-            append(indent * indentation + TimeOffsetParser.createTimeOffset(code.endTime - localLastOffset) + "\n")
-          }
+          appendOffset(indent * indentation + TimeOffsetParser.createTimeOffset(code.endTime - localLastOffset) + "\n")
           localLastOffset = code.endTime
         }
       }
@@ -192,22 +188,25 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   class MarkedTextBuilder(val withOffsets: Boolean = true) {
     private val myBuilder = StringBuilder()
-    private val myMap = mutableMapOf<Code, IntRange>()
+    private val myRanges = mutableListOf<IntRange>()
 
     fun append(str: String) {
       myBuilder.append(str)
     }
 
-    fun append(str: String, code: Code) {
-      myMap[code] = myBuilder.length until myBuilder.length + str.length
-      myBuilder.append(str)
+    fun appendOffset(str: String) {
+      if (withOffsets) {
+        myBuilder.append(str)
+      } else {
+        myRanges.add(myBuilder.length until myBuilder.length + str.length)
+      }
     }
 
-    fun done() = MarkedText(myBuilder.toString(), myMap)
+    fun done() = MarkedText(myBuilder.toString(), myRanges)
   }
 }
 
-data class MarkedText(val text: String, val map: Map<Code, IntRange>)
+data class MarkedText(val text: String, val ranges: List<IntRange>)
 
 class CodeBlockBuilder {
   private val myBlocks = mutableListOf<Code>()
