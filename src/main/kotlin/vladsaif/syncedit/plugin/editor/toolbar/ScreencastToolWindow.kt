@@ -29,19 +29,19 @@ object ScreencastToolWindow {
   private fun getToolWindow(project: Project): ToolWindow {
     val manager = ToolWindowManager.getInstance(project)
     val toolWindow = manager.getToolWindow(myToolWindowId)
-        ?: manager.registerToolWindow(myToolWindowId, true, ToolWindowAnchor.BOTTOM).also {
-          it.contentManager.addContentManagerListener(object : ContentManagerListener {
-            override fun contentAdded(event: ContentManagerEvent) = Unit
+      ?: manager.registerToolWindow(myToolWindowId, true, ToolWindowAnchor.BOTTOM).also {
+        it.contentManager.addContentManagerListener(object : ContentManagerListener {
+          override fun contentAdded(event: ContentManagerEvent) = Unit
 
-            override fun contentRemoveQuery(event: ContentManagerEvent) = Unit
+          override fun contentRemoveQuery(event: ContentManagerEvent) = Unit
 
-            override fun selectionChanged(event: ContentManagerEvent) = Unit
+          override fun selectionChanged(event: ContentManagerEvent) = Unit
 
-            override fun contentRemoved(event: ContentManagerEvent) {
-              it.setAvailable(false, null)
-            }
-          })
-        }
+          override fun contentRemoved(event: ContentManagerEvent) {
+            it.setAvailable(false, null)
+          }
+        })
+      }
     toolWindow.icon = SCREENCAST_TOOL_WINDOW
     return toolWindow
   }
@@ -49,8 +49,8 @@ object ScreencastToolWindow {
   fun openScreencastFile(screencast: ScreencastFile) {
     val editorPane = EditorPane(screencast)
     val audioPanel = ActionPanel(
-        createAudioRelatedActionGroup(editorPane.waveformController!!, editorPane.zoomController),
-        editorPane
+      createAudioRelatedActionGroup(editorPane.waveformController!!, editorPane.zoomController),
+      editorPane
     )
     audioPanel.disposeAction = { editorPane.waveformController.stopImmediately() }
     val controlPanel = ActionPanel(createMainActionGroup(screencast), audioPanel)
@@ -83,7 +83,10 @@ object ScreencastToolWindow {
     }
   }
 
-  private fun createAudioRelatedActionGroup(controller: WaveformController, zoomController: ZoomController): ActionGroup {
+  private fun createAudioRelatedActionGroup(
+    controller: WaveformController,
+    zoomController: ZoomController
+  ): ActionGroup {
     with(DefaultActionGroup()) group@{
       with(controller) {
         addAction("Play", "Play audio", PLAY, this::play) {

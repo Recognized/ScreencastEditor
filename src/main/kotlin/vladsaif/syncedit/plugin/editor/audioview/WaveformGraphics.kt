@@ -16,16 +16,17 @@ object WaveformGraphics {
   val AUDIO_PEAK_CUT_COLOR = JBColor(STATE.audioPeak.getBright().muchBrighter(), STATE.audioPeak.getDark().muchDarker())
   val AUDIO_PLAY_LINE_COLOR = STATE.audioPlayLine.toJBColor()
   val AUDIO_SELECTION_COLOR = STATE.audioSelectedRange.toJBColor()
-  val AUDIO_RMS_CUT_COLOR = JBColor(STATE.audioRms.getBright().muchBrighter(), STATE.audioRms.getDark().muchBrighter().muchDarker())
-  val AUDIO_RMS_COLOR  = STATE.audioRms.toJBColor()
-  val MAPPING_HIGHLIGHT_COLOR  = STATE.mappingHighlight.toJBColor()
-  val WORD_COLOR  = STATE.word.toJBColor()
-  val WORD_MOVING_SEPARATOR_COLOR  = STATE.wordMovingSeparator.toJBColor()
+  val AUDIO_RMS_CUT_COLOR =
+    JBColor(STATE.audioRms.getBright().muchBrighter(), STATE.audioRms.getDark().muchBrighter().muchDarker())
+  val AUDIO_RMS_COLOR = STATE.audioRms.toJBColor()
+  val MAPPING_HIGHLIGHT_COLOR = STATE.mappingHighlight.toJBColor()
+  val WORD_COLOR = STATE.word.toJBColor()
+  val WORD_MOVING_SEPARATOR_COLOR = STATE.wordMovingSeparator.toJBColor()
   val WORD_SEPARATOR_COLOR = STATE.wordSeparator.toJBColor()
 
   val DASH_WIDTH = JBUI.scale(STATE.dashWidthDp)
-  val PEAK_STROKE_WIDTH  = JBUI.scale(STATE.peakStrokeWidthDp)
-  val ROOT_MEAN_SQUARE_STROKE_WIDTH  = JBUI.scale(STATE.rootMeanSquareStrokeWidthDp)
+  val PEAK_STROKE_WIDTH = JBUI.scale(STATE.peakStrokeWidthDp)
+  val ROOT_MEAN_SQUARE_STROKE_WIDTH = JBUI.scale(STATE.rootMeanSquareStrokeWidthDp)
   val WORD_SEPARATOR_WIDTH = JBUI.scale(STATE.wordSeparatorWidthDp)
 
   private infix fun Color.or(other: Color): Long {

@@ -38,9 +38,10 @@ sealed class Code(val code: String) {
           val newEnd = captured.endTime
           list[list.size - 1] = when {
             block is Statement && captured is Statement -> Statement(newCode, newEnd)
-            else -> Block(newCode, block.startTime..newEnd,
-                (block as? Block)?.innerBlocks ?: listOf<Code>()+
-                ((captured as? Block)?.innerBlocks ?: listOf())
+            else -> Block(
+              newCode, block.startTime..newEnd,
+              (block as? Block)?.innerBlocks ?: listOf<Code>()+
+              ((captured as? Block)?.innerBlocks ?: listOf())
             )
           }
         } else {
@@ -55,8 +56,10 @@ sealed class Code(val code: String) {
 class Statement(code: String, val timeOffset: Int) : Code(code) {
 
   override fun toScript(builder: StringBuilder, indentation: Int) {
-    builder.append(indentationUnit * indentation
-        + code.split("\n").joinToString("\n" + "  " * indentation))
+    builder.append(
+      indentationUnit * indentation
+          + code.split("\n").joinToString("\n" + "  " * indentation)
+    )
     builder.append("  $timeOffset\n")
   }
 
@@ -80,15 +83,15 @@ class Statement(code: String, val timeOffset: Int) : Code(code) {
 }
 
 class Block(
-    code: String,
-    val timeRange: IntRange,
-    innerBlocks: List<Code> = listOf()
+  code: String,
+  val timeRange: IntRange,
+  innerBlocks: List<Code> = listOf()
 ) : Code(code) {
 
   val innerBlocks = mergeWithSameRange(innerBlocks.asSequence()
-      .filter { it !is Block || !it.timeRange.empty }
-      .sortedBy { it.startTime }
-      .toList()
+    .filter { it !is Block || !it.timeRange.empty }
+    .sortedBy { it.startTime }
+    .toList()
   )
 
   override fun toScript(builder: StringBuilder, indentation: Int) {

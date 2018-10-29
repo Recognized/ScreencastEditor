@@ -38,9 +38,9 @@ object TimeOffsetParser {
       element.putUserData(TIME_RANGE_KEY, null)
       if (isBlock) {
         Block(
-            element.text.substringBefore("{").trim { it.isWhitespace() },
-            range,
-            list
+          element.text.substringBefore("{").trim { it.isWhitespace() },
+          range,
+          list
         )
       } else {
         val start = range.start
@@ -60,8 +60,8 @@ object TimeOffsetParser {
    * @param offsets sorted.
    **/
   private fun markElements(
-      expressions: List<PsiElement>,
-      offsets: List<TimeOffset>
+    expressions: List<PsiElement>,
+    offsets: List<TimeOffset>
   ) {
     val intervals = offsets.sortedBy { it.textOffset }
     var j = 0

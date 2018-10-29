@@ -12,7 +12,7 @@ import javax.swing.ScrollPaneConstants
 import javax.swing.event.ChangeListener
 
 class EditorPane(
-    screencast: ScreencastFile
+  screencast: ScreencastFile
 ) : JBScrollPane() {
   val waveformView = if (screencast.isAudioSet) WaveformView(screencast) else null
   val waveformController = waveformView?.let { WaveformController(it) }
@@ -21,9 +21,9 @@ class EditorPane(
 
   init {
     val splitter = EditorSplitter(
-        waveformView ?: StubPanel(),
-        scriptView,
-        scriptView.coordinator
+      waveformView ?: StubPanel(),
+      scriptView,
+      scriptView.coordinator
     )
     setViewportView(splitter)
     verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER

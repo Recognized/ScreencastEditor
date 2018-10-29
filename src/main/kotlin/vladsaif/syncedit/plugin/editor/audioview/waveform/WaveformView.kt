@@ -147,10 +147,12 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
     }
   }
 
-  private inline fun Graphics2D.drawWaveformPiece(workPieces: List<Pair<IntRange, EditionModel.EditionType>>,
-                                                  cutColor: Color,
-                                                  noChangeColor: Color,
-                                                  painter: (Int) -> Unit) {
+  private inline fun Graphics2D.drawWaveformPiece(
+    workPieces: List<Pair<IntRange, EditionModel.EditionType>>,
+    cutColor: Color,
+    noChangeColor: Color,
+    painter: (Int) -> Unit
+  ) {
     var last = Int.MIN_VALUE
     loop@ for (piece in workPieces) {
       color = when (piece.second) {
@@ -181,12 +183,14 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
       }
       val (leftBound, rightBound) = coordinates
       color = WaveformGraphics.WORD_SEPARATOR_COLOR
-      stroke = BasicStroke(WaveformGraphics.WORD_SEPARATOR_WIDTH,
-          BasicStroke.CAP_BUTT,
-          BasicStroke.JOIN_BEVEL,
-          0f,
-          FloatArray(1) { WaveformGraphics.DASH_WIDTH },
-          0f)
+      stroke = BasicStroke(
+        WaveformGraphics.WORD_SEPARATOR_WIDTH,
+        BasicStroke.CAP_BUTT,
+        BasicStroke.JOIN_BEVEL,
+        0f,
+        FloatArray(1) { WaveformGraphics.DASH_WIDTH },
+        0f
+      )
       if (leftBound > usedRange.start) {
         drawLine(leftBound, 0, leftBound, height)
       }
@@ -200,12 +204,14 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
     val x = selectionModel.movingBorder
     if (x == -1) return
     color = WaveformGraphics.WORD_MOVING_SEPARATOR_COLOR
-    stroke = BasicStroke(WaveformGraphics.WORD_SEPARATOR_WIDTH,
-        BasicStroke.CAP_BUTT,
-        BasicStroke.JOIN_BEVEL,
-        0f,
-        FloatArray(1) { WaveformGraphics.DASH_WIDTH },
-        0f)
+    stroke = BasicStroke(
+      WaveformGraphics.WORD_SEPARATOR_WIDTH,
+      BasicStroke.CAP_BUTT,
+      BasicStroke.JOIN_BEVEL,
+      0f,
+      FloatArray(1) { WaveformGraphics.DASH_WIDTH },
+      0f
+    )
     drawLine(x, 0, x, height)
   }
 

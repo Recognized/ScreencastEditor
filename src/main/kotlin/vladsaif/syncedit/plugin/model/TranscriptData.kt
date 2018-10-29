@@ -19,7 +19,7 @@ class TranscriptData(words: List<WordData>) {
   val words = words.sorted()
   val text: String
     get() = TextFormatter.formatLines(words.map { it.filteredText }, 120, separator = '\u00A0')
-        .joinToString(separator = "\n") { it }
+      .joinToString(separator = "\n") { it }
 
   // JAXB needs to access default constructor via reflection and add element
   // so we may abuse fact that ArrayList can be assigned to kotlin List
@@ -50,8 +50,8 @@ class TranscriptData(words: List<WordData>) {
     if (concat.size < 2) return this
     val concatText = concat.joinToString(separator = " ") { it.filteredText }
     val newWord = WordData(
-        concatText,
-        IntRange(concat.first().range.start, concat.last().range.end)
+      concatText,
+      IntRange(concat.first().range.start, concat.last().range.end)
     )
     val newWords = mutableListOf<WordData>()
     newWords.addAll(words.subList(0, indexRange.start))

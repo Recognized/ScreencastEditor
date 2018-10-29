@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.model
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel

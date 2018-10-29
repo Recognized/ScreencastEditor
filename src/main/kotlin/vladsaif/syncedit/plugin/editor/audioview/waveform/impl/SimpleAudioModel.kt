@@ -55,15 +55,15 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
 
   override fun msRangeToFrameRange(range: IntRange): LongRange {
     return LongRange(
-        (framesPerMillisecond * range.start).toLong(),
-        (framesPerMillisecond * range.end).toLong()
+      (framesPerMillisecond * range.start).toLong(),
+      (framesPerMillisecond * range.end).toLong()
     )
   }
 
   override fun frameRangeToMsRange(range: LongRange): IntRange {
     return IntRange(
-        (millisecondsPerFrame * range.start).toInt(),
-        (millisecondsPerFrame * range.end).toInt()
+      (millisecondsPerFrame * range.start).toInt(),
+      (millisecondsPerFrame * range.end).toInt()
     )
   }
 
@@ -77,9 +77,11 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
     }
   }
 
-  override fun getAveragedSampleData(maxChunks: Int,
-                                     chunkRange: IntRange,
-                                     isActive: () -> Boolean): List<AveragedSampleData> {
+  override fun getAveragedSampleData(
+    maxChunks: Int,
+    chunkRange: IntRange,
+    isActive: () -> Boolean
+  ): List<AveragedSampleData> {
     val framesPerChunk = (totalFrames / maxChunks).toInt()
     SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { input ->
       val decodeFormat = input.format.toDecodeFormat()
@@ -88,9 +90,11 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
         AveragedSampleData(chunks, chunkRange.start, decodeFormat.sampleSizeInBits)
       }
       if (chunks == 0) return ret
-      AudioSampler(SoundProvider.getAudioInputStream(decodeFormat, input),
-          countSkippedFrames(maxChunks, chunkRange, framesPerChunk),
-          countReadFrames(maxChunks, chunkRange, framesPerChunk)).use {
+      AudioSampler(
+        SoundProvider.getAudioInputStream(decodeFormat, input),
+        countSkippedFrames(maxChunks, chunkRange, framesPerChunk),
+        countReadFrames(maxChunks, chunkRange, framesPerChunk)
+      ).use {
         countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, isActive)
       }
       return ret
@@ -108,13 +112,15 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
     return res.floorToInt()
   }
 
-  private fun countStat(audio: AudioSampler,
-                        framesPerChunk: Int,
-                        data: List<AveragedSampleData>,
-                        maxChunks: Int,
-                        chunkRange: IntRange,
-                        channels: Int,
-                        isActive: () -> Boolean) {
+  private fun countStat(
+    audio: AudioSampler,
+    framesPerChunk: Int,
+    data: List<AveragedSampleData>,
+    maxChunks: Int,
+    chunkRange: IntRange,
+    channels: Int,
+    isActive: () -> Boolean
+  ) {
     val peaks = List(channels) { LongArray(framesPerChunk + 1) }
     var restCounter = getBigChunkRange(maxChunks).intersect(chunkRange).length
     var frameCounter = 0
@@ -127,7 +133,8 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
         channelCounter = 0
         frameCounter++
         if (frameCounter == framesPerChunk && restCounter <= 0 ||
-            frameCounter == framesPerChunk + 1 && restCounter > 0) {
+          frameCounter == framesPerChunk + 1 && restCounter > 0
+        ) {
           restCounter--
           data.forEachIndexed { index, x -> x.setChunk(frameCounter, chunkCounter, peaks[index]) }
           chunkCounter++

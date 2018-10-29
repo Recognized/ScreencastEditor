@@ -9,7 +9,7 @@ class AudioCoordinator(private val audioDataModel: AudioDataModel) : Coordinator
 
   override fun toScreenPixel(time: Long, unit: TimeUnit): Int {
     return getPixel(
-        (TimeUnit.MILLISECONDS.convert(time, unit) * audioDataModel.framesPerMillisecond).toLong()
+      (TimeUnit.MILLISECONDS.convert(time, unit) * audioDataModel.framesPerMillisecond).toLong()
     )
   }
 
@@ -21,12 +21,16 @@ class AudioCoordinator(private val audioDataModel: AudioDataModel) : Coordinator
   fun getPixel(frame: Long) = audioDataModel.getChunk(maxPixels, frame)
 
   fun pixelRangeToFrameRange(pixelRange: IntRange): LongRange {
-    return LongRange(audioDataModel.getStartFrame(maxPixels, pixelRange.start),
-        audioDataModel.getStartFrame(maxPixels, pixelRange.end + 1) - 1)
+    return LongRange(
+      audioDataModel.getStartFrame(maxPixels, pixelRange.start),
+      audioDataModel.getStartFrame(maxPixels, pixelRange.end + 1) - 1
+    )
   }
 
   fun frameRangeToPixelRange(frameRange: LongRange): IntRange {
-    return IntRange(audioDataModel.getChunk(maxPixels, frameRange.start),
-        audioDataModel.getChunk(maxPixels, frameRange.end))
+    return IntRange(
+      audioDataModel.getChunk(maxPixels, frameRange.start),
+      audioDataModel.getChunk(maxPixels, frameRange.end)
+    )
   }
 }

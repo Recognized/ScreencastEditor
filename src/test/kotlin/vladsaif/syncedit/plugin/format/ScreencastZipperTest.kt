@@ -2,7 +2,7 @@ package vladsaif.syncedit.plugin.format
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import com.intellij.util.io.inputStream
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import vladsaif.syncedit.plugin.*
 import vladsaif.syncedit.plugin.model.ScreencastFile

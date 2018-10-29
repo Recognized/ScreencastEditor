@@ -25,7 +25,7 @@ class LibrariesLoader {
       // It finds android.app.Application class and assumes that it is running under Android. Then it fails.
       // So to prevent it from finding it, we should load these classes with system classloader as parent.
       val loadedUrls = (LibrariesLoader::class.java.classLoader as? PluginClassLoader)?.urls
-          ?: (LibrariesLoader::class.java.classLoader as URLClassLoader).urLs.asList()
+        ?: (LibrariesLoader::class.java.classLoader as URLClassLoader).urLs.asList()
       myUrls = loadedUrls
     }
 

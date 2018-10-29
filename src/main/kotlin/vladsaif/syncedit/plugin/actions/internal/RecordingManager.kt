@@ -55,14 +55,14 @@ object RecordingManager {
             pane.repaint()
           }
           pane.add(
-              countDown,
-              GridBagBuilder()
-                  .weightx(1.0)
-                  .weighty(1.0)
-                  .gridx(0)
-                  .gridy(0)
-                  .fill(GridBagConstraints.BOTH)
-                  .done()
+            countDown,
+            GridBagBuilder()
+              .weightx(1.0)
+              .weighty(1.0)
+              .gridx(0)
+              .gridy(0)
+              .fill(GridBagConstraints.BOTH)
+              .done()
           )
           pane.revalidate()
           pane.repaint()
@@ -83,10 +83,10 @@ object RecordingManager {
     LOG.info("Raw audio path: $rawAudioPath")
     // Delete temp file on application exit
     Disposer.register(
-        ApplicationManager.getApplication(),
-        Disposable {
-          Files.deleteIfExists(rawAudioPath)
-        }
+      ApplicationManager.getApplication(),
+      Disposable {
+        Files.deleteIfExists(rawAudioPath)
+      }
     )
     SoundRecorder.start { line ->
       Files.newOutputStream(rawAudioPath).buffered().use {
@@ -121,9 +121,9 @@ object RecordingManager {
   }
 
   private fun saveScreencast(
-      screencast: Path,
-      rawAudio: Path,
-      name: String
+    screencast: Path,
+    rawAudio: Path,
+    name: String
   ) {
     val out = screencast.resolve(name.replace('.', '_') + ScreencastFileType.dotExtension)
     val task = object : Task.Backgroundable(null, "Saving screencast: $out", false) {
@@ -166,9 +166,9 @@ object RecordingManager {
 
   private fun showSaveDialog(rawAudio: Path) {
     val res = Messages.showYesNoDialog(
-        "Would you like to save screencast?",
-        "Save screencast",
-        null
+      "Would you like to save screencast?",
+      "Save screencast",
+      null
     )
     if (res == Messages.YES) {
       val descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor()
@@ -178,11 +178,11 @@ object RecordingManager {
           return@chooseFile
         }
         val name = Messages.showInputDialog(
-            "Enter screencast name",
-            "Save screencast",
-            null,
-            "screencast_${Date().toString().replace(' ', '_').replace(':', '_')}",
-            NAME_VALIDATOR
+          "Enter screencast name",
+          "Save screencast",
+          null,
+          "screencast_${Date().toString().replace(' ', '_').replace(':', '_')}",
+          NAME_VALIDATOR
         )
         if (name == null) {
           clear(rawAudio)

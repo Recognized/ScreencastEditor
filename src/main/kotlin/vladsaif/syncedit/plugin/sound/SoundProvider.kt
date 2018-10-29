@@ -79,9 +79,9 @@ object SoundProvider {
   }
 
   fun getAudioInputStream(
-      rawData: InputStream,
-      format: AudioFormat,
-      length: Long
+    rawData: InputStream,
+    format: AudioFormat,
+    length: Long
   ): AudioInputStream {
     return AudioInputStream(ExactSkippingBIS(rawData), format, length)
   }
@@ -113,24 +113,26 @@ object SoundProvider {
 
   private fun AudioFormat.toMonoFormat(): AudioFormat {
     return AudioFormat(
-        AudioFormat.Encoding.PCM_SIGNED,
-        if (this.sampleRate > 0) this.sampleRate else 44100f,
-        16,
-        1,
-        2,
-        if (this.sampleRate > 0) this.sampleRate else 44100f,
-        false
+      AudioFormat.Encoding.PCM_SIGNED,
+      if (this.sampleRate > 0) this.sampleRate else 44100f,
+      16,
+      1,
+      2,
+      if (this.sampleRate > 0) this.sampleRate else 44100f,
+      false
     )
   }
 
   private fun AudioFormat.toPcmPreservingChannels() =
-      AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-          44100f,
-          16,
-          channels,
-          2 * channels,
-          44100f,
-          false)
+    AudioFormat(
+      AudioFormat.Encoding.PCM_SIGNED,
+      44100f,
+      16,
+      channels,
+      2 * channels,
+      44100f,
+      false
+    )
 
   // This is needed to make possible converting audio to recognizable WAV format without temporary file storage
   // and without storing whole decoded file in RAM, because it can be very big.
@@ -229,9 +231,9 @@ object SoundProvider {
   private fun createSizedAudioStream(source: AudioInputStream, size: Long): AudioInputStream {
     if (source.frameLength > 0) return source
     return object : AudioInputStream(
-        ByteArrayInputStream(ByteArray(0)), // fake arguments
-        source.format.toPcmPreservingChannels(),
-        size
+      ByteArrayInputStream(ByteArray(0)), // fake arguments
+      source.format.toPcmPreservingChannels(),
+      size
     ) {
       override fun skip(n: Long) = source.skip(n)
 

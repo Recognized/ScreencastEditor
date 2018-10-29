@@ -25,8 +25,8 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.io.exists
 import com.intellij.util.io.isFile
-import kotlinx.coroutines.experimental.Dispatchers
-import kotlinx.coroutines.experimental.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AudioDataModel
@@ -67,8 +67,8 @@ import javax.swing.event.ChangeListener
  * @throws java.io.IOException If I/O error occurs while reading xml
  */
 class ScreencastFile(
-    val project: Project,
-    val file: Path
+  val project: Project,
+  val file: Path
 ) : Disposable {
 
   private val myListeners: MutableSet<Listener> = ContainerUtil.newConcurrentSet()
@@ -116,8 +116,9 @@ class ScreencastFile(
       ApplicationManager.getApplication().assertIsDispatchThread()
       if (value != field) {
         if (CommandProcessor.getInstance().currentCommand != null
-            && !UndoManager.getInstance(project).isUndoInProgress
-            && !UndoManager.getInstance(project).isRedoInProgress) {
+          && !UndoManager.getInstance(project).isUndoInProgress
+          && !UndoManager.getInstance(project).isRedoInProgress
+        ) {
           UndoManager.getInstance(project).undoableActionPerformed(TranscriptDataUndoableAction(field!!, value))
         }
         field = value
@@ -165,23 +166,23 @@ class ScreencastFile(
       }
       if (isScriptSet) {
         val tempFile = createVirtualFile(
-            "$name.kts",
-            readContents(myScriptInputStream),
-            KotlinFileType.INSTANCE
+          "$name.kts",
+          readContents(myScriptInputStream),
+          KotlinFileType.INSTANCE
         ).also { it.putUserData(KEY, this@ScreencastFile) }
         PsiDocumentManager.getInstance(project).commitDocument(getPsi<KtFile>(tempFile)!!.viewProvider.document!!)
         codeModel.blocks = TimeOffsetParser.parse(getPsi(tempFile)!!).blocks
         scriptFile = createVirtualFile(
-            "$name.kts",
-            codeModel.serialize(),
-            KotlinFileType.INSTANCE
+          "$name.kts",
+          codeModel.serialize(),
+          KotlinFileType.INSTANCE
         )
         PsiDocumentManager.getInstance(project).commitDocument(scriptDocument!!)
         val markedText = codeModel.createTextWithoutOffsets()
         scriptViewFile = createVirtualFile(
-            "$name.kts",
-            markedText.text,
-            KotlinFileType.INSTANCE
+          "$name.kts",
+          markedText.text,
+          KotlinFileType.INSTANCE
         )
         scriptViewDoc!!.addDocumentListener(ChangesReproducer(markedText.ranges))
       }
@@ -225,11 +226,11 @@ class ScreencastFile(
     }
     // Change word ranges because of deletions
     val newTranscriptData = data?.words?.asSequence()
-        ?.filter { it.state != WordData.State.EXCLUDED }
-        ?.map { it.copy(range = msDeleted.impose(it.range)) }
-        ?.filter { !it.range.empty }
-        ?.toList()
-        ?.let { TranscriptData(it) }
+      ?.filter { it.state != WordData.State.EXCLUDED }
+      ?.map { it.copy(range = msDeleted.impose(it.range)) }
+      ?.filter { !it.range.empty }
+      ?.toList()
+      ?.let { TranscriptData(it) }
 
     // TODO update offsets
     val newScript = scriptDocument?.text
@@ -476,9 +477,9 @@ class ScreencastFile(
 
   private fun createTranscriptPsi(data: TranscriptData) {
     transcriptFile = createVirtualFile(
-        "$name.transcript",
-        data.text,
-        TranscriptFileType
+      "$name.transcript",
+      data.text,
+      TranscriptFileType
     )
     transcriptFile!!.putUserData(KEY, this)
   }
@@ -491,12 +492,12 @@ class ScreencastFile(
 
   private fun createVirtualFile(name: String, text: String, type: FileType): VirtualFile {
     return PsiFileFactory.getInstance(project).createFileFromText(
-        name,
-        type,
-        text,
-        0,
-        true,
-        false
+      name,
+      type,
+      text,
+      0,
+      true,
+      false
     ).virtualFile
   }
 
@@ -509,8 +510,8 @@ class ScreencastFile(
   private fun getInputStreamByType(type: EntryType): InputStream? {
     val exists = ZipFile(file.toFile()).use { file ->
       file.entries()
-          .asSequence()
-          .any { it.comment == type.name }
+        .asSequence()
+        .any { it.comment == type.name }
     }
     return if (exists) ZipEntryInputStream(ZipFile(file.toFile()), type.name) else null
   }
@@ -550,18 +551,18 @@ class ScreencastFile(
 
 
   private inner class TranscriptDataUndoableAction(
-      private val dataBefore: TranscriptData?,
-      private val dataAfter: TranscriptData?
+    private val dataBefore: TranscriptData?,
+    private val dataAfter: TranscriptData?
   ) : UndoableAction {
 
     private val myAffectedDocuments = mutableSetOf<DocumentReference>()
 
     init {
       transcriptFile
-          ?.let { FileDocumentManager.getInstance().getDocument(it) }
-          ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+        ?.let { FileDocumentManager.getInstance().getDocument(it) }
+        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
       scriptDocument
-          ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
     }
 
     override fun redo() {

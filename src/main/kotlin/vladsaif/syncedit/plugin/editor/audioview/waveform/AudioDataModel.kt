@@ -44,10 +44,12 @@ interface AudioDataModel {
 }
 
 fun AudioFormat.toDecodeFormat() =
-    AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-        sampleRate,
-        16,
-        channels,
-        channels * 2,
-        sampleRate,
-        false)
+  AudioFormat(
+    AudioFormat.Encoding.PCM_SIGNED,
+    sampleRate,
+    16,
+    channels,
+    channels * 2,
+    sampleRate,
+    false
+  )

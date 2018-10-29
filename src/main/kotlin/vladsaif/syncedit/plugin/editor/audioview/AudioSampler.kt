@@ -10,9 +10,9 @@ import kotlin.math.min
  * Working only for formats which sampleSizeInBits >= 8
  */
 class AudioSampler(
-    val underlyingStream: AudioInputStream,
-    skippedFrames: Long,
-    readFrames: Long
+  val underlyingStream: AudioInputStream,
+  skippedFrames: Long,
+  readFrames: Long
 ) : AutoCloseable by underlyingStream {
   val buffer = ByteArray(8192)
   var pos = 0
@@ -53,9 +53,9 @@ class AudioSampler(
         pos = 0
         do {
           val ret = underlyingStream.read(
-              buffer,
-              endPos,
-              min(min(leftBytes, Int.MAX_VALUE.toLong()).toInt(), buffer.size - endPos)
+            buffer,
+            endPos,
+            min(min(leftBytes, Int.MAX_VALUE.toLong()).toInt(), buffer.size - endPos)
           )
           if (ret == -1) break
           endPos += ret

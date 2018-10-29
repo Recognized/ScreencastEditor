@@ -18,8 +18,8 @@ import kotlin.concurrent.thread
 import kotlin.math.min
 
 class PlayerImpl(
-    private val getAudioStream: () -> InputStream,
-    private val editionModel: EditionModel
+  private val getAudioStream: () -> InputStream,
+  private val editionModel: EditionModel
 ) : Player {
   private val mySource: SourceDataLine
   private var myProcessUpdater: (Long) -> Unit = {}
@@ -114,8 +114,8 @@ class PlayerImpl(
           while (needBytes != 0L || needSkip != 0L) {
             if (needBytes != 0L) {
               val zeroesCount = min(buffer.size.toLong(), needBytes)
-                  .toInt()
-                  .modFloor(frameSize)
+                .toInt()
+                .modFloor(frameSize)
               if (mySignalStopReceived) {
                 break@outer
               }

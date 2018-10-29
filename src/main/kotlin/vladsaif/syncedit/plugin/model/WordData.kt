@@ -11,12 +11,12 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter
 
 @XmlAccessorType(XmlAccessType.FIELD)
 data class WordData(
-    @field:XmlElement
-    private val text: String,
-    @field:XmlJavaTypeAdapter(IntRangeAdapter::class)
-    val range: IntRange,
-    @field:XmlAttribute
-    val state: State = State.PRESENTED
+  @field:XmlElement
+  private val text: String,
+  @field:XmlJavaTypeAdapter(IntRangeAdapter::class)
+  val range: IntRange,
+  @field:XmlAttribute
+  val state: State = State.PRESENTED
 ) : Comparable<WordData> {
   /**
    * Replaces non-breaking space symbol because it is used in TranscriptView language as word separator
@@ -37,10 +37,10 @@ data class WordData(
 
 @XmlAccessorType(XmlAccessType.FIELD)
 private class IntRangeAdapter(
-    @field:XmlAttribute
-    var start: Int = 0,
-    @field:XmlAttribute
-    var end: Int = 0
+  @field:XmlAttribute
+  var start: Int = 0,
+  @field:XmlAttribute
+  var end: Int = 0
 ) : XmlAdapter<IntRangeAdapter, IntRange>() {
 
   override fun marshal(v: IntRange?): IntRangeAdapter {

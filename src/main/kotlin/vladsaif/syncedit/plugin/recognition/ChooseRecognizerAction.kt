@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.recognition
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.ui.DialogBuilder
 import javax.swing.JSpinner
 import javax.swing.SpinnerListModel
@@ -13,7 +12,7 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
     val builder = DialogBuilder()
     with(builder) {
       val spinner = JSpinner()
-      val elements = Extensions.getExtensions(SpeechRecognizer.EP_NAME).map { ElementWrapper(it) }
+      val elements = SpeechRecognizer.EP_NAME.extensionList.map { ElementWrapper(it) }
       println(elements)
       spinner.model = SpinnerListModel(elements)
       spinner.value = ElementWrapper(SpeechRecognizer.getCurrentRecognizer())
@@ -35,7 +34,7 @@ class ChooseRecognizerAction : AnAction(), PersistentStateComponent<ChooseRecogn
   }
 
   override fun loadState(state: State) {
-    for (recognizer in Extensions.getExtensions(SpeechRecognizer.EP_NAME)) {
+    for (recognizer in SpeechRecognizer.EP_NAME.extensionList) {
       if (recognizer.name == state.recognizerName) {
         SpeechRecognizer.setCurrentRecognizer(recognizer)
       }

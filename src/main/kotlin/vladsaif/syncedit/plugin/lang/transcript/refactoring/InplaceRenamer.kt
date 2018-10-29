@@ -147,7 +147,15 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
       val attributes = colorsManager.globalScheme.getAttributes(EditorColors.WRITE_SEARCH_RESULT_ATTRIBUTES)
 
       val highlightManager = HighlightManager.getInstance(editor.project ?: return)
-      highlightManager.addOccurrenceHighlight(editor, range.startOffset, range.endOffset, attributes, 0, highlighters, null)
+      highlightManager.addOccurrenceHighlight(
+        editor,
+        range.startOffset,
+        range.endOffset,
+        attributes,
+        0,
+        highlighters,
+        null
+      )
       for (highlighter in highlighters) {
         highlighter.isGreedyToLeft = true
         highlighter.isGreedyToRight = true

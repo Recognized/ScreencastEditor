@@ -68,8 +68,10 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
       }
     }
   val drawRange: IntRange
-    get() = IntRange(max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
-        min(myFirstVisibleChunk + myVisibleChunks * 3, maxChunks - 1))
+    get() = IntRange(
+      max(myFirstVisibleChunk - myVisibleChunks * 3, 0),
+      min(myFirstVisibleChunk + myVisibleChunks * 3, maxChunks - 1)
+    )
   val editionModel: EditionModel
     get() = screencast.editionModel
   val wordBorders: List<IntRange>
@@ -92,14 +94,16 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
   fun setRangeProperties(
-      maxChunks: Int = this.maxChunks,
-      firstVisibleChunk: Int = myFirstVisibleChunk,
-      visibleChunks: Int = myVisibleChunks
+    maxChunks: Int = this.maxChunks,
+    firstVisibleChunk: Int = myFirstVisibleChunk,
+    visibleChunks: Int = myVisibleChunks
   ) {
     val model = audioDataModel
-    coordinator.maxPixels = minOf(max(maxChunks, (model.totalFrames / maxSamplesPerChunk).floorToInt()),
-        (model.totalFrames / minSamplesPerChunk).floorToInt(),
-        Int.MAX_VALUE / minSamplesPerChunk)
+    coordinator.maxPixels = minOf(
+      max(maxChunks, (model.totalFrames / maxSamplesPerChunk).floorToInt()),
+      (model.totalFrames / minSamplesPerChunk).floorToInt(),
+      Int.MAX_VALUE / minSamplesPerChunk
+    )
     myVisibleChunks = max(min(visibleChunks, this.maxChunks), 1)
     myFirstVisibleChunk = max(min(firstVisibleChunk, this.maxChunks - myVisibleChunks - 1), 0)
   }
@@ -133,7 +137,8 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
    */
   fun updateData() {
     if (myLastLoadedVisibleRange?.intersects(myVisibleRange) != true
-        || myVisibleRange.length != myLastLoadedVisibleRange?.length) {
+      || myVisibleRange.length != myLastLoadedVisibleRange?.length
+    ) {
       myLastLoadedVisibleRange = myVisibleRange
       loadData(maxChunks, drawRange) {
         fireStateChanged()
@@ -142,9 +147,9 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
   inner class LoadTask(
-      private val maxChunks: Int,
-      private val drawRange: IntRange,
-      private val callback: () -> Unit
+    private val maxChunks: Int,
+    private val drawRange: IntRange,
+    private val callback: () -> Unit
   ) : Runnable {
     @Volatile
     var isActive = true
@@ -181,16 +186,18 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
   fun scale(
-      factor: Float,
-      position: Int = myFirstVisibleChunk + myVisibleChunks / 2,
-      callback: () -> Unit
+    factor: Float,
+    position: Int = myFirstVisibleChunk + myVisibleChunks / 2,
+    callback: () -> Unit
   ) {
     val centerPosition = position / maxChunks.toFloat()
     val currentMaxChunks = maxChunks
     val currentFirstVisible = myFirstVisibleChunk
     val currentVisible = myVisibleChunks
-    setRangeProperties(maxChunks = (maxChunks * factor).toLong().floorToInt(),
-        visibleChunks = (myVisibleChunks * factor).toLong().floorToInt())
+    setRangeProperties(
+      maxChunks = (maxChunks * factor).toLong().floorToInt(),
+      visibleChunks = (myVisibleChunks * factor).toLong().floorToInt()
+    )
     val newMaxChunks = maxChunks
     val newCenterPoint = (newMaxChunks * centerPosition).toInt()
     val newVisibleRange = myVisibleRange
@@ -199,10 +206,18 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
     val newFirstVisible = myFirstVisibleChunk
     val newVisibleChunks = myVisibleChunks
     val newDrawRange = drawRange
-    setRangeProperties(maxChunks = currentMaxChunks, firstVisibleChunk = currentFirstVisible, visibleChunks = currentVisible)
+    setRangeProperties(
+      maxChunks = currentMaxChunks,
+      firstVisibleChunk = currentFirstVisible,
+      visibleChunks = currentVisible
+    )
     loadData(newMaxChunks, newDrawRange) {
       resetCache()
-      setRangeProperties(maxChunks = newMaxChunks, firstVisibleChunk = newFirstVisible, visibleChunks = newVisibleChunks)
+      setRangeProperties(
+        maxChunks = newMaxChunks,
+        firstVisibleChunk = newFirstVisible,
+        visibleChunks = newVisibleChunks
+      )
       myLastLoadedVisibleRange = newVisibleRange
       callback()
     }
@@ -214,7 +229,7 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
   fun getContainingWordRange(coordinate: Int) =
-      myCoordinates.find { it.contains(coordinate) } ?: IntRange.EMPTY
+    myCoordinates.find { it.contains(coordinate) } ?: IntRange.EMPTY
 
   fun getCoveredRange(extent: IntRange): IntRange {
     val coordinates = myCoordinates

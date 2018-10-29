@@ -4,11 +4,10 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
 import vladsaif.syncedit.plugin.util.end
-import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.max
 import kotlin.math.min
 
-fun wordsBetween(start: PsiElement, end: PsiElement) = buildSequence<TranscriptWord> {
+fun wordsBetween(start: PsiElement, end: PsiElement) = sequence<TranscriptWord> {
   var x: PsiElement? = start
   while (true) {
     if (x is TranscriptWord) {

@@ -25,12 +25,12 @@ class WordHintBalloonListener(parent: Component, private val locator: WaveformMo
       val prev = myPreviousBalloon
       return if (prev == null || prev.isDisposed || prev.wasFadedOut()) {
         JBPopupFactory.getInstance().createBalloonBuilder(myBalloonLabel)
-            .setFadeoutTime(3000)
-            .createBalloon()
-            .also {
-              it.setAnimationEnabled(false)
-              myPreviousBalloon = it
-            }
+          .setFadeoutTime(3000)
+          .createBalloon()
+          .also {
+            it.setAnimationEnabled(false)
+            myPreviousBalloon = it
+          }
       } else {
         prev
       }

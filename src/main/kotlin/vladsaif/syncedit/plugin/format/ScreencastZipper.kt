@@ -58,14 +58,14 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
 
   @Synchronized
   fun addAudio(
-      audio: Path
+    audio: Path
   ) {
     addAudio(Files.newInputStream(audio))
   }
 
   @Synchronized
   fun addAudio(
-      inputStream: InputStream
+    inputStream: InputStream
   ) {
     useAudioOutputStream { output ->
       inputStream.buffered().use { input ->
@@ -76,18 +76,18 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
 
   @Synchronized
   fun addAudio(
-      audio: Path,
-      editionModel: EditionModel,
-      progressUpdater: (Double) -> Unit = {}
+    audio: Path,
+    editionModel: EditionModel,
+    progressUpdater: (Double) -> Unit = {}
   ) {
     addAudio(Supplier { Files.newInputStream(audio) }, editionModel, progressUpdater)
   }
 
   @Synchronized
   fun addAudio(
-      inputStream: Supplier<InputStream>,
-      editionModel: EditionModel,
-      progressUpdater: (Double) -> Unit = {}
+    inputStream: Supplier<InputStream>,
+    editionModel: EditionModel,
+    progressUpdater: (Double) -> Unit = {}
   ) {
     var totalLength = 0L
     var frameSize = 0
@@ -117,12 +117,12 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
 
   @Synchronized
   private fun editAndSave(
-      audio: InputStream,
-      out: OutputStream,
-      editionModel: EditionModel,
-      frameSize: Int,
-      totalLength: Long,
-      progressUpdater: (Double) -> Unit
+    audio: InputStream,
+    out: OutputStream,
+    editionModel: EditionModel,
+    frameSize: Int,
+    totalLength: Long,
+    progressUpdater: (Double) -> Unit
   ) {
     val buffered = out.buffered()
     val editions = editionModel.editions
@@ -148,8 +148,8 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
           while (needBytes != 0L || needSkip != 0L) {
             if (needBytes != 0L) {
               val zeroesCount = min(buffer.size.toLong(), needBytes)
-                  .toInt()
-                  .modFloor(frameSize)
+                .toInt()
+                .modFloor(frameSize)
               progressUpdater(totalFrames.toDouble() / totalLength)
               buffered.write(buffer, 0, zeroesCount)
               totalFrames += zeroesCount / frameSize

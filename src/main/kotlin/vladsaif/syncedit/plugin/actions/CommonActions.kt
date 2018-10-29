@@ -8,9 +8,9 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import kotlinx.coroutines.experimental.Dispatchers
-import kotlinx.coroutines.experimental.GlobalScope
-import kotlinx.coroutines.experimental.channels.actor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.actor
 import vladsaif.syncedit.plugin.editor.toolbar.ScreencastToolWindow
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
@@ -75,11 +75,11 @@ val lightSavingActor = GlobalScope.actor<ScreencastFile>(Dispatchers.Default) {
 }
 
 fun DefaultActionGroup.addAction(
-    what: String,
-    desc: String?,
-    icon: Icon?,
-    action: () -> Unit,
-    checkAvailable: () -> Boolean = { true }
+  what: String,
+  desc: String?,
+  icon: Icon?,
+  action: () -> Unit,
+  checkAvailable: () -> Boolean = { true }
 ) {
   this.add(object : AnAction(what, desc, icon) {
     override fun actionPerformed(event: AnActionEvent) {

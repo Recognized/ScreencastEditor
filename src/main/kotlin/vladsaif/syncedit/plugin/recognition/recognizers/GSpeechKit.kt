@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.recognition.recognizers
 
-import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.CancellationException
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.model.WordData
 import vladsaif.syncedit.plugin.recognition.CredentialsProvider

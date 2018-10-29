@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit
 import javax.swing.JScrollPane
 
 class ZoomController(
-    private val view: WaveformView?,
-    private val scriptView: ScriptView
+  private val view: WaveformView?,
+  private val scriptView: ScriptView
 ) : ChangeNotifier by DefaultChangeNotifier() {
   private var myScrollPane: JScrollPane? = null
   private var myIgnoreBarChanges = false
@@ -72,17 +72,17 @@ class ZoomController(
     val linearCoordinator = scriptView.coordinator as LinearCoordinator
     val oldValue = linearCoordinator.getTimeUnitsPerPixel(TimeUnit.NANOSECONDS)
     linearCoordinator.setTimeUnitsPerPixel(
-        (oldValue * factor).toLong().coerceIn(myAcceptableScale),
-        TimeUnit.NANOSECONDS
+      (oldValue * factor).toLong().coerceIn(myAcceptableScale),
+      TimeUnit.NANOSECONDS
     )
     val endTime = scriptView.screencast.codeModel.blocks.lastOrNull()?.endTime ?: 0
     val scrollPane = myScrollPane
     if (scrollPane != null) {
       val currentPos = linearCoordinator.toNanoseconds(scrollPane.horizontalScrollBar.value)
       scriptView.preferredSize = Dimension(
-          linearCoordinator.toScreenPixel(endTime.toLong(), TimeUnit.MILLISECONDS)
-              + Toolkit.getDefaultToolkit().screenSize.width / 2,
-          scriptView.height
+        linearCoordinator.toScreenPixel(endTime.toLong(), TimeUnit.MILLISECONDS)
+            + Toolkit.getDefaultToolkit().screenSize.width / 2,
+        scriptView.height
       )
       val visible = scrollPane.viewport.visibleRect
       visible.x = linearCoordinator.toScreenPixel(currentPos, TimeUnit.NANOSECONDS)

@@ -37,8 +37,8 @@ object CredentialsProvider {
   }
 
   @com.intellij.openapi.components.State(
-      name = "googleCredentials.xml",
-      storages = [Storage("googleCredentialsPath.xml")]
+    name = "googleCredentials.xml",
+    storages = [Storage("googleCredentialsPath.xml")]
   )
   private class State(key: String? = null) : PersistentStateComponent<CredentialsProvider.State> {
     val myCredentials: String? = key

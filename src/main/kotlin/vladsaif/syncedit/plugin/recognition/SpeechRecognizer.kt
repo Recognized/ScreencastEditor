@@ -8,9 +8,9 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import kotlinx.coroutines.experimental.*
-import kotlinx.coroutines.experimental.channels.actor
-import kotlinx.coroutines.experimental.future.await
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.future.await
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
@@ -94,10 +94,10 @@ interface SpeechRecognizer {
         val cause = getCause(ex)
         withContext(ExEDT) {
           Notification(
-              "Screencast Editor",
-              "Recognition failed",
-              "${if (cause is IOException) "I/O error occurred: " else "Error:"} ${cause.message}",
-              NotificationType.ERROR
+            "Screencast Editor",
+            "Recognition failed",
+            "${if (cause is IOException) "I/O error occurred: " else "Error:"} ${cause.message}",
+            NotificationType.ERROR
           ).notify(file.project)
         }
       }
@@ -110,8 +110,8 @@ interface SpeechRecognizer {
   }
 
   private class RecognizeTask(
-      file: ScreencastFile,
-      val job: Job
+    file: ScreencastFile,
+    val job: Job
   ) : Task.Backgroundable(file.project, "Getting transcript for ${file.file.fileName}", true) {
 
     override fun run(indicator: ProgressIndicator) {

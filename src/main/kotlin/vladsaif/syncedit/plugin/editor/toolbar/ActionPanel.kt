@@ -14,11 +14,11 @@ class ActionPanel(actionGroup: ActionGroup, content: JComponent) : SimpleToolWin
   init {
     add(content)
     setToolbar(
-        ActionManager.getInstance().createActionToolbar(
-            ActionPlaces.TOOLBAR,
-            actionGroup,
-            false
-        ).component
+      ActionManager.getInstance().createActionToolbar(
+        ActionPlaces.TOOLBAR,
+        actionGroup,
+        false
+      ).component
     )
   }
 

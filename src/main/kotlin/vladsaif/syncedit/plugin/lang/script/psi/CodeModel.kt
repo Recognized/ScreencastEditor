@@ -13,9 +13,9 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   var blocks: List<Code> = listOf()
     set(value) {
       field = Code.mergeWithSameRange(value.asSequence()
-          .filter { it !is Block || !it.timeRange.empty }
-          .sortedBy { it.startTime }
-          .toList())
+        .filter { it !is Block || !it.timeRange.empty }
+        .sortedBy { it.startTime }
+        .toList())
       myDepthCache.clear()
       recalculateDepth(field)
       fireStateChanged()
@@ -98,17 +98,19 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   }
 
   private fun serializeImpl(
-      builder: MarkedTextBuilder,
-      code: Code,
-      lastOffset: Int,
-      indent: String,
-      indentation: Int = 0
+    builder: MarkedTextBuilder,
+    code: Code,
+    lastOffset: Int,
+    indent: String,
+    indentation: Int = 0
   ): Int {
     with(builder) {
       var localLastOffset = lastOffset
-      appendOffset(indent * indentation
-          + TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset)
-          + "\n")
+      appendOffset(
+        indent * indentation
+            + TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset)
+            + "\n"
+      )
       localLastOffset = code.startTime
       when (code) {
         is Statement -> {

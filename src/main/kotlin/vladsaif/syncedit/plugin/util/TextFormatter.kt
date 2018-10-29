@@ -35,10 +35,10 @@ object TextFormatter {
   }
 
   fun formatLines(
-      words: List<String>,
-      lineSize: Int,
-      getWidth: (String) -> Int = { it.length },
-      separator: Char = ' '
+    words: List<String>,
+    lineSize: Int,
+    getWidth: (String) -> Int = { it.length },
+    separator: Char = ' '
   ): List<String> {
     val lines = mutableListOf<String>()
     var builder = StringBuilder()

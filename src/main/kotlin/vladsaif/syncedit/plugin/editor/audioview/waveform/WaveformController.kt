@@ -159,9 +159,9 @@ class WaveformController(private val view: WaveformView) : Disposable {
 }
 
 fun showNotification(
-    content: String,
-    title: String = "Error",
-    type: NotificationType = NotificationType.ERROR
+  content: String,
+  title: String = "Error",
+  type: NotificationType = NotificationType.ERROR
 ) {
   Notifications.Bus.notify(Notification("Screencast Editor", title, content, type))
 }

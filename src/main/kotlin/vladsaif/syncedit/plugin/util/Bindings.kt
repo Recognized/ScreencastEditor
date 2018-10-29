@@ -3,8 +3,8 @@ package vladsaif.syncedit.plugin.util
 import com.intellij.openapi.editor.RangeMarker
 
 data class MergedLineMapping(
-    val itemRange: IntRange,
-    val lineRange: IntRange
+  val itemRange: IntRange,
+  val lineRange: IntRange
 )
 
 /**
@@ -20,7 +20,8 @@ typealias LineMapping = Map<Int, IntRange>
 typealias TextRangeMapping = Map<Int, RangeMarker>
 
 fun mergeLineMappings(mergedLineMappings: List<MergedLineMapping>): List<MergedLineMapping> {
-  val sorted = mergedLineMappings.asSequence().filter { !it.itemRange.empty && !it.lineRange.empty }.sortedBy { it.itemRange.start }
+  val sorted = mergedLineMappings.asSequence().filter { !it.itemRange.empty && !it.lineRange.empty }
+    .sortedBy { it.itemRange.start }
   return sorted.fold(mutableListOf()) { acc, x ->
     when {
       x.itemRange.empty -> Unit
@@ -35,7 +36,8 @@ fun mergeLineMappings(mergedLineMappings: List<MergedLineMapping>): List<MergedL
   }
 }
 
-fun createMergedLineMappings(lineMapping: LineMapping, lineConverter: (IntRange) -> IntRange = { it }) = lineMapping.entries
+fun createMergedLineMappings(lineMapping: LineMapping, lineConverter: (IntRange) -> IntRange = { it }) =
+  lineMapping.entries
     .map { (index, x) -> MergedLineMapping(IntRange(index, index), lineConverter(x)) }
     .let(::mergeLineMappings)
 

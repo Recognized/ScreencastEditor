@@ -48,8 +48,8 @@ class CountdownPanel(count: Int) : JPanel() {
       val shape = gv.outline
       Color.BLACK
       translate(
-          width / 2 - metrics.stringWidth(str) / 2,
-          height / 3 + metrics.height
+        width / 2 - metrics.stringWidth(str) / 2,
+        height / 3 + metrics.height
       )
       draw(shape)
       color = Color.YELLOW

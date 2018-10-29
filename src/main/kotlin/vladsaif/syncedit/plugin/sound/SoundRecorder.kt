@@ -20,13 +20,13 @@ object SoundRecorder {
     }
 
   val RECORD_FORMAT = AudioFormat(
-      AudioFormat.Encoding.PCM_SIGNED,
-      44100f,
-      16,
-      1,
-      2,
-      44100f,
-      false
+    AudioFormat.Encoding.PCM_SIGNED,
+    44100f,
+    16,
+    1,
+    2,
+    44100f,
+    false
   )
 
   init {

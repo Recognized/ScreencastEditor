@@ -18,9 +18,9 @@ import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
 
 class EditorSplitter(
-    waveformView: JComponent,
-    scriptView: JComponent,
-    private val coordinator: Coordinator
+  waveformView: JComponent,
+  scriptView: JComponent,
+  private val coordinator: Coordinator
 ) : Splitter(true, 0.5f, 0.0f, 1.0f) {
   private var myInterval: Long = 1_000_000_000 // 1 second
   private val myFormatCache = TLongObjectHashMap<SizedString>()
@@ -80,9 +80,9 @@ class EditorSplitter(
           }
           font = UIUtil.getLabelFont()
           drawString(
-              sizedString.value,
-              currentPos - sizedString.width / 2,
-              (bounds.height - BIG_MARK_HEIGHT * 1.5).toInt()
+            sizedString.value,
+            currentPos - sizedString.width / 2,
+            (bounds.height - BIG_MARK_HEIGHT * 1.5).toInt()
           )
           timeStart += myInterval
         }
@@ -92,8 +92,8 @@ class EditorSplitter(
 
       private fun Graphics2D.formatTime(ns: Long): SizedString {
         var string = (BigDecimal.valueOf(ns).divide(myDivisor, 10, RoundingMode.HALF_UP))
-            .toString()
-            .trimEnd { it == '0' }
+          .toString()
+          .trimEnd { it == '0' }
         if (string.endsWith('.')) {
           string += '0'
         }
