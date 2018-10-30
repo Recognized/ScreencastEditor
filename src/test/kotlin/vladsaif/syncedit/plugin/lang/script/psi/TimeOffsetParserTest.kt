@@ -77,8 +77,8 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     val actual = TimeOffsetParser.parse(ktFile)
     val expected = codeBlockModel {
       statement("statement()", 2000)
-      statement("call()", 2000)
-      statement("anotherCall()", 2000)
+      statement("call()", 2333)
+      statement("anotherCall()", 2666)
       block("startBlock", 3000..5000) {
         statement("call()", 3000)
       }
@@ -98,8 +98,8 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     val actual = TimeOffsetParser.parse(ktFile)
     val expected = codeBlockModel {
       statement("statement()", 0)
-      statement("call()", 0)
-      statement("anotherCall()", 0)
+      statement("call()", 1000)
+      statement("anotherCall()", 2000)
     }
     assertEquals(expected, actual)
   }

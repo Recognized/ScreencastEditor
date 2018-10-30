@@ -12,7 +12,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   var blocks: List<Code> = listOf()
     set(value) {
-      field = Code.mergeWithSameRange(value.asSequence()
+      field = Code.separateCodeWithSameRange(value.asSequence()
         .filter { it !is Block || !it.timeRange.empty }
         .sortedBy { it.startTime }
         .toList())

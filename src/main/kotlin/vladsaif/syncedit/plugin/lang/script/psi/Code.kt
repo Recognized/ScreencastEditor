@@ -1,7 +1,6 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
 import vladsaif.syncedit.plugin.actions.times
-import vladsaif.syncedit.plugin.util.empty
 import vladsaif.syncedit.plugin.util.end
 
 sealed class Code(val code: String) {
@@ -29,7 +28,7 @@ sealed class Code(val code: String) {
     const val indentationUnit = "  "
 
     @JvmStatic
-    fun mergeWithSameRange(innerBlocks: List<Code>): List<Code> {
+    fun separateCodeWithSameRange(innerBlocks: List<Code>): List<Code> {
       val list = mutableListOf<Code>()
       for (block in innerBlocks) {
         if (!list.isEmpty() && block.startTime == list.last().startTime) {
@@ -88,11 +87,7 @@ class Block(
   innerBlocks: List<Code> = listOf()
 ) : Code(code) {
 
-  val innerBlocks = mergeWithSameRange(innerBlocks.asSequence()
-    .filter { it !is Block || !it.timeRange.empty }
-    .sortedBy { it.startTime }
-    .toList()
-  )
+  val innerBlocks = innerBlocks.sortedBy { it.startTime }
 
   override fun toScript(builder: StringBuilder, indentation: Int) {
     builder.append(indentationUnit * indentation + code.split("\n").joinToString("\n" + "  " * indentation))
