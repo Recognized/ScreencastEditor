@@ -148,7 +148,6 @@ private fun consistentWith(
     }
     if (!consistent) return false
   }
-  return script == screencast.scriptDocument?.text
-      && data == screencast.data
+  return data == screencast.data
       && (editionModel ?: DefaultEditionModel()) == screencast.editionModel
 }

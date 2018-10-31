@@ -1,10 +1,12 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
+import com.github.tmatek.zhangshasha.TreeDistance
+import com.github.tmatek.zhangshasha.TreeNode
 import gnu.trove.TObjectIntHashMap
+import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.actions.times
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
-import vladsaif.syncedit.plugin.util.empty
 import vladsaif.syncedit.plugin.util.end
 
 class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() {
@@ -12,10 +14,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   var blocks: List<Code> = listOf()
     set(value) {
-      field = Code.separateCodeWithSameRange(value.asSequence()
-        .filter { it !is Block || !it.timeRange.empty }
-        .sortedBy { it.startTime }
-        .toList())
+      field = value.sortedBy { it.startTime }
       myDepthCache.clear()
       recalculateDepth(field)
       fireStateChanged()
@@ -79,7 +78,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   fun serialize(): String {
     val builder = MarkedTextBuilder(true)
-    val indent = Code.indentationUnit
+    val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
     for (code in blocks) {
       lastOffset = serializeImpl(builder, code, lastOffset, indent)
@@ -89,7 +88,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   fun createTextWithoutOffsets(): MarkedText {
     val builder = MarkedTextBuilder(false)
-    val indent = Code.indentationUnit
+    val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
     for (code in blocks) {
       lastOffset = serializeImpl(builder, code, lastOffset, indent)
@@ -188,6 +187,30 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     }
   }
 
+  fun createEditableTree(): RawTreeNode {
+    val root = RawTreeNode(RawTreeData.Root)
+    root.addAll(blocks.map { convertCodeIntoNode(it, root) })
+    return root
+  }
+
+  fun transformedByScript(ktFile: KtFile): CodeModel {
+    val root = createEditableTree()
+    val mod = TreeDistance.treeDistanceZhangShasha(root, RawTreeNode.buildFromPsi(ktFile))
+    TreeDistance.transformTree(root, mod)
+    return RawTreeNode.toCodeModel(root)
+  }
+
+  private fun convertCodeIntoNode(code: Code, parent: TreeNode? = null): RawTreeNode {
+    val currentNode = RawTreeNode(RawTreeData.CodeData(code))
+    currentNode.parent = parent
+    if (code is Block) {
+      for (every in code.innerBlocks) {
+        currentNode.add(convertCodeIntoNode(every, currentNode))
+      }
+    }
+    return currentNode
+  }
+
   class MarkedTextBuilder(val withOffsets: Boolean = true) {
     private val myBuilder = StringBuilder()
     private val myRanges = mutableListOf<IntRange>()
@@ -228,7 +251,7 @@ class CodeBlockBuilder {
   }
 }
 
-fun codeBlockModel(closure: CodeBlockBuilder.() -> Unit): CodeModel {
+fun codeModel(closure: CodeBlockBuilder.() -> Unit): CodeModel {
   val builder = CodeBlockBuilder()
   builder.closure()
   return CodeModel(builder.build())

@@ -75,7 +75,7 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = codeBlockModel {
+    val expected = codeModel {
       statement("statement()", 2000)
       statement("call()", 2333)
       statement("anotherCall()", 2666)
@@ -96,7 +96,7 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = codeBlockModel {
+    val expected = codeModel {
       statement("statement()", 0)
       statement("call()", 1000)
       statement("anotherCall()", 2000)
@@ -114,7 +114,7 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("startBlock", 3000..4000) {
       }
     }
@@ -132,7 +132,7 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("startBlock", 3000..5000) {
       }
     }
@@ -147,7 +147,7 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
     """.trimIndent()
     val ktFile = createKtFile(text)
     val actual = TimeOffsetParser.parse(ktFile)
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("startBlock", 0..0) {
       }
     }
@@ -156,7 +156,7 @@ class TimeOffsetParserTest : LightCodeInsightFixtureTestCase() {
 
   @Test
   fun `test block model serialization`() {
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("outer", 30..900) {
         block("a", 50..100) {
         }

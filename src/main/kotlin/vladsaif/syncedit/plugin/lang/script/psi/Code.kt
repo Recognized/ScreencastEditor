@@ -25,30 +25,7 @@ sealed class Code(val code: String) {
   }
 
   companion object {
-    const val indentationUnit = "  "
-
-    @JvmStatic
-    fun separateCodeWithSameRange(innerBlocks: List<Code>): List<Code> {
-      val list = mutableListOf<Code>()
-      for (block in innerBlocks) {
-        if (!list.isEmpty() && block.startTime == list.last().startTime) {
-          val newCode = list.last().code + "\n" + block.code
-          val captured = list.last()
-          val newEnd = captured.endTime
-          list[list.size - 1] = when {
-            block is Statement && captured is Statement -> Statement(newCode, newEnd)
-            else -> Block(
-              newCode, block.startTime..newEnd,
-              (block as? Block)?.innerBlocks ?: listOf<Code>()+
-              ((captured as? Block)?.innerBlocks ?: listOf())
-            )
-          }
-        } else {
-          list.add(block)
-        }
-      }
-      return list
-    }
+    const val INDENTATION_UNIT = "  "
   }
 }
 
@@ -56,7 +33,7 @@ class Statement(code: String, val timeOffset: Int) : Code(code) {
 
   override fun toScript(builder: StringBuilder, indentation: Int) {
     builder.append(
-      indentationUnit * indentation
+      INDENTATION_UNIT * indentation
           + code.split("\n").joinToString("\n" + "  " * indentation)
     )
     builder.append("  $timeOffset\n")
@@ -90,7 +67,7 @@ class Block(
   val innerBlocks = innerBlocks.sortedBy { it.startTime }
 
   override fun toScript(builder: StringBuilder, indentation: Int) {
-    builder.append(indentationUnit * indentation + code.split("\n").joinToString("\n" + "  " * indentation))
+    builder.append(INDENTATION_UNIT * indentation + code.split("\n").joinToString("\n" + "  " * indentation))
     builder.append(" {\n")
     for (block in innerBlocks) {
       block.toScript(builder, indentation + 1)

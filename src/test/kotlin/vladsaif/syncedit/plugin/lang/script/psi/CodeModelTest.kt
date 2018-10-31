@@ -8,7 +8,7 @@ class CodeModelTest {
 
   @Test
   fun `test zero depth complete statement boundary`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       block("a", 50..100) {
       }
 
@@ -24,7 +24,7 @@ class CodeModelTest {
 
   @Test
   fun `test zero depth incomplete left statement boundary`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       statement("statement", 200)
 
       block("b", 300..400) {
@@ -37,7 +37,7 @@ class CodeModelTest {
 
   @Test
   fun `test zero depth incomplete statement boundaries`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       statement("statement", 200)
     }
     val beingFind = model.blocks[0] as Statement
@@ -47,7 +47,7 @@ class CodeModelTest {
 
   @Test
   fun `test complete block boundary`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       block("outer", 30..900) {
         block("a", 50..100) {
         }
@@ -68,7 +68,7 @@ class CodeModelTest {
 
   @Test
   fun `test complete block boundary with inner`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       block("outer", 30..900) {
         block("a", 50..100) {
         }
@@ -91,35 +91,14 @@ class CodeModelTest {
   }
 
   @Test
-  fun `test merging statement with same time`() {
-    val model = codeBlockModel {
-      statement("code1", 200)
-      statement("code2", 200)
-    }
-    assertEquals(1, model.blocks.size)
-    assertEquals("code1\ncode2", model.blocks[0].code)
-  }
-
-  @Test
-  fun `test merging statement with block`() {
-    val model = codeBlockModel {
-      statement("code1", 200)
-      block("block2", 200..300) {
-      }
-    }
-    assertEquals(1, model.blocks.size)
-    assertEquals("code1\nblock2", model.blocks[0].code)
-  }
-
-  @Test
   fun `test replace statement`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       block("block1", 200..300) {
         statement("code1", 250)
       }
     }
     model.replace(model.blocks[0].cast<Block>().innerBlocks[0], Statement("newCode", 222))
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("block1", 200..300) {
         statement("newCode", 222)
       }
@@ -129,7 +108,7 @@ class CodeModelTest {
 
   @Test
   fun `test replace block`() {
-    val model = codeBlockModel {
+    val model = codeModel {
       block("block1", 200..300) {
         statement("code1", 250)
       }
@@ -140,7 +119,7 @@ class CodeModelTest {
       }
     }
     model.replace(model.blocks[1].cast<Block>().innerBlocks[0], Statement("newCode", 350))
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("block1", 200..300) {
         statement("code1", 250)
       }
@@ -153,7 +132,7 @@ class CodeModelTest {
 
   @Test
   fun `test offset offsets`() {
-    val expected = codeBlockModel {
+    val expected = codeModel {
       block("block1", 200..300) {
         statement("code1", 250)
       }
@@ -164,7 +143,6 @@ class CodeModelTest {
     val markedText = expected.createTextWithoutOffsets()
     var newText = expected.serialize()
     for (range in markedText.ranges) {
-      println(newText.substring(range))
       newText = newText.replaceRange(range, "")
     }
     assertEquals(markedText.text, newText)
