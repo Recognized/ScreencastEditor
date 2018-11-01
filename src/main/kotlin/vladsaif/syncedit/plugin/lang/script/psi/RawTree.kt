@@ -167,7 +167,7 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
         listOf(Offset(-1, 0)) + list.filterIsInstance(Offset::class.java)
       )
       LOG.info("Plain tree build: ${list.joinToString("\n")}")
-      val (blocks, _) = fold<Code>(code, 0) { entry, inner ->
+      val (codes, _) = fold<Code>(code, 0) { entry, inner ->
         val (k, total) = output.fraction[entry] ?: 1 to 1
         val range = output.time[entry]!!
         val correctedRange = (range.start + range.length / total * (k - 1))..range.end
@@ -177,7 +177,7 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
           Statement(entry.value, correctedRange.start)
         }
       }
-      return CodeModel(blocks)
+      return CodeModel(codes)
     }
 
     private fun <T> fold(

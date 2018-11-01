@@ -18,6 +18,7 @@ import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
 import java.util.concurrent.TimeUnit
 import javax.swing.event.ChangeListener
 import kotlin.math.max
@@ -27,19 +28,28 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   val coordinator = givenCoordinator ?: LinearCoordinator().apply {
     setTimeUnitsPerPixel(50, TimeUnit.MILLISECONDS)
   }
-  private val myBordersRectangles =
-    Cache { calculateBorders(screencast.codeModel.blocks).sortedByDescending { it.area.y } }
-  private val myBlockAreas = Cache { calculateCodeAreas(screencast.codeModel.blocks) }
+  private val myCaches = mutableListOf<Cache<*>>()
+  private val myBordersRectangles = Cache { calculateBorders(screencast.codeModel.codes).sortedWith(AREA_COMPARATOR) }
+  private val myBlockAreas = Cache { calculateCodeAreas(screencast.codeModel.codes) }
   private var myTempBorder: DraggedBorder? = null
   private val myShortenedCode = THashMap<Code, String>(TObjectIdentityHashingStrategy())
   private val myDepthDelta: Int = calculateDepthDelta()
-  private val myFurtherMostBorder = Cache { findPreferredWidth() }
+  private val myFurtherMostBorder = Cache { lastBlockPixel() }
+  private val myFirstBorder = Cache { firstBlockPixel() }
+  private var myTempMovingDelta = 0
 
   val preferredWidth get() = myFurtherMostBorder.get()
 
-  private fun findPreferredWidth(): Int {
+  private fun lastBlockPixel(): Int {
     return coordinator.toScreenPixel(
-      screencast.codeModel.blocks.lastOrNull()?.endTime?.toLong() ?: 0L,
+      screencast.codeModel.codes.lastOrNull()?.endTime?.toLong() ?: 0L,
+      TimeUnit.MILLISECONDS
+    )
+  }
+
+  private fun firstBlockPixel(): Int {
+    return coordinator.toScreenPixel(
+      screencast.codeModel.codes.firstOrNull()?.startTime?.toLong() ?: 0L,
       TimeUnit.MILLISECONDS
     )
   }
@@ -65,8 +75,21 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   fun installListeners() {
+    addMouseMotionListener(object : MouseMotionAdapter() {
+      override fun mouseMoved(e: MouseEvent) {
+        if (!e.isShiftDown && !UIUtil.isControlKeyDown(e) && overBorder(e.point) != null) {
+          e.component?.cursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
+        } else if (e.isShiftDown && !UIUtil.isControlKeyDown(e)) {
+          e.component?.cursor = Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR)
+        } else {
+          e.component?.cursor = Cursor.getDefaultCursor()
+        }
+      }
+    })
     addMouseListener(myDragBorderListener)
     addMouseMotionListener(myDragBorderListener)
+    addMouseListener(myDragWholeScriptListener)
+    addMouseMotionListener(myDragWholeScriptListener)
   }
 
   fun overBorder(point: Point): Border? {
@@ -80,14 +103,16 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   fun resetCache() {
-    myBordersRectangles.resetCache()
-    myBlockAreas.resetCache()
+    myCaches.forEach(Cache<*>::resetCache)
     myShortenedCode.clear()
-    myFurtherMostBorder.resetCache()
   }
 
   override fun paint(g: Graphics) {
     with(g as Graphics2D) {
+      if (myTempMovingDelta != 0) {
+        val delta = max(myTempMovingDelta, -myFirstBorder.get())
+        translate(delta, 0)
+      }
       val metrics = getFontMetrics(ScriptGraphics.FONT)
       font = ScriptGraphics.FONT
       val getLength = { string: String -> metrics.stringWidth(string) }
@@ -180,16 +205,6 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
 
   private val myDragBorderListener = object : MouseDragListener() {
 
-    override fun mouseMoved(e: MouseEvent?) {
-      e ?: return
-      super.mouseMoved(e)
-      if (!e.isShiftDown && !UIUtil.isControlKeyDown(e) && overBorder(e.point) != null) {
-        e.component?.cursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
-      } else {
-        e.component?.cursor = Cursor.getDefaultCursor()
-      }
-    }
-
     override fun onDragStarted(point: Point) {
       super.onDragStarted(point)
       if (dragStartEvent!!.let {
@@ -232,6 +247,44 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       myTempBorder = null
       repaint()
     }
+  }
+
+  private val myDragWholeScriptListener = object : MouseDragListener() {
+    private var myDragStarted = false
+
+    override fun onDragStarted(point: Point) {
+      super.onDragStarted(point)
+      if (dragStartEvent!!.isShiftDown && !UIUtil.isControlKeyDown(dragStartEvent!!)) {
+        myDragStarted = true
+      }
+    }
+
+    override fun onDrag(point: Point) {
+      super.onDrag(point)
+      if (myDragStarted) {
+        myTempMovingDelta = point.x - dragStartEvent!!.x
+        repaint()
+      }
+    }
+
+    override fun onDragFinished(point: Point) {
+      super.onDragFinished(point)
+      if (myDragStarted) {
+        fixCurrentScriptDelta()
+        myTempMovingDelta = 0
+        repaint()
+        myDragStarted = false
+        resetCache()
+      }
+    }
+  }
+
+  private fun fixCurrentScriptDelta() {
+    if (myTempMovingDelta == 0) return
+    val delta = max(myTempMovingDelta, -myFirstBorder.get())
+    val start = coordinator.toNanoseconds(myFirstBorder.get())
+    val end = coordinator.toNanoseconds(myFirstBorder.get() + delta)
+    screencast.codeModel.shiftAll(end - start, TimeUnit.NANOSECONDS)
   }
 
   private fun updateBlock(newBorder: DraggedBorder) {
@@ -316,8 +369,12 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     ) : CodeArea(x1, x2, y, statement)
   }
 
-  private class Cache<T>(private val recalculate: () -> T) {
+  private inner class Cache<T>(private val recalculate: () -> T) {
     private var myStorage: T? = null
+
+    init {
+      myCaches.add(this)
+    }
 
     fun get(): T {
       return if (myStorage != null) myStorage!! else recalculate().also { myStorage = it }
@@ -326,5 +383,12 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     fun resetCache() {
       myStorage = null
     }
+  }
+
+  companion object {
+    private val AREA_COMPARATOR = Comparator
+      .comparingInt<ScriptView.Border> { it.area.y }
+      .reversed()
+      .thenComparing(Comparator.comparingInt { it.area.x })
   }
 }

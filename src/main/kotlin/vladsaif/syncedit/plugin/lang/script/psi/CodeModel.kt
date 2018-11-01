@@ -9,11 +9,14 @@ import vladsaif.syncedit.plugin.actions.times
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.util.end
+import vladsaif.syncedit.plugin.util.floorToInt
+import vladsaif.syncedit.plugin.util.shift
+import java.util.concurrent.TimeUnit
 
 class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() {
   private val myDepthCache = TObjectIntHashMap<Code>()
 
-  var blocks: List<Code> = listOf()
+  var codes: List<Code> = listOf()
     set(value) {
       field = value.sortedBy { it.startTime }
       myDepthCache.clear()
@@ -22,23 +25,23 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     }
 
   init {
-    this.blocks = blocks
+    this.codes = blocks
   }
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
     other as CodeModel
-    if (blocks != other.blocks) return false
+    if (codes != other.codes) return false
     return true
   }
 
   override fun hashCode(): Int {
-    return blocks.hashCode()
+    return codes.hashCode()
   }
 
   override fun toString(): String {
-    return blocks.joinToString(separator = "")
+    return codes.joinToString(separator = "")
   }
 
   fun findDepth(code: Code): Int {
@@ -46,9 +49,9 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   }
 
   fun replace(oldCode: Code, newCode: Code) {
-    val (changed, newBlocks) = replaceImpl(blocks, oldCode, newCode)
+    val (changed, newBlocks) = replaceImpl(codes, oldCode, newCode)
     if (changed) {
-      blocks = newBlocks
+      codes = newBlocks
     }
   }
 
@@ -81,7 +84,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     val builder = MarkedTextBuilder(true)
     val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
-    for (code in blocks) {
+    for (code in codes) {
       lastOffset = serializeImpl(builder, code, lastOffset, indent)
     }
     return builder.done().text
@@ -91,7 +94,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     val builder = MarkedTextBuilder(false)
     val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
-    for (code in blocks) {
+    for (code in codes) {
       lastOffset = serializeImpl(builder, code, lastOffset, indent)
     }
     return builder.done()
@@ -135,7 +138,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   }
 
   private fun findParent(ofThis: Code, currentParent: Block? = null): Block? {
-    val amongThem = currentParent?.innerBlocks ?: blocks
+    val amongThem = currentParent?.innerBlocks ?: codes
     for (block in amongThem) {
       if (block === ofThis) {
         return currentParent
@@ -154,7 +157,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   private fun findDragBoundary(beingFind: Code, isLeft: Boolean): Pair<Int, Int> {
     val parent = findParent(beingFind)
-    val parentBlocks = parent?.innerBlocks ?: blocks
+    val parentBlocks = parent?.innerBlocks ?: codes
     val index = parentBlocks.asSequence().withIndex().find { (_, x) -> x == beingFind }!!.index
     val outerBoundaryLeft = if (index > 0) {
       parentBlocks[index - 1].endTime
@@ -190,7 +193,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
 
   fun createEditableTree(): RawTreeNode {
     val root = RawTreeNode(RawTreeData.Root)
-    root.addAll(blocks.map { convertCodeIntoNode(it, root) })
+    root.addAll(codes.map { convertCodeIntoNode(it, root) })
     return root
   }
 
@@ -200,6 +203,16 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     LOG.info("Transform cost: ${mod.sumBy {it.cost}}")
     TreeDistance.transformTree(root, mod)
     return RawTreeNode.toCodeModel(root)
+  }
+
+  fun shiftAll(delta: Long, unit: TimeUnit) {
+    val ms = TimeUnit.MILLISECONDS.convert(delta, unit).floorToInt()
+    val newCodes = codes.map { code ->
+      code.fold<Code>({ st -> st.copy(offset = st.timeOffset + ms) }) { block, list ->
+        block.copy(range = block.timeRange.shift(ms), innerBlocks = list)
+      }
+    }
+    codes = newCodes
   }
 
   private fun convertCodeIntoNode(code: Code, parent: TreeNode? = null): RawTreeNode {

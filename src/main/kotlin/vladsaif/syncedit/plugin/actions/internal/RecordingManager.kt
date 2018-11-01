@@ -82,8 +82,6 @@ object RecordingManager {
       LISTENER_INSTALLED = true
       SoundRecorder.addListener(object : SoundRecorder.StateListener {
         override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
-          println(oldValue)
-          println(newValue)
           when {
             oldValue == IDLE && newValue == RECORDING -> {
               Timer.start()

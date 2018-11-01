@@ -24,6 +24,13 @@ sealed class Code(val code: String) {
     }
   }
 
+  fun <T> fold(fnSt: (Statement) -> T, fnBl: (Block, List<T>) -> T): T {
+    return when(this) {
+      is Statement -> fnSt(this)
+      is Block -> fnBl(this, innerBlocks.map { it.fold(fnSt, fnBl) })
+    }
+  }
+
   companion object {
     const val INDENTATION_UNIT = "  "
   }
@@ -38,6 +45,8 @@ class Statement(code: String, val timeOffset: Int) : Code(code) {
     )
     builder.append("  $timeOffset\n")
   }
+
+  fun copy(code: String = this.code, offset: Int = this.timeOffset) = Statement(code, offset)
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -74,6 +83,12 @@ class Block(
     }
     builder.append("  " * indentation + "} $timeRange\n")
   }
+
+  fun copy(
+    code: String = this.code,
+    range: IntRange = this.timeRange,
+    innerBlocks: List<Code> = this.innerBlocks
+  ) = Block(code, range, innerBlocks)
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

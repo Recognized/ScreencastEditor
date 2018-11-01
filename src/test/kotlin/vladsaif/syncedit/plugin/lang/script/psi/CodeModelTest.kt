@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.lang.script.psi
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class CodeModelTest {
 
@@ -17,7 +18,7 @@ class CodeModelTest {
       block("b", 300..400) {
       }
     }
-    val beingFind = model.blocks[1] as Statement
+    val beingFind = model.codes[1] as Statement
     val expected = 100 to 300
     assertEquals(expected, model.findDragBoundary(beingFind))
   }
@@ -30,7 +31,7 @@ class CodeModelTest {
       block("b", 300..400) {
       }
     }
-    val beingFind = model.blocks[0] as Statement
+    val beingFind = model.codes[0] as Statement
     val expected = -1 to 300
     assertEquals(expected, model.findDragBoundary(beingFind))
   }
@@ -40,7 +41,7 @@ class CodeModelTest {
     val model = codeModel {
       statement("statement", 200)
     }
-    val beingFind = model.blocks[0] as Statement
+    val beingFind = model.codes[0] as Statement
     val expected = -1 to -1
     assertEquals(expected, model.findDragBoundary(beingFind))
   }
@@ -59,7 +60,7 @@ class CodeModelTest {
         }
       }
     }
-    val beingFind = (model.blocks[0] as Block).innerBlocks[1] as Block
+    val beingFind = (model.codes[0] as Block).innerBlocks[1] as Block
     val expectedLeft = 100 to 250
     val expectedRight = 200 to 300
     assertEquals(expectedLeft, model.findDragBoundary(beingFind, true))
@@ -83,7 +84,7 @@ class CodeModelTest {
         }
       }
     }
-    val beingFind = (model.blocks[0] as Block).innerBlocks[1] as Block
+    val beingFind = (model.codes[0] as Block).innerBlocks[1] as Block
     val expectedLeft = 100 to 210
     val expectedRight = 230 to 300
     assertEquals(expectedLeft, model.findDragBoundary(beingFind, true))
@@ -97,7 +98,7 @@ class CodeModelTest {
         statement("code1", 250)
       }
     }
-    model.replace(model.blocks[0].cast<Block>().innerBlocks[0], Statement("newCode", 222))
+    model.replace(model.codes[0].cast<Block>().innerBlocks[0], Statement("newCode", 222))
     val expected = codeModel {
       block("block1", 200..300) {
         statement("newCode", 222)
@@ -119,7 +120,7 @@ class CodeModelTest {
       }
     }
     println(model)
-    model.replace(model.blocks[1].cast<Block>().innerBlocks[0], Statement("newCode", 350))
+    model.replace(model.codes[1].cast<Block>().innerBlocks[0], Statement("newCode", 350))
     val expected = codeModel {
       block("block1", 200..300) {
         statement("code1", 250)
@@ -147,5 +148,27 @@ class CodeModelTest {
       newText = newText.replaceRange(range, "")
     }
     assertEquals(markedText.text, newText)
+  }
+
+  @Test
+  fun `test shift all`() {
+    val startModel = codeModel {
+      block("block1", 200..300) {
+        statement("code1", 250)
+      }
+      block("block2", 300..500) {
+        statement("newCode", 350)
+      }
+    }
+    val expectedModel = codeModel {
+      block("block1", 100..200) {
+        statement("code1", 150)
+      }
+      block("block2", 200..400) {
+        statement("newCode", 250)
+      }
+    }
+    startModel.shiftAll(-100, TimeUnit.MILLISECONDS)
+    assertEquals(expectedModel, startModel)
   }
 }

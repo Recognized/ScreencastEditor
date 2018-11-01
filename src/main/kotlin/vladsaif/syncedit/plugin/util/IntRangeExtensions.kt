@@ -33,6 +33,8 @@ infix fun IntRange.intersect(other: IntRange): IntRange {
   else IntRange.EMPTY
 }
 
+fun IntRange.shift(delta: Int) = (start + delta)..(endInclusive + delta)
+
 operator fun IntRange.component1(): Int = start
 
 operator fun IntRange.component2(): Int = end

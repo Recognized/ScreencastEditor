@@ -139,7 +139,7 @@ class RawTreeTest : LightCodeInsightFixtureTestCase() {
       |  }
       |}
     """.trimIndent().trimMargin()
-    val expected = CodeModel(listOf(Statement("hello", 0)) + model.blocks)
+    val expected = CodeModel(listOf(Statement("hello", 0)) + model.codes)
     model.assertTransformed(expected, text)
   }
 

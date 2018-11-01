@@ -75,7 +75,7 @@ class ZoomController(
       (oldValue * factor).toLong().coerceIn(myAcceptableScale),
       TimeUnit.NANOSECONDS
     )
-    val endTime = scriptView.screencast.codeModel.blocks.lastOrNull()?.endTime ?: 0
+    val endTime = scriptView.screencast.codeModel.codes.lastOrNull()?.endTime ?: 0
     val scrollPane = myScrollPane
     if (scrollPane != null) {
       val currentPos = linearCoordinator.toNanoseconds(scrollPane.horizontalScrollBar.value)

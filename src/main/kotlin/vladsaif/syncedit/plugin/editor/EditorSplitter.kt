@@ -16,6 +16,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
+import kotlin.math.max
 
 class EditorSplitter(
   waveformView: JComponent,
@@ -68,7 +69,7 @@ class EditorSplitter(
       private fun Graphics2D.drawInterval(bounds: Rectangle) {
         val start = bounds.x
         val end = bounds.x + bounds.width
-        var timeStart = (coordinator.toNanoseconds(start) ceil myInterval) * myInterval
+        var timeStart = max((coordinator.toNanoseconds(start) ceil myInterval) * myInterval, 0)
         val timeEnd = coordinator.toNanoseconds(end)
         while (timeStart <= timeEnd) {
           val currentPos = coordinator.toScreenPixel(timeStart, TimeUnit.NANOSECONDS)
@@ -92,11 +93,15 @@ class EditorSplitter(
 
       private fun Graphics2D.formatTime(ns: Long): SizedString {
         var string = (BigDecimal.valueOf(ns).divide(myDivisor, 10, RoundingMode.HALF_UP))
-          .toString()
+          .toPlainString()
           .trimEnd { it == '0' }
         if (string.endsWith('.')) {
           string += '0'
         }
+        if (string.startsWith("-")) {
+          string = "0"
+        }
+        println(string)
         val width = fontMetrics.stringWidth(string)
         val height = fontMetrics.height
         return SizedString(string, width, height)

@@ -180,7 +180,7 @@ class ScreencastFile(
     ).also { it.putUserData(KEY, this@ScreencastFile) }
     PsiDocumentManager.getInstance(project).commitDocument(getPsi<KtFile>(project, tempFile)!!.viewProvider.document!!)
     if (!PsiTreeUtil.hasErrorElements(getPsi<KtFile>(project, tempFile)!!)) {
-      codeModel.blocks = TimeOffsetParser.parse(getPsi(project, tempFile)!!).blocks
+      codeModel.codes = TimeOffsetParser.parse(getPsi(project, tempFile)!!).codes
     } else {
       errorScriptContainsErrors(this@ScreencastFile)
       // TODO
@@ -513,8 +513,7 @@ class ScreencastFile(
       ApplicationManager.getApplication().invokeLater(Runnable {
         PsiDocumentManager.getInstance(project).performForCommittedDocument(scriptViewDoc!!) {
           if (!PsiTreeUtil.hasErrorElements(scriptViewPsi!!)) {
-            codeModel.blocks = codeModel.transformedByScript(scriptViewPsi!!).blocks
-            println(codeModel)
+            codeModel.codes = codeModel.transformedByScript(scriptViewPsi!!).codes
           }
         }
       }, myExpired)
