@@ -1,9 +1,11 @@
 package vladsaif.syncedit.plugin.editor.toolbar
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
@@ -54,10 +56,18 @@ object ScreencastToolWindow {
     )
     audioPanel.disposeAction = { editorPane.waveformController.stopImmediately() }
     val controlPanel = ActionPanel(createMainActionGroup(screencast), audioPanel)
-    Disposer.register(controlPanel, audioPanel)
     val content = ContentFactory.SERVICE.getInstance().createContent(controlPanel, screencast.name, false)
     val toolWindow = getToolWindow(screencast.project)
+    Disposer.register(controlPanel, audioPanel)
     Disposer.register(content, controlPanel)
+    Disposer.register(content, screencast)
+    Disposer.register(content, Disposable {
+      with(screencast) {
+        for (file in listOfNotNull(scriptViewFile, transcriptFile)) {
+          FileEditorManager.getInstance(screencast.project).closeFile(file)
+        }
+      }
+    })
     if (editorPane.waveformView != null) {
       Disposer.register(content, editorPane.waveformView.model)
     }
