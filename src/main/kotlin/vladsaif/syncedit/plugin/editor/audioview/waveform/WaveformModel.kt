@@ -1,6 +1,8 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.editor.scriptview.AudioCoordinator
@@ -16,7 +18,7 @@ import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
 
-class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultChangeNotifier() {
+class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultChangeNotifier(), Disposable {
   val audioDataModel = screencast.audioDataModel!!
   /**
    * Waveform presented using sliding window and this is the visible part of it.
@@ -49,8 +51,10 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   private var myLastLoadedVisibleRange: IntRange? = null
   private var myWordBorders: List<IntRange> = listOf()
   private var myIsBroken = AtomicBoolean(false)
+  private val myTranscriptListener: () -> Unit
+  private val myEditionModelListener: ChangeListener
   var playFramePosition: AtomicLong = AtomicLong(-1L)
-  // TODO use it
+  // TODO make use of it
   val isBroken
     get() = myIsBroken.get()
   val coordinator = AudioCoordinator(audioDataModel)
@@ -87,8 +91,8 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   private fun calculateWordBorders(): List<IntRange> {
     val list = mutableListOf<IntRange>()
     for (x in myCoordinatesCache) {
-      list.add(IntRange(x.start - JBUI.scale(magnetRange), x.start + JBUI.scale(magnetRange)))
-      list.add(IntRange(x.end - JBUI.scale(magnetRange), x.end + JBUI.scale(magnetRange)))
+      list.add(IntRange(x.start - JBUI.scale(MAGNET_RANGE), x.start + JBUI.scale(MAGNET_RANGE)))
+      list.add(IntRange(x.end - JBUI.scale(MAGNET_RANGE), x.end + JBUI.scale(MAGNET_RANGE)))
     }
     return list
   }
@@ -100,24 +104,24 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   ) {
     val model = audioDataModel
     coordinator.maxPixels = minOf(
-      max(maxChunks, (model.totalFrames / maxSamplesPerChunk).floorToInt()),
-      (model.totalFrames / minSamplesPerChunk).floorToInt(),
-      Int.MAX_VALUE / minSamplesPerChunk
+      max(maxChunks, (model.totalFrames / MAX_SAMPLES_PER_CHUNK).floorToInt()),
+      (model.totalFrames / MIN_SAMPLES_PER_CHUNK).floorToInt(),
+      Int.MAX_VALUE / MIN_SAMPLES_PER_CHUNK
     )
     myVisibleChunks = max(min(visibleChunks, this.maxChunks), 1)
     myFirstVisibleChunk = max(min(firstVisibleChunk, this.maxChunks - myVisibleChunks - 1), 0)
   }
 
   init {
-    screencast.editionModel.addChangeListener(ChangeListener {
+    myEditionModelListener = ChangeListener {
       fireStateChanged()
-    })
-    screencast.addTranscriptDataListener(object : ScreencastFile.Listener {
-      override fun onTranscriptDataChanged() {
-        myCoordinatesCacheCoherent = false
-        fireStateChanged()
-      }
-    })
+    }
+    screencast.editionModel.addChangeListener(myEditionModelListener)
+    myTranscriptListener = {
+      myCoordinatesCacheCoherent = false
+      fireStateChanged()
+    }
+    screencast.addTranscriptDataListener(myTranscriptListener)
   }
 
   fun getCoordinates(word: WordData): IntRange {
@@ -144,6 +148,12 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
         fireStateChanged()
       }
     }
+  }
+
+  override fun dispose() {
+    LOG.info("Disposed: waveform model of ${this.screencast}")
+    screencast.removeTranscriptDataListener(myTranscriptListener)
+    screencast.editionModel.removeChangeListener(myEditionModelListener)
   }
 
   inner class LoadTask(
@@ -239,8 +249,9 @@ class WaveformModel(val screencast: ScreencastFile) : ChangeNotifier by DefaultC
   }
 
   companion object {
-    private const val maxSamplesPerChunk = 100000
-    private const val minSamplesPerChunk = 20
-    private const val magnetRange = 10
+    private const val MAX_SAMPLES_PER_CHUNK = 100000
+    private const val MIN_SAMPLES_PER_CHUNK = 20
+    private const val MAGNET_RANGE = 10
+    private val LOG = logger<WaveformModel>()
   }
 }

@@ -14,6 +14,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 import kotlin.math.min
 
@@ -235,6 +236,51 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
 
   enum class EntryType {
     AUDIO, TRANSCRIPT_DATA, SCRIPT, BINDINGS, EDITION_MODEL
+  }
+
+  // Actual zipStream cannot skip properly
+  private class ZipEntryInputStream(private val file: ZipFile, comment: String) : InputStream() {
+
+    private val myStream: InputStream = file.getInputStream(file.entries().asSequence().first { it.comment == comment })
+
+    override fun read() = myStream.read()
+
+    override fun read(b: ByteArray?) = myStream.read(b)
+
+    override fun read(b: ByteArray?, off: Int, len: Int) = myStream.read(b, off, len)
+
+    override fun available() = myStream.available()
+
+    override fun reset() = myStream.reset()
+
+    override fun mark(readlimit: Int) = myStream.mark(readlimit)
+
+    override fun markSupported() = myStream.markSupported()
+
+    override fun skip(n: Long) = myStream.skip(n)
+
+    override fun close() {
+      myStream.close()
+      file.close()
+    }
+  }
+
+
+  companion object {
+    fun isDataSet(path: Path, type: EntryType): Boolean {
+      return ZipFile(path.toFile()).use { file ->
+        file.entries().asSequence().any { it.comment == type.name }
+      }
+    }
+
+    fun getInputStreamByType(path: Path, type: EntryType): InputStream? {
+      val exists = ZipFile(path.toFile()).use { file ->
+        file.entries()
+          .asSequence()
+          .any { it.comment == type.name }
+      }
+      return if (exists) ZipEntryInputStream(ZipFile(path.toFile()), type.name) else null
+    }
   }
 }
 

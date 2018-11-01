@@ -57,6 +57,10 @@ object ScreencastToolWindow {
     Disposer.register(controlPanel, audioPanel)
     val content = ContentFactory.SERVICE.getInstance().createContent(controlPanel, screencast.name, false)
     val toolWindow = getToolWindow(screencast.project)
+    Disposer.register(content, controlPanel)
+    if (editorPane.waveformView != null) {
+      Disposer.register(content, editorPane.waveformView.model)
+    }
     toolWindow.contentManager.removeAllContents(true)
     toolWindow.contentManager.addContent(content)
     toolWindow.setAvailable(true, null)

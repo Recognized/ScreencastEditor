@@ -2,6 +2,7 @@ package vladsaif.syncedit.plugin.lang.script.psi
 
 import com.github.tmatek.zhangshasha.TreeDistance
 import com.github.tmatek.zhangshasha.TreeNode
+import com.intellij.openapi.diagnostic.logger
 import gnu.trove.TObjectIntHashMap
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.actions.times
@@ -196,6 +197,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   fun transformedByScript(ktFile: KtFile): CodeModel {
     val root = createEditableTree()
     val mod = TreeDistance.treeDistanceZhangShasha(root, RawTreeNode.buildFromPsi(ktFile))
+    LOG.info("Transform cost: ${mod.sumBy {it.cost}}")
     TreeDistance.transformTree(root, mod)
     return RawTreeNode.toCodeModel(root)
   }
@@ -228,6 +230,10 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     }
 
     fun done() = MarkedText(myBuilder.toString(), myRanges)
+  }
+
+  companion object {
+    private val LOG = logger<CodeModel>()
   }
 }
 

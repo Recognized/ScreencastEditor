@@ -16,7 +16,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.IdeGlassPaneUtil
 import com.intellij.openapi.wm.WindowManager
 import com.intellij.openapi.wm.impl.IdeGlassPaneImpl
+import com.intellij.testGuiFramework.recorder.GlobalActionRecorder
 import vladsaif.syncedit.plugin.actions.GeneratedCodeReceiver
+import vladsaif.syncedit.plugin.actions.Timer
 import vladsaif.syncedit.plugin.actions.errorIO
 import vladsaif.syncedit.plugin.format.ScreencastFileType
 import vladsaif.syncedit.plugin.format.ScreencastZipper
@@ -42,6 +44,7 @@ object RecordingManager {
   private val LOG = logger<RecordingManager>()
   private var CURRENT_GLASS_PANE: IdeGlassPaneImpl? = null
   private var CURRENT_RAW_AUDIO_PATH: Path? = null
+  private var LISTENER_INSTALLED = false
 
   init {
     SoundRecorder.addListener(object : SoundRecorder.StateListener {
@@ -70,10 +73,35 @@ object RecordingManager {
         }
       }
     })
+
+  }
+
+  @Synchronized
+  fun installSoundRecorderListener() {
+    if (!LISTENER_INSTALLED) {
+      LISTENER_INSTALLED = true
+      SoundRecorder.addListener(object : SoundRecorder.StateListener {
+        override fun stateChanged(oldValue: SoundRecorder.State, newValue: SoundRecorder.State) {
+          println(oldValue)
+          println(newValue)
+          when {
+            oldValue == IDLE && newValue == RECORDING -> {
+              Timer.start()
+              GlobalActionRecorder.activate()
+            }
+            oldValue == RECORDING && newValue == IDLE -> {
+              GlobalActionRecorder.deactivate()
+              Timer.stop()
+            }
+          }
+        }
+      })
+    }
   }
 
   fun startRecording() {
     ApplicationManager.getApplication().assertIsDispatchThread()
+    installSoundRecorderListener()
     val ideFrame = WindowManager.getInstance().getIdeFrame(null)
     val glassPane = IdeGlassPaneUtil.find(ideFrame.component) as IdeGlassPaneImpl
     CURRENT_GLASS_PANE = glassPane

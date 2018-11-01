@@ -5,17 +5,18 @@ import com.github.tmatek.zhangshasha.TreeNode
 import com.github.tmatek.zhangshasha.TreeOperation
 import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.kotlin.psi.KtFile
-import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.Code
+import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.CodeEntry
 import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.Offset
 import vladsaif.syncedit.plugin.util.end
 import vladsaif.syncedit.plugin.util.length
 
 sealed class RawTreeData {
-  val data get() = when(this) {
-    is Label -> label
-    is CodeData -> code.code
-    is Root -> ""
-  }
+  val data
+    get() = when (this) {
+      is Label -> label
+      is CodeData -> code.code
+      is Root -> ""
+    }
 
   class Label(val label: String, val isBlock: Boolean) : RawTreeData() {
     override fun toString(): String {
@@ -35,14 +36,6 @@ sealed class RawTreeData {
 class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   private var myParent: TreeNode? = null
   private val myChildren: MutableList<RawTreeNode> = mutableListOf()
-  private var mySubtreeCache = -1
-
-  val subtreeSize: Int get() {
-    if (mySubtreeCache != -1) return mySubtreeCache
-    val size = myChildren.asSequence().map { it.subtreeSize }.sum()
-    mySubtreeCache = size + 1
-    return size
-  }
 
   fun add(node: RawTreeNode) {
     myChildren.add(node)
@@ -53,7 +46,6 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   }
 
   override fun setParent(newParent: TreeNode?) {
-    LOG.info("Want set parent of $this to $newParent")
     myParent = newParent
   }
 
@@ -64,16 +56,14 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   override fun getChildren(): MutableList<out TreeNode> = myChildren
 
   override fun addChildAt(child: TreeNode, position: Int) {
-    LOG.info("Want to add to $this that $child in $position position")
     myChildren.add(position, child as RawTreeNode)
   }
 
   override fun renameNodeTo(other: TreeNode) {
-    LOG.info("Want to rename $this in $other")
     val current = data
     val newString = (other as RawTreeNode).data.data
     if (current is RawTreeData.CodeData && newString != current.data) {
-      val newCode = when(current.code) {
+      val newCode = when (current.code) {
         is Statement -> Statement(newString, current.code.timeOffset)
         is Block -> Block(newString, current.code.timeRange, current.code.innerBlocks)
       }
@@ -82,7 +72,6 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   }
 
   override fun deleteChild(child: TreeNode) {
-    LOG.info("Want to delete in $this that $child")
     myChildren.remove(child)
   }
 
@@ -91,12 +80,16 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   }
 
   override fun getTransformationCost(operation: TreeOperation, other: TreeNode?): Int {
-    if (data == RawTreeData.Root && other != null && (other as RawTreeNode).data == RawTreeData.Root) return 0
-    if (data == RawTreeData.Root || (other as? RawTreeNode)?.data == RawTreeData.Root) return 100000
+    if (data == RawTreeData.Root && other != null && (other as RawTreeNode).data == RawTreeData.Root) {
+      return 0
+    }
+    if (data == RawTreeData.Root) {
+      return 100000
+    }
     return when (operation) {
       TreeOperation.OP_DELETE_NODE -> 10
       TreeOperation.OP_INSERT_NODE -> 10
-      TreeOperation.OP_RENAME_NODE -> if (data.data == (other as? RawTreeNode)?.data?.data) 0 else 11
+      TreeOperation.OP_RENAME_NODE -> if (data.data == (other as? RawTreeNode)?.data?.data) 0 else 10
     }
   }
 
@@ -110,9 +103,10 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
         return "${indexRange.start}: Offset($value)"
       }
     }
-    class Code(startIndex: Int, val value: String, val isBlock: Boolean) : IndexedEntry(startIndex..startIndex){
+
+    class CodeEntry(startIndex: Int, val value: String, val isBlock: Boolean) : IndexedEntry(startIndex..startIndex) {
       override fun toString(): String {
-        return if (!isBlock) "${indexRange.start}: Code('$value')" 
+        return if (!isBlock) "${indexRange.start}: Code('$value')"
         else "$indexRange: Code('$value')"
       }
     }
@@ -120,7 +114,7 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
 
   companion object {
     private val LOG = logger<RawTreeNode>()
-    
+
     fun buildFromPsi(ktFile: KtFile): RawTreeNode {
       val nodes = BlockVisitor.fold<RawTreeNode>(ktFile) { element, list, isBlock ->
         if (isBlock) {
@@ -147,27 +141,34 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
     fun buildPlainTree(root: RawTreeNode, oldRange: IntRange? = null): List<IndexedEntry> {
       val list = mutableListOf<IndexedEntry>()
       var index = 0
+      var lastOffset = 0
       if (oldRange != null) {
         list.add(Offset(index++, oldRange.start))
+        lastOffset = oldRange.start
       }
       for (child in root.myChildren) {
-        index = processNode(child, list, index) + 1
+        val (newIndex, newLastOffset) = processNode(child, list, index, lastOffset)
+        index = newIndex
+        lastOffset = newLastOffset
       }
       if (oldRange != null) {
-        list.add(Offset(index, oldRange.end))
+        if (lastOffset < oldRange.end) {
+          list.add(Offset(index, oldRange.end))
+        }
       }
       return list
     }
 
     fun toCodeModel(root: RawTreeNode, oldRange: IntRange? = null): CodeModel {
       val list = buildPlainTree(root, oldRange)
-      val code = list.filterIsInstance(IndexedEntry.Code::class.java)
+      val code = list.filterIsInstance(IndexedEntry.CodeEntry::class.java)
       val output = markRawTreeOutput(
         code,
-        list.filterIsInstance(IndexedEntry.Offset::class.java)
+        listOf(Offset(-1, 0)) + list.filterIsInstance(Offset::class.java)
       )
+      LOG.info("Plain tree build: ${list.joinToString("\n")}")
       val (blocks, _) = fold<Code>(code, 0) { entry, inner ->
-        val (k, total) = output.fraction[entry]!!
+        val (k, total) = output.fraction[entry] ?: 1 to 1
         val range = output.time[entry]!!
         val correctedRange = (range.start + range.length / total * (k - 1))..range.end
         if (entry.isBlock) {
@@ -179,15 +180,15 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
       return CodeModel(blocks)
     }
 
-    fun <T> fold(
-      code: List<IndexedEntry.Code>,
+    private fun <T> fold(
+      code: List<IndexedEntry.CodeEntry>,
       startIndex: Int,
       until: Int = Int.MAX_VALUE,
-      operation: (IndexedEntry.Code, List<T>) -> T
-    ) : Pair<List<T>, Int> {
+      operation: (IndexedEntry.CodeEntry, List<T>) -> T
+    ): Pair<List<T>, Int> {
       val result = mutableListOf<T>()
       var index = startIndex
-      while(index < code.size) {
+      while (index < code.size) {
         val x = code[index++]
         if (x.indexRange.end > until) {
           return result to index - 1
@@ -206,50 +207,67 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
     private fun processNode(
       node: RawTreeNode,
       list: MutableList<IndexedEntry>,
-      startIndex: Int
-    ): Int {
+      startIndex: Int,
+      offset: Int
+    ): Pair<Int, Int> {
       val data = node.data
       var index = startIndex
-      when(data) {
+      var lastOffset = offset
+      when (data) {
         is RawTreeData.CodeData -> {
-          when(data.code) {
+          when (data.code) {
             is Block -> {
-              list.add(Offset(index++, data.code.startTime))
-              val block = Code(index++, data.data, true)
+              if (lastOffset <= data.code.startTime) {
+                list.add(Offset(index++, data.code.startTime))
+                lastOffset = data.code.startTime
+              }
+              val block = CodeEntry(index++, data.data, true)
               list.add(block)
               for (child in node.myChildren) {
-                index = processNode(child, list, index) + 1
+                val (newIndex, newLastOffset) = processNode(child, list, index, lastOffset)
+                index = newIndex
+                lastOffset = newLastOffset
               }
-              block.indexRange = block.indexRange.start..index
-              list.add(Offset(index++, data.code.endTime))
+              block.indexRange = block.indexRange.start..index++
+              if (lastOffset <= data.code.endTime) {
+                list.add(Offset(index++, data.code.endTime))
+                lastOffset = data.code.endTime
+              }
             }
             is Statement -> {
-              list.add(Offset(index++, data.code.timeOffset))
-              list.add(Code(index++, data.data, false))
+              if (lastOffset <= data.code.timeOffset) {
+                list.add(Offset(index++, data.code.timeOffset))
+              }
+              list.add(CodeEntry(index++, data.data, false))
             }
           }
         }
         is RawTreeData.Label -> {
-          list.add(Code(index++, data.data, data.isBlock))
+          list.add(CodeEntry(index++, data.data, data.isBlock))
+          for (child in node.myChildren) {
+            val (newIndex, newLastOffset) = processNode(child, list, index, lastOffset)
+            index = newIndex
+            lastOffset = newLastOffset
+          }
         }
       }
-      return index
+      return index to lastOffset
     }
 
     private data class Output(
-      val time: Map<IndexedEntry.Code, IntRange>,
-      val fraction: Map<IndexedEntry.Code, Pair<Int, Int>>
+      val time: Map<IndexedEntry.CodeEntry, IntRange>,
+      val fraction: Map<IndexedEntry.CodeEntry, Pair<Int, Int>>
     )
 
     private fun markRawTreeOutput(
-      expressions: List<IndexedEntry.Code>,
+      expressions: List<IndexedEntry.CodeEntry>,
       offsets: List<IndexedEntry.Offset>
     ): Output {
       val intervals = offsets.sortedBy { it.indexRange.start }
       var j = 0
-      val time = mutableMapOf<IndexedEntry.Code, IntRange>()
-      val fraction = mutableMapOf<IndexedEntry.Code, Pair<Int, Int>>()
-      val sameRangeElements = mutableMapOf<IntRange, MutableList<IndexedEntry.Code>>()
+      val time = mutableMapOf<IndexedEntry.CodeEntry, IntRange>()
+      val fraction = mutableMapOf<IndexedEntry.CodeEntry, Pair<Int, Int>>()
+      val sameRangeElements = mutableMapOf<IntRange, MutableList<IndexedEntry.CodeEntry>>()
       out@ for (expr in expressions) {
         while (j < intervals.size) {
           val interval = intervals[j]

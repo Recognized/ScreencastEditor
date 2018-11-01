@@ -27,7 +27,8 @@ import java.util.*
 val RESOURCES_PATH: Path = Paths.get("src", "test", "resources")
 val CREDENTIALS_PATH: Path? = System.getProperty("google.credentials")?.let { File(it).toPath() }
 val SCREENCAST_PATH: Path = RESOURCES_PATH.resolve("screencast.${ScreencastFileType.defaultExtension}")
-val TRANSCRIPT_DATA = TranscriptData(listOf(
+val TRANSCRIPT_DATA = TranscriptData(
+  listOf(
     WordData("first", IntRange(1000, 2000)),
     WordData("two", IntRange(2000, 3000)),
     WordData("three", IntRange(3000, 4000)),
@@ -40,7 +41,8 @@ val TRANSCRIPT_DATA = TranscriptData(listOf(
     WordData("ten", IntRange(11000, 12000)),
     WordData("eleven", IntRange(12000, 13000)),
     WordData("twelve", IntRange(13000, 14000))
-))
+  )
+)
 val EDITION_MODEL = DefaultEditionModel().apply {
   cut(LongRange(0, 100000))
   mute(LongRange(200000, 300000))
@@ -73,12 +75,12 @@ val SCRIPT_TEXT =
 
 fun createScriptPsi(project: Project): PsiFile {
   return PsiFileFactory.getInstance(project).createFileFromText(
-      "demo.kts",
-      KotlinFileType.INSTANCE,
-      SCRIPT_TEXT,
-      0,
-      true,
-      false
+    "demo.kts",
+    KotlinFileType.INSTANCE,
+    SCRIPT_TEXT,
+    0,
+    true,
+    false
   )
 }
 
@@ -101,11 +103,11 @@ fun InputStream.sha1sum(): String {
 }
 
 fun prepareTestScreencast(
-    project: Project,
-    audio: Path?,
-    script: String?,
-    editionModel: DefaultEditionModel?,
-    data: TranscriptData?
+  project: Project,
+  audio: Path?,
+  script: String?,
+  editionModel: DefaultEditionModel?,
+  data: TranscriptData?
 ) {
   val out = SCREENCAST_PATH
   if (out.exists()) {
@@ -136,11 +138,11 @@ fun prepareTestScreencast(
 }
 
 private fun consistentWith(
-    audio: Path?,
-    script: String?,
-    data: TranscriptData?,
-    editionModel: DefaultEditionModel?,
-    screencast: ScreencastFile
+  audio: Path?,
+  script: String?,
+  data: TranscriptData?,
+  editionModel: DefaultEditionModel?,
+  screencast: ScreencastFile
 ): Boolean {
   if (audio != null && screencast.isAudioSet) {
     val consistent = Files.newInputStream(audio).use { cached ->

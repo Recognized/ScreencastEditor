@@ -26,6 +26,16 @@ fun errorWhileSaving(screencastFile: ScreencastFile, throwable: Throwable) {
   ).notify(screencastFile.project)
 }
 
+fun errorScriptContainsErrors(screencastFile: ScreencastFile) {
+  Notification(
+    "Screencast Editor",
+    "Script contains errors",
+    "Script of ${screencastFile.file} is malformed",
+    NotificationType.ERROR
+  ).notify(screencastFile.project)
+}
+
+
 fun errorUnsupportedAudioFile(project: Project, path: Path) {
   Messages.showErrorDialog(
     project,

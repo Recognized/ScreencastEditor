@@ -7,11 +7,15 @@ object GeneratedCodeReceiver : GeneratedCodeReceiver {
 
   @Synchronized
   override fun receiveCode(code: String, indentation: Int) {
+    val indent = "  " * indentation
     if (code != "}" && Timer.offsetToLastStatement >= 16) {
+      myBuilder.append(indent)
       myBuilder.appendln(Timer.newTimeOffsetStatement())
     }
-    myBuilder.append("  " * indentation + code)
+    myBuilder.append(indent)
+    myBuilder.append(code)
     if (code == "}" && Timer.offsetToLastStatement >= 16) {
+      myBuilder.append(indent)
       myBuilder.appendln(Timer.newTimeOffsetStatement())
     }
   }

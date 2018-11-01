@@ -118,6 +118,7 @@ class CodeModelTest {
         }
       }
     }
+    println(model)
     model.replace(model.blocks[1].cast<Block>().innerBlocks[0], Statement("newCode", 350))
     val expected = codeModel {
       block("block1", 200..300) {
