@@ -101,18 +101,18 @@ object ScreencastToolWindow {
     parentDisposable: Disposable
   ): ActionGroup {
     with(ActionGroupBuilder(parent, parentDisposable)) {
-      addAction("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
+      add("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
         ApplicationManager.getApplication().invokeLater {
           //          KotlinCompileUtil.compileAndRun(screencast.getPlayScript())
         }
       })
-      addAction("Open transcript", "Open transcript in editor", TRANSCRIPT, {
+      add("Open transcript", "Open transcript in editor", TRANSCRIPT, {
         openTranscript(screencast)
       })
-      addAction("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
+      add("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
         openScript(screencast)
       })
-      addAction("Save changes", "Save edited screencast", AllIcons.Actions.Menu_saveall, {
+      add("Save changes", "Save edited screencast", AllIcons.Actions.Menu_saveall, {
         saveChanges(screencast)
       })
       return done()
@@ -126,20 +126,30 @@ object ScreencastToolWindow {
     with(ActionGroupBuilder(focusComponent, editorPane)) group@{
       val zoomController = editorPane.zoomController
       with(editorPane.waveformController!!) {
-        addAction("Play", "Play audio", PLAY, this::play) {
-          playState != PLAY
+        val playPauseAction = object : AnAction() {
+
+          override fun actionPerformed(e: AnActionEvent) {
+            if (playState !is WaveformController.PlayState.Playing) {
+              play()
+            } else {
+              pause()
+            }
+            update(e)
+          }
+
+          override fun update(e: AnActionEvent) {
+            e.presentation.icon = if (playState is WaveformController.PlayState.Playing) PAUSE else PLAY
+          }
         }
-        addAction("Pause", "Pause audio", PAUSE, this::pause) {
-          playState == PLAY
-        }
-        addAction("Stop", "Stop audio", STOP, this::stopImmediately) {
+        add(playPauseAction)
+        add("Stop", "Stop audio", STOP, this::stopImmediately) {
           playState !is WaveformController.PlayState.Stopped
         }
-        addAction("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo, this::hasSelection)
-        addAction("Clip", "Clip audio", DELETE, this::cutSelected, this::hasSelection)
-        addAction("Mute", "Mute selected", VOLUME_OFF, this::muteSelected, this::hasSelection)
-        addAction("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, zoomController::zoomIn)
-        addAction("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, zoomController::zoomOut)
+        add("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo, this::hasSelection)
+        add("Clip", "Clip audio", DELETE, this::cutSelected, this::hasSelection)
+        add("Mute", "Mute selected", VOLUME_OFF, this::muteSelected, this::hasSelection)
+        add("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, zoomController::zoomIn)
+        add("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, zoomController::zoomOut)
         return done()
       }
     }
@@ -162,7 +172,7 @@ object ScreencastToolWindow {
   private class ActionGroupBuilder(val parent: JComponent, val parentDisposable: Disposable) {
     private val myGroup = DefaultActionGroup()
 
-    fun addAction(
+    fun add(
       what: String,
       desc: String?,
       icon: Icon?,
@@ -180,6 +190,11 @@ object ScreencastToolWindow {
       }
       getShortcutSet(what)?.let { anAction.registerCustomShortcutSet(it, parent, parentDisposable) }
       myGroup.add(anAction)
+    }
+
+    fun add(action: AnAction) {
+      getShortcutSet("Play/Pause")?.let { action.registerCustomShortcutSet(it, parent, parentDisposable) }
+      myGroup.add(action)
     }
 
     fun done() = myGroup
