@@ -101,7 +101,6 @@ class EditorSplitter(
         if (string.startsWith("-")) {
           string = "0"
         }
-        println(string)
         val width = fontMetrics.stringWidth(string)
         val height = fontMetrics.height
         return SizedString(string, width, height)

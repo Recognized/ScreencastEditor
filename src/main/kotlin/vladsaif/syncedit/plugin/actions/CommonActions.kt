@@ -1,8 +1,5 @@
 package vladsaif.syncedit.plugin.actions
 
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
@@ -16,7 +13,6 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
 import java.io.IOException
 import javax.sound.sampled.UnsupportedAudioFileException
-import javax.swing.Icon
 
 fun openTranscript(screencast: ScreencastFile) {
   val transcript = screencast.transcriptPsi
@@ -72,22 +68,4 @@ val lightSavingActor = GlobalScope.actor<ScreencastFile>(Dispatchers.Default) {
     }
     ProgressManager.getInstance().run(saveTask)
   }
-}
-
-fun DefaultActionGroup.addAction(
-  what: String,
-  desc: String?,
-  icon: Icon?,
-  action: () -> Unit,
-  checkAvailable: () -> Boolean = { true }
-) {
-  this.add(object : AnAction(what, desc, icon) {
-    override fun actionPerformed(event: AnActionEvent) {
-      action()
-    }
-
-    override fun update(e: AnActionEvent) {
-      e.presentation.isEnabled = checkAvailable()
-    }
-  })
 }

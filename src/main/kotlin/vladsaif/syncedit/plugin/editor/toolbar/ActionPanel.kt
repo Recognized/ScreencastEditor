@@ -7,12 +7,15 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import javax.swing.JComponent
 
-class ActionPanel(actionGroup: ActionGroup, content: JComponent) : SimpleToolWindowPanel(false, false), Disposable {
+class ActionPanel(content: JComponent) : SimpleToolWindowPanel(false, false), Disposable {
 
   var disposeAction: () -> Unit = {}
 
   init {
     add(content)
+  }
+
+  fun addActionGroup(actionGroup: ActionGroup) {
     setToolbar(
       ActionManager.getInstance().createActionToolbar(
         ActionPlaces.TOOLBAR,
@@ -20,6 +23,7 @@ class ActionPanel(actionGroup: ActionGroup, content: JComponent) : SimpleToolWin
         false
       ).component
     )
+    isRequestFocusEnabled = true
   }
 
   override fun dispose() {

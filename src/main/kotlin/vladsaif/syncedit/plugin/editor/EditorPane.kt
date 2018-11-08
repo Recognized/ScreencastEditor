@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.editor
 
+import com.intellij.openapi.Disposable
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.editor.audioview.StubPanel
@@ -13,7 +14,7 @@ import javax.swing.event.ChangeListener
 
 class EditorPane(
   screencast: ScreencastFile
-) : JBScrollPane() {
+) : JBScrollPane(), Disposable {
   val waveformView = if (screencast.isAudioSet) WaveformView(screencast) else null
   val waveformController = waveformView?.let { WaveformController(it) }
   val scriptView = ScriptView(screencast, waveformView?.model?.coordinator)
@@ -44,4 +45,6 @@ class EditorPane(
       splitter.updateInterval(x, TimeUnit.NANOSECONDS)
     })
   }
+
+  override fun dispose() = Unit
 }

@@ -2,12 +2,13 @@ package vladsaif.syncedit.plugin.editor.toolbar
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.wm.IdeFocusManager
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
@@ -16,14 +17,16 @@ import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import icons.ScreencastEditorIcons.*
 import org.jetbrains.kotlin.idea.KotlinIcons
-import vladsaif.syncedit.plugin.actions.addAction
 import vladsaif.syncedit.plugin.actions.openScript
 import vladsaif.syncedit.plugin.actions.openTranscript
 import vladsaif.syncedit.plugin.actions.saveChanges
 import vladsaif.syncedit.plugin.editor.EditorPane
-import vladsaif.syncedit.plugin.editor.ZoomController
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformController
 import vladsaif.syncedit.plugin.model.ScreencastFile
+import java.awt.event.MouseEvent
+import javax.swing.Icon
+import javax.swing.JComponent
+import javax.swing.event.MouseInputAdapter
 
 object ScreencastToolWindow {
   private const val myToolWindowId = "Screencast Editor"
@@ -50,14 +53,15 @@ object ScreencastToolWindow {
 
   fun openScreencastFile(screencast: ScreencastFile) {
     val editorPane = EditorPane(screencast)
-    val audioPanel = ActionPanel(
-      createAudioRelatedActionGroup(editorPane.waveformController!!, editorPane.zoomController),
-      editorPane
-    )
-    audioPanel.disposeAction = { editorPane.waveformController.stopImmediately() }
-    val controlPanel = ActionPanel(createMainActionGroup(screencast), audioPanel)
+    val audioPanel = ActionPanel(editorPane)
+    audioPanel.disposeAction = { editorPane.waveformController!!.stopImmediately() }
+    val controlPanel = ActionPanel(audioPanel)
+    controlPanel.addActionGroup(createMainActionGroup(screencast, controlPanel, editorPane))
+    audioPanel.addActionGroup(createAudioRelatedActionGroup(editorPane, controlPanel))
     val content = ContentFactory.SERVICE.getInstance().createContent(controlPanel, screencast.name, false)
     val toolWindow = getToolWindow(screencast.project)
+    addForAllLeaves(FocusRequestor(controlPanel, screencast.project), controlPanel)
+    content.setPreferredFocusedComponent { controlPanel }
     Disposer.register(controlPanel, audioPanel)
     Disposer.register(content, controlPanel)
     Disposer.register(content, screencast)
@@ -74,11 +78,29 @@ object ScreencastToolWindow {
     toolWindow.contentManager.removeAllContents(true)
     toolWindow.contentManager.addContent(content)
     toolWindow.setAvailable(true, null)
-    toolWindow.activate(null)
+    toolWindow.activate {
+      IdeFocusManager.getInstance(screencast.project).requestFocus(controlPanel, true)
+    }
   }
 
-  private fun createMainActionGroup(screencast: ScreencastFile): ActionGroup {
-    with(DefaultActionGroup()) group@{
+  private fun addForAllLeaves(focus: FocusRequestor, component: JComponent) {
+    val components = component.components
+    if (components.isEmpty()) {
+      component.addMouseMotionListener(focus)
+      component.addMouseListener(focus)
+    } else {
+      for (x in components) {
+        addForAllLeaves(focus, x as JComponent)
+      }
+    }
+  }
+
+  private fun createMainActionGroup(
+    screencast: ScreencastFile,
+    parent: JComponent,
+    parentDisposable: Disposable
+  ): ActionGroup {
+    with(ActionGroupBuilder(parent, parentDisposable)) {
       addAction("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
         ApplicationManager.getApplication().invokeLater {
           //          KotlinCompileUtil.compileAndRun(screencast.getPlayScript())
@@ -93,16 +115,17 @@ object ScreencastToolWindow {
       addAction("Save changes", "Save edited screencast", AllIcons.Actions.Menu_saveall, {
         saveChanges(screencast)
       })
-      return this
+      return done()
     }
   }
 
   private fun createAudioRelatedActionGroup(
-    controller: WaveformController,
-    zoomController: ZoomController
+    editorPane: EditorPane,
+    focusComponent: JComponent
   ): ActionGroup {
-    with(DefaultActionGroup()) group@{
-      with(controller) {
+    with(ActionGroupBuilder(focusComponent, editorPane)) group@{
+      val zoomController = editorPane.zoomController
+      with(editorPane.waveformController!!) {
         addAction("Play", "Play audio", PLAY, this::play) {
           playState != PLAY
         }
@@ -117,10 +140,61 @@ object ScreencastToolWindow {
         addAction("Mute", "Mute selected", VOLUME_OFF, this::muteSelected, this::hasSelection)
         addAction("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, zoomController::zoomIn)
         addAction("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, zoomController::zoomOut)
-        return this@group
+        return done()
       }
     }
   }
 
-//  private fun createScriptActionGroup(controller: ScriptController)
+  private class FocusRequestor(val parent: JComponent, val project: Project) : MouseInputAdapter() {
+    override fun mouseClicked(e: MouseEvent?) {
+      requestFocus()
+    }
+
+    override fun mousePressed(e: MouseEvent?) {
+      requestFocus()
+    }
+
+    private fun requestFocus() {
+      IdeFocusManager.getInstance(project).requestFocus(parent, true)
+    }
+  }
+
+  private class ActionGroupBuilder(val parent: JComponent, val parentDisposable: Disposable) {
+    private val myGroup = DefaultActionGroup()
+
+    fun addAction(
+      what: String,
+      desc: String?,
+      icon: Icon?,
+      action: () -> Unit,
+      checkAvailable: () -> Boolean = { true }
+    ) {
+      val anAction = object : AnAction(what, desc, icon) {
+        override fun actionPerformed(event: AnActionEvent) {
+          action()
+        }
+
+        override fun update(e: AnActionEvent) {
+          e.presentation.isEnabled = checkAvailable()
+        }
+      }
+      getShortcutSet(what)?.let { anAction.registerCustomShortcutSet(it, parent, parentDisposable) }
+      myGroup.add(anAction)
+    }
+
+    fun done() = myGroup
+
+    private fun getShortcutSet(action: String): ShortcutSet? = when (action) {
+      "Play/Pause" -> CustomShortcutSet.fromString("ctrl P")
+      "Stop" -> CustomShortcutSet.fromString("ctrl O")
+      "Undo" -> KeymapUtil.getActiveKeymapShortcuts(IdeActions.ACTION_UNDO)
+      "Redo" -> KeymapUtil.getActiveKeymapShortcuts(IdeActions.ACTION_REDO)
+      "Clip" -> KeymapUtil.getActiveKeymapShortcuts(IdeActions.ACTION_CUT)
+      "Mute" -> CustomShortcutSet.fromString("ctrl M")
+      "Zoom in" -> CustomShortcutSet.fromString("ctrl EQUALS")
+      "Zoom out" -> CustomShortcutSet.fromString("ctrl MINUS")
+      "Save changes" -> CustomShortcutSet.fromString("ctrl S")
+      else -> null
+    }
+  }
 }
