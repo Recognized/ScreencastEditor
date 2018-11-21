@@ -9,17 +9,17 @@ class IntRangeExtensionsTest {
 
   @Test
   fun `test border intersection`() {
-    assertEquals(1, ((40..60) intersect (60..70)).length)
+    assertEquals(1, ((40..60) intersectWith (60..70)).length)
   }
 
   @Test
   fun `test not intersecting ranges`() {
-    assertEquals(0, ((40..60) intersect (80..90)).length)
+    assertEquals(0, ((40..60) intersectWith (80..90)).length)
   }
 
   @Test
   fun `test intersecting ranges`() {
-    assertEquals(11, ((40..60) intersect (50..90)).length)
+    assertEquals(11, ((40..60) intersectWith (50..90)).length)
   }
 
   @Test
@@ -29,14 +29,14 @@ class IntRangeExtensionsTest {
 
   @Test
   fun `test intersection of both side infinite range`() {
-    assertEquals(0..1000, (Int.MIN_VALUE..Int.MAX_VALUE).intersect(0..1000))
+    assertEquals(0..1000, (Int.MIN_VALUE..Int.MAX_VALUE).intersectWith(0..1000))
   }
 
   @Test
   fun `test intersection of two infinite ranges`() {
     assertEquals(
         Int.MIN_VALUE..Int.MAX_VALUE,
-        (Int.MIN_VALUE..Int.MAX_VALUE).intersect(Int.MIN_VALUE..Int.MAX_VALUE)
+        (Int.MIN_VALUE..Int.MAX_VALUE).intersectWith(Int.MIN_VALUE..Int.MAX_VALUE)
     )
   }
 

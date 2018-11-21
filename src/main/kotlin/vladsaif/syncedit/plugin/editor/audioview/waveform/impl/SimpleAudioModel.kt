@@ -3,12 +3,10 @@ package vladsaif.syncedit.plugin.editor.audioview.waveform.impl
 import vladsaif.syncedit.plugin.editor.audioview.AudioSampler
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AveragedSampleData
-import vladsaif.syncedit.plugin.editor.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.sound.SoundProvider
-import vladsaif.syncedit.plugin.util.end
-import vladsaif.syncedit.plugin.util.floorToInt
-import vladsaif.syncedit.plugin.util.intersect
+import vladsaif.syncedit.plugin.util.intersectWith
 import vladsaif.syncedit.plugin.util.length
+import vladsaif.syncedit.plugin.util.mapInt
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,109 +31,77 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
     private set
   override var framesPerMillisecond = 0.0
     private set
+  override var offsetFrames: Long
+    get() = myOffsetFrames
+    set(value) {
+      myOffsetFrames = value
+    }
+
+  private var myOffsetFrames = 0L
 
   constructor(path: Path) : this({ Files.newInputStream(path) })
 
   init {
-    SoundProvider.getAudioInputStream(getAudioStream().buffered()).use {
-      if (!SoundProvider.isConversionSupported(it.format.toDecodeFormat(), it.format)) {
-        throw UnsupportedAudioFileException("Cannot decode audio file.")
-      }
-      SoundProvider.getAudioInputStream(it.format.toDecodeFormat(), it).use { stream ->
-        val audio = AudioSampler(stream)
-        var sampleCount = 0L
-        audio.forEachSample { _ -> sampleCount++ }
-        totalFrames = sampleCount / stream.format.channels
-        millisecondsPerFrame = 1000.0 / stream.format.frameRate
-        framesPerMillisecond = stream.format.frameRate / 1000.0
-        trackDurationMilliseconds = totalFrames * 1000L / stream.format.frameRate.toDouble()
-      }
+    SoundProvider.withWaveformPcmStream(getAudioStream()) { stream ->
+      val audio = AudioSampler(stream)
+      var sampleCount = 0L
+      audio.forEachSample { sampleCount++ }
+      totalFrames = sampleCount / stream.format.channels
+      millisecondsPerFrame = 1000.0 / stream.format.frameRate
+      framesPerMillisecond = stream.format.frameRate / 1000.0
+      trackDurationMilliseconds = totalFrames * 1000L / stream.format.frameRate.toDouble()
     }
   }
 
-  override fun msRangeToFrameRange(range: IntRange): LongRange {
-    return LongRange(
-      (framesPerMillisecond * range.start).toLong(),
-      (framesPerMillisecond * range.end).toLong()
-    )
-  }
-
-  override fun frameRangeToMsRange(range: LongRange): IntRange {
-    return IntRange(
-      (millisecondsPerFrame * range.start).toInt(),
-      (millisecondsPerFrame * range.end).toInt()
-    )
-  }
-
-  override fun getStartFrame(maxChunks: Int, chunk: Int): Long {
-    val framesPerChunk = (totalFrames / maxChunks).toInt()
-    val bigChunkRange = getBigChunkRange(maxChunks)
-    return if (chunk in bigChunkRange) {
-      chunk.toLong() * (framesPerChunk + 1)
-    } else {
-      chunk.toLong() * framesPerChunk + bigChunkRange.length
-    }
-  }
-
+  // Skipped chunks do not depend on offsetFrames
   override fun getAveragedSampleData(
-    maxChunks: Int,
+    framesPerChunk: Int,
     chunkRange: IntRange,
     isActive: () -> Boolean
   ): List<AveragedSampleData> {
-    val framesPerChunk = (totalFrames / maxChunks).toInt()
-    SoundProvider.getAudioInputStream(getAudioStream().buffered()).use { input ->
-      val decodeFormat = input.format.toDecodeFormat()
+    return SoundProvider.withWaveformPcmStream(getAudioStream()) { audio ->
       val chunks = chunkRange.length
-      val ret = List(decodeFormat.channels) {
-        AveragedSampleData(chunks, chunkRange.start, decodeFormat.sampleSizeInBits)
+      val skippedFrames = countSkippedFrames(framesPerChunk, chunkRange)
+      val readFrames = countReadFrames(framesPerChunk, chunkRange)
+      val ret = List(audio.format.channels) {
+        AveragedSampleData(
+          (readFrames / framesPerChunk).toInt(),
+          (skippedFrames / framesPerChunk).toInt(),
+          audio.format.sampleSizeInBits
+        )
       }
-      if (chunks == 0) return ret
+      if (chunks == 0) return@withWaveformPcmStream ret
       AudioSampler(
-        SoundProvider.getAudioInputStream(decodeFormat, input),
-        countSkippedFrames(maxChunks, chunkRange, framesPerChunk),
-        countReadFrames(maxChunks, chunkRange, framesPerChunk)
+        audio,
+        skippedFrames,
+        readFrames
       ).use {
-        countStat(it, framesPerChunk, ret, maxChunks, chunkRange, decodeFormat.channels, isActive)
+        countStat(it, framesPerChunk, ret, audio.format.channels, isActive)
       }
-      return ret
+      ret
     }
-  }
-
-  override fun getChunk(maxChunks: Int, frame: Long): Int {
-    val bigChunkRange = getBigChunkRange(maxChunks)
-    val framesPerChunk = (totalFrames / maxChunks).toInt()
-    val res = if (frame >= bigChunkRange.length * (framesPerChunk + 1)) {
-      (bigChunkRange.length + (frame - bigChunkRange.length * (framesPerChunk + 1)) / framesPerChunk)
-    } else {
-      (frame / (framesPerChunk + 1))
-    }
-    return res.floorToInt()
   }
 
   private fun countStat(
     audio: AudioSampler,
     framesPerChunk: Int,
     data: List<AveragedSampleData>,
-    maxChunks: Int,
-    chunkRange: IntRange,
     channels: Int,
     isActive: () -> Boolean
   ) {
-    val peaks = List(channels) { LongArray(framesPerChunk + 1) }
-    var restCounter = getBigChunkRange(maxChunks).intersect(chunkRange).length
+    val peaks = List(channels) { LongArray(framesPerChunk) }
     var frameCounter = 0
     var channelCounter = 0
     var chunkCounter = 0
     audio.forEachSample {
-      if (!isActive()) throw CancellationException()
+      if (!isActive()) {
+        throw CancellationException()
+      }
       peaks[channelCounter++][frameCounter] = it
       if (channelCounter == channels) {
         channelCounter = 0
         frameCounter++
-        if (frameCounter == framesPerChunk && restCounter <= 0 ||
-          frameCounter == framesPerChunk + 1 && restCounter > 0
-        ) {
-          restCounter--
+        if (frameCounter == framesPerChunk) {
           data.forEachIndexed { index, x -> x.setChunk(frameCounter, chunkCounter, peaks[index]) }
           chunkCounter++
           frameCounter = 0
@@ -147,21 +113,14 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
     }
   }
 
-  private fun getBigChunkRange(maxChunks: Int) = IntRange(0, (totalFrames % maxChunks).toInt() - 1)
-
-  private fun countReadFrames(maxChunks: Int, chunkRange: IntRange, framesPerChunk: Int): Long {
-    var sum = 0L
-    val bigChunks = getBigChunkRange(maxChunks)
-    sum += chunkRange.intersect(bigChunks).length * (framesPerChunk + 1)
-    sum += chunkRange.intersect(IntRange(bigChunks.end + 1, Int.MAX_VALUE)).length * framesPerChunk
-    return sum
+  private fun countReadFrames(framesPerChunk: Int, chunkRange: IntRange): Long {
+    val virtualChunkRange = offsetFrames / framesPerChunk..(offsetFrames + totalFrames - 1) / framesPerChunk
+    return (chunkRange intersectWith virtualChunkRange.mapInt { it.toInt() }).length * framesPerChunk.toLong()
   }
 
-  private fun countSkippedFrames(maxChunks: Int, chunkRange: IntRange, framesPerChunk: Int): Long {
-    val bigChunkRange = getBigChunkRange(maxChunks)
-    val skipRange = IntRange(0, chunkRange.start - 1)
-    return bigChunkRange.intersect(skipRange).length * (framesPerChunk.toLong() + 1) +
-        IntRange(bigChunkRange.end + 1, chunkRange.start - 1).intersect(skipRange).length * framesPerChunk.toLong()
+  private fun countSkippedFrames(framesPerChunk: Int, chunkRange: IntRange): Long {
+    val notInRead = (offsetFrames / framesPerChunk).toInt() until chunkRange.start
+    return (notInRead intersectWith chunkRange).length * framesPerChunk.toLong()
   }
 
   private fun AveragedSampleData.setChunk(counter: Int, chunk: Int, peaks: LongArray) {

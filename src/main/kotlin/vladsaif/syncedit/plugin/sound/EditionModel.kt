@@ -34,7 +34,7 @@ interface EditionModel : ChangeNotifier {
   /**
    * Undo all changes made to this [frameRange]
    */
-  fun undo(frameRange: LongRange)
+  fun unmute(frameRange: LongRange)
 
   /**
    * Reset all changes.
@@ -42,6 +42,18 @@ interface EditionModel : ChangeNotifier {
   fun reset()
 
   fun copy(): EditionModel
+
+  fun impose(frameRange: LongRange): LongRange
+
+  fun impose(frame: Long): Long {
+    return impose(frame..frame).start
+  }
+
+  fun overlay(frameRange: LongRange): LongRange
+
+  fun overlay(frame: Long): Long {
+    return overlay(frame..frame).start
+  }
 
   fun serialize(): ByteArray {
     return buildString {
@@ -61,7 +73,7 @@ interface EditionModel : ChangeNotifier {
           when (sc.next()) {
             CUT.name -> cut(range)
             MUTE.name -> mute(range)
-            NO_CHANGES.name -> undo(range)
+            NO_CHANGES.name -> unmute(range)
           }
         }
         return this

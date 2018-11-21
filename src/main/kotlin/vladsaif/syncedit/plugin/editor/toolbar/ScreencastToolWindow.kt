@@ -188,6 +188,7 @@ object ScreencastToolWindow {
           e.presentation.isEnabled = checkAvailable()
         }
       }
+      // TODO
       getShortcutSet(what)?.let { anAction.registerCustomShortcutSet(it, parent, parentDisposable) }
       myGroup.add(anAction)
     }

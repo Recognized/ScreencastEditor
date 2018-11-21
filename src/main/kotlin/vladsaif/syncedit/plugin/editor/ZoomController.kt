@@ -1,24 +1,28 @@
 package vladsaif.syncedit.plugin.editor
 
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
-import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformView
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
-import vladsaif.syncedit.plugin.editor.scriptview.LinearCoordinator
-import vladsaif.syncedit.plugin.editor.scriptview.ScriptView
-import java.awt.Dimension
-import java.awt.Toolkit
+import vladsaif.syncedit.plugin.util.length
 import java.util.concurrent.TimeUnit
 import javax.swing.JScrollPane
+import javax.swing.event.ChangeListener
+import kotlin.math.max
 
-class ZoomController(
-  private val view: WaveformView?,
-  private val scriptView: ScriptView
-) : ChangeNotifier by DefaultChangeNotifier() {
-  private var myScrollPane: JScrollPane? = null
-  private var myIgnoreBarChanges = false
-  @Volatile
-  private var myBlockScaling = false
-  private val myAcceptableScale = 10_000L..(Long.MAX_VALUE ushr 16)
+class ZoomController(val coordinator: Coordinator) : ChangeNotifier by DefaultChangeNotifier() {
+  private lateinit var myScrollPane: JScrollPane
+
+  init {
+    addChangeListener(ChangeListener {
+      with(myScrollPane) {
+        viewport.view.revalidate()
+        viewport.revalidate()
+        revalidate()
+        repaint()
+        viewport.repaint()
+        viewport.view.repaint()
+      }
+    })
+  }
 
   fun zoomIn() {
     scale(2f)
@@ -30,75 +34,24 @@ class ZoomController(
 
   fun installZoom(scrollPane: JScrollPane) {
     myScrollPane = scrollPane
-    val brm = scrollPane.horizontalScrollBar.model
     scrollPane.horizontalScrollBar.addAdjustmentListener {
-      if (myIgnoreBarChanges) return@addAdjustmentListener
-      view?.model?.setRangeProperties(visibleChunks = brm.extent, firstVisibleChunk = brm.value)
-      view?.model?.updateData()
+      coordinator.visibleRange = with(it.adjustable) {
+        value..value + visibleAmount
+      }
     }
   }
 
   private fun scale(factor: Float) {
-    if (myBlockScaling) return
-    if (view != null) {
-      scaleByAudio(factor)
-    } else {
-      scaleByScript(factor)
-    }
-  }
-
-  private fun scaleByAudio(factor: Float) {
-    myBlockScaling = true
-    view?.model?.scale(factor) {
-      myIgnoreBarChanges = true
-      view.preferredSize = Dimension(view.model.maxChunks, view.height)
-      val scrollPane = myScrollPane
-      if (scrollPane != null) {
-        val visible = scrollPane.viewport.visibleRect
-        visible.x = view.model.firstVisibleChunk
-        scrollPane.viewport.scrollRectToVisible(visible)
-        scrollPane.horizontalScrollBar.value = visible.x
-      }
-      myIgnoreBarChanges = false
-      view.selectionModel.resetSelection()
-      view.model.fireStateChanged()
-      revalidateRepaint()
-      myBlockScaling = false
-      fireStateChanged()
-    }
-  }
-
-  private fun scaleByScript(factor: Float) {
-    val linearCoordinator = scriptView.coordinator as LinearCoordinator
-    val oldValue = linearCoordinator.getTimeUnitsPerPixel(TimeUnit.NANOSECONDS)
-    linearCoordinator.setTimeUnitsPerPixel(
-      (oldValue * factor).toLong().coerceIn(myAcceptableScale),
-      TimeUnit.NANOSECONDS
-    )
-    val endTime = scriptView.screencast.codeModel.codes.lastOrNull()?.endTime ?: 0
-    val scrollPane = myScrollPane
-    if (scrollPane != null) {
-      val currentPos = linearCoordinator.toNanoseconds(scrollPane.horizontalScrollBar.value)
-      scriptView.preferredSize = Dimension(
-        linearCoordinator.toScreenPixel(endTime.toLong(), TimeUnit.MILLISECONDS)
-            + Toolkit.getDefaultToolkit().screenSize.width / 2,
-        scriptView.height
-      )
-      val visible = scrollPane.viewport.visibleRect
-      visible.x = linearCoordinator.toScreenPixel(currentPos, TimeUnit.NANOSECONDS)
-      scrollPane.viewport.scrollRectToVisible(visible)
-      scrollPane.horizontalScrollBar.value = visible.x
+    val currentCenterPixel = with(coordinator.visibleRange) { (start + endInclusive) / 2 }
+    val currentCenterTime = coordinator.toNanoseconds(currentCenterPixel)
+    coordinator.framesPerPixel = (coordinator.framesPerPixel / factor).toLong()
+    with(myScrollPane) {
+      val visible = viewport.visibleRect
+      val newCenterPixel = coordinator.toPixel(currentCenterTime, TimeUnit.NANOSECONDS)
+      visible.x = max(newCenterPixel - coordinator.visibleRange.length / 2, 0)
+      viewport.scrollRectToVisible(visible)
+      horizontalScrollBar.value = visible.x
     }
     fireStateChanged()
-  }
-
-  private fun revalidateRepaint() {
-    val scrollPane = myScrollPane ?: return
-    scrollPane.viewport.view.revalidate()
-    scrollPane.viewport.revalidate()
-    scrollPane.revalidate()
-    scrollPane.repaint()
-    scrollPane.viewport.repaint()
-    scrollPane.viewport.view.repaint()
   }
 }

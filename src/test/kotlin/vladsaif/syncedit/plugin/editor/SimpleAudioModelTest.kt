@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import vladsaif.syncedit.plugin.RESOURCES_PATH
+import vladsaif.syncedit.plugin.editor.audioview.waveform.AveragedSampleData
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.SimpleAudioModel
 import java.nio.file.Path
 import kotlin.test.assertEquals
@@ -13,10 +14,6 @@ import kotlin.test.assertTrue
 class SimpleAudioModelTest(path: Path) {
 
   private val myAudio = SimpleAudioModel(path)
-  private val myChunks = if (myAudio.totalFrames % 4000 == 0L) 3999 else 4000
-  private val myFramePerChunk = myAudio.totalFrames / myChunks
-  private val myFramePerBigChunk = myFramePerChunk + 1
-  private val myExcess = (myAudio.totalFrames % myChunks).toInt()
 
   @Test
   fun `test frames are known`() {
@@ -33,33 +30,47 @@ class SimpleAudioModelTest(path: Path) {
   }
 
   @Test
-  fun `test zero chunk start frame`() {
-    assertEquals(0, myAudio.getStartFrame(myChunks, 0))
-    assertEquals(0, myAudio.getChunk(myChunks, 0))
+  fun `test data before beginning`() {
+    withOffset(1000) {
+      val data = getAveragedSampleData(100, 0..9) { true }
+      val expected = List(data.size) { AveragedSampleData(0, 0, data.first().sampleSizeInBits) }
+      assertEquals(expected, data)
+    }
   }
 
   @Test
-  fun `test big chunk start frame`() {
-    assertEquals((myExcess - 1) * myFramePerBigChunk, myAudio.getStartFrame(myChunks, myExcess - 1))
-    assertEquals(myExcess - 1, myAudio.getChunk(myChunks, myAudio.getStartFrame(myChunks, myExcess - 1)))
+  fun `test start data with offset`() {
+    val expectedData = myAudio.getAveragedSampleData(100, 0..9) { true }
+    withOffset(1000) {
+      val data = getAveragedSampleData(100, 10..19) { true }
+      assertEquals(expectedData, data)
+    }
   }
 
   @Test
-  fun `test first small chunk start frame`() {
-    assertEquals(myExcess * myFramePerBigChunk, myAudio.getStartFrame(myChunks, myExcess))
-    assertEquals(myExcess, myAudio.getChunk(myChunks, myAudio.getStartFrame(myChunks, myExcess)))
+  fun `test start data with negative offset`() {
+    val expectedData = myAudio.getAveragedSampleData(100, 10..19) { true }
+    withOffset(-1000) {
+      val data = getAveragedSampleData(100, 0..9) { true }
+      assertEquals(expectedData, data)
+    }
   }
 
   @Test
-  fun `test second small chunk start frame`() {
-    assertEquals(myExcess * myFramePerBigChunk + myFramePerChunk, myAudio.getStartFrame(myChunks, myExcess + 1))
-    assertEquals(myExcess + 1, myAudio.getChunk(myChunks, myAudio.getStartFrame(myChunks, myExcess + 1)))
+  fun `test data of all track do not depend on offset`() {
+    val data = myAudio.getAveragedSampleData(100000, 0..200) { true }
+    withOffset(1000) {
+      assertEquals(data, getAveragedSampleData(100000, 0..200) { true })
+    }
+    withOffset(-1000) {
+      assertEquals(data, getAveragedSampleData(100000, 0..200) { true })
+    }
   }
 
-  @Test
-  fun `test frame range to milliseconds range`() {
-    val range = IntRange(500, 1500)
-    assertEquals(range, myAudio.frameRangeToMsRange(myAudio.msRangeToFrameRange(range)))
+  private fun withOffset(offset: Long, action: SimpleAudioModel.() -> Unit) {
+    myAudio.offsetFrames = offset
+    myAudio.action()
+    myAudio.offsetFrames = 0
   }
 
   companion object {

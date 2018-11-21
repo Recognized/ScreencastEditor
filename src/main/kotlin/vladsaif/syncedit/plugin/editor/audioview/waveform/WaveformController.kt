@@ -6,12 +6,14 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import org.picocontainer.Disposable
+import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.Player
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.sound.impl.PlayerImpl
-import vladsaif.syncedit.plugin.util.intersect
+import vladsaif.syncedit.plugin.util.mapLong
 import java.io.IOException
+import javax.swing.Timer
 import javax.swing.event.ChangeEvent
 
 
@@ -19,6 +21,14 @@ class WaveformController(private val view: WaveformView) : Disposable {
 
   @Volatile
   private var myPlayState: PlayState = PlayState.Stopped
+  private val myScreencast: ScreencastFile = view.model.screencast
+  private val myTimer = Timer(1000 / 30) {
+    view.model.playFramePosition = when(val state = myPlayState) {
+      is PlayState.Playing -> state.player.getFramePosition()
+      PlayState.Stopped -> -1
+      is PlayState.Paused -> return@Timer
+    }
+  }
   val hasSelection: Boolean
     get() = !view.selectionModel.selectedRanges.isEmpty()
   val playState: PlayState
@@ -43,13 +53,12 @@ class WaveformController(private val view: WaveformView) : Disposable {
   }
 
   fun undo() {
-    edit(view.model.editionModel::undo)
+    edit(view.model.editionModel::unmute)
   }
 
   private inline fun edit(consumer: (LongRange) -> Unit) {
     view.selectionModel.selectedRanges.forEach {
-      val truncated = it intersect IntRange(0, view.model.maxChunks - 1)
-      consumer(view.model.coordinator.pixelRangeToFrameRange(truncated))
+      consumer(myScreencast.editionModel.overlay(myScreencast.coordinator.toFrameRange(it)))
     }
     view.stateChanged(ChangeEvent(view.model.editionModel))
   }
@@ -59,6 +68,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
     when (state) {
       is PlayState.Playing -> return
       is PlayState.Paused -> {
+        myTimer.start()
         myPlayState = PlayState.Playing(state.player)
         state.player.resume()
       }
@@ -72,11 +82,10 @@ class WaveformController(private val view: WaveformView) : Disposable {
           view.selectionModel.toEditionModel()
         }
         val player = PlayerImpl({ view.model.screencast.audioInputStream }, editionModel)
-        player.setProcessUpdater(this::positionUpdater)
         player.setOnStopAction {
           ApplicationManager.getApplication().invokeAndWait {
             stop()
-            view.model.playFramePosition.set(-1L)
+            view.model.playFramePosition = -1L
           }
         }
         player.play {
@@ -88,6 +97,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
             is SecurityException -> showNotification("Cannot access audio file due to security restrictions.")
           }
         }
+        myTimer.start()
         myPlayState = PlayState.Playing(player)
       }
     }
@@ -98,19 +108,13 @@ class WaveformController(private val view: WaveformView) : Disposable {
     val audioModel = view.model.screencast.audioDataModel ?: return editionModel
     editionModel.cut(LongRange(0, audioModel.totalFrames))
     for (selected in selectedRanges) {
-      editionModel.undo(view.model.coordinator.pixelRangeToFrameRange(selected))
+      editionModel.unmute(selected.mapLong { view.model.screencast.coordinator.toFrame(it) })
     }
     return editionModel
   }
 
-  private fun positionUpdater(pos: Long) {
-    view.model.playFramePosition.set(pos)
-    ApplicationManager.getApplication().invokeLater {
-      view.stateChanged(ChangeEvent(this))
-    }
-  }
-
   fun pause() {
+    myTimer.stop()
     val state = myPlayState
     when (state) {
       is PlayState.Stopped, is PlayState.Paused -> return
@@ -130,6 +134,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
   }
 
   private fun stopBase(action: Player.() -> Unit) {
+    myTimer.stop()
     val state = myPlayState
     val player = when (state) {
       is PlayState.Stopped -> return
@@ -139,7 +144,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
     myPlayState = PlayState.Stopped
     player.action()
     view.stateChanged(ChangeEvent(this))
-    view.model.playFramePosition.set(-1)
+    view.model.playFramePosition = -1
   }
 
   override fun dispose() {

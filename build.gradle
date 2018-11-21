@@ -37,10 +37,10 @@ compileKotlin {
     kotlinOptions.verbose = true
 }
 
-kotlin {
-    experimental {
-    }
-}
+//kotlin {
+//    experimental {
+//    }
+//}
 
 idea {
     module {

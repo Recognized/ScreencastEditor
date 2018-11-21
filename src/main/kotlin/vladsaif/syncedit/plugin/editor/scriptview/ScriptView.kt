@@ -14,6 +14,7 @@ import vladsaif.syncedit.plugin.lang.script.psi.Code
 import vladsaif.syncedit.plugin.lang.script.psi.Statement
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.util.*
+import vladsaif.syncedit.plugin.util.Cache.Companion.cache
 import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -23,32 +24,30 @@ import java.util.concurrent.TimeUnit
 import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
-class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?) : JBPanel<ScriptView>() {
-  val coordinator = givenCoordinator ?: LinearCoordinator().apply {
-    setTimeUnitsPerPixel(50, TimeUnit.MILLISECONDS)
-  }
-  private val myCaches = mutableListOf<Cache<*>>()
-  private val myBordersRectangles = Cache { calculateBorders(screencast.codeModel.codes).sortedWith(AREA_COMPARATOR) }
-  private val myBlockAreas = Cache { calculateCodeAreas(screencast.codeModel.codes) }
+class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), DrawingFixture by DrawingFixture.create() {
+  val coordinator = screencast.coordinator
+  private val myBordersRectangles = cache { calculateBorders(screencast.codeModel.codes).sortedWith(AREA_COMPARATOR) }
+  private val myBlockAreas = cache { calculateCodeAreas(screencast.codeModel.codes) }
   private var myTempBorder: DraggedBorder? = null
   private val myShortenedCode = THashMap<Code, String>(TObjectIdentityHashingStrategy())
   private val myDepthDelta: Int = calculateDepthDelta()
-  private val myFurtherMostBorder = Cache { lastBlockPixel() }
-  private val myFirstBorder = Cache { firstBlockPixel() }
+  private val myFurtherMostBorder = cache { lastBlockPixel() }
+  private val myFirstBorder = cache { firstBlockPixel() }
   private var myTempMovingDelta = 0
 
   val preferredWidth get() = myFurtherMostBorder.get()
 
   private fun lastBlockPixel(): Int {
-    return coordinator.toScreenPixel(
+    return coordinator.toPixel(
       screencast.codeModel.codes.lastOrNull()?.endTime?.toLong() ?: 0L,
       TimeUnit.MILLISECONDS
     )
   }
 
   private fun firstBlockPixel(): Int {
-    return coordinator.toScreenPixel(
+    return coordinator.toPixel(
       screencast.codeModel.codes.firstOrNull()?.startTime?.toLong() ?: 0L,
       TimeUnit.MILLISECONDS
     )
@@ -69,7 +68,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
 
   override fun getPreferredSize(): Dimension {
     return Dimension(
-      preferredWidth + JBUI.scale(200),
+      preferredWidth.divScale() + 200,
       (myBordersRectangles.get().lastOrNull()?.area?.y ?: 0) + myDepthDelta
     )
   }
@@ -93,9 +92,9 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   fun overBorder(point: Point): Border? {
-    // TODO: optimize
+    val scaled = Point(point.x.mulScale(), point.y)
     for (border in myBordersRectangles.get()) {
-      if (point in border.area) {
+      if (scaled in border.area) {
         return border
       }
     }
@@ -103,15 +102,16 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   fun resetCache() {
-    myCaches.forEach(Cache<*>::resetCache)
+    Cache.resetCache(this)
     myShortenedCode.clear()
   }
 
   override fun paint(g: Graphics) {
     with(g as Graphics2D) {
+      setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       if (myTempMovingDelta != 0) {
-        val delta = max(myTempMovingDelta, -myFirstBorder.get())
-        translate(delta, 0)
+        val delta = max(myTempMovingDelta.toDouble(), -myFirstBorder.get() / JBUI.pixScale().toDouble())
+        translate(delta, 0.0)
       }
       val metrics = getFontMetrics(ScriptGraphics.FONT)
       font = ScriptGraphics.FONT
@@ -122,20 +122,28 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       color = ScriptGraphics.CODE_BLOCK_BORDER
       stroke = BasicStroke(ScriptGraphics.BORDER_WIDTH)
       for (block in myBlockAreas.get()) {
-        drawBorderMark(block is CodeArea.BlockArea, block.x1, block.x2, block.y)
+        drawBorderMark(block is CodeArea.BlockArea, block.x1, block.x2, block.y.toFloat())
       }
       myTempBorder?.let { drawTempBorder(it) }
     }
   }
 
-  private fun Graphics2D.drawBorderMark(isBlock: Boolean, x1: Int, x2: Int, y: Int) {
+  private fun Graphics2D.drawBorderMark(isBlock: Boolean, x1: Int, x2: Int, y: Float) {
+    val x2scaled = x2.divScaleF()
+    val x1scaled = x1.divScaleF()
     if (isBlock) {
-      drawLine(x1, y, min(x1 + ScriptGraphics.PADDING.toInt(), x2), y)
-      drawLine(max(x1, x2 - ScriptGraphics.PADDING.toInt()), y, x2, y)
+      drawLine(
+        x1scaled, y,
+        min(x1scaled + ScriptGraphics.PADDING, x2scaled), y
+      )
+      drawLine(
+        max(x1scaled, x2scaled - ScriptGraphics.PADDING.toInt()), y,
+        x2scaled, y
+      )
     } else {
       drawLine(
-        x1 - (ScriptGraphics.PADDING / 2).toInt(), y,
-        x1 + (ScriptGraphics.PADDING / 2).toInt(), y
+        x1scaled - (ScriptGraphics.PADDING / 2).toInt(), y,
+        x1scaled + (ScriptGraphics.PADDING / 2).toInt(), y
       )
     }
   }
@@ -167,16 +175,16 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
       val y = myDepthDelta * depth
       when (code) {
         is Block -> {
-          val borders = coordinator.toScreenPixel(code.timeRange.msToNs(), TimeUnit.NANOSECONDS)
+          val borders = coordinator.toPixelRange(code.timeRange, TimeUnit.MILLISECONDS)
           areas.add(CodeArea.BlockArea(borders.start, borders.end, y, code, color))
           areas.addAll(calculateCodeAreas(code.innerBlocks, newBright to newDark, code, depth + 1))
         }
         is Statement -> {
-          val borderLeft = coordinator.toScreenPixel(code.timeOffset.toLong(), TimeUnit.MILLISECONDS)
+          val borderLeft = coordinator.toPixel(code.timeOffset.toLong(), TimeUnit.MILLISECONDS)
           val borderRight = if (index + 1 < codeList.size) {
-            coordinator.toScreenPixel(codeList[index + 1].startTime.toLong(), TimeUnit.MILLISECONDS)
+            coordinator.toPixel(codeList[index + 1].startTime.toLong(), TimeUnit.MILLISECONDS)
           } else {
-            coordinator.toScreenPixel(
+            coordinator.toPixel(
               parent?.timeRange?.end?.toLong() ?: coordinator.toNanoseconds(width) / 1_000_000,
               TimeUnit.MILLISECONDS
             )
@@ -189,11 +197,11 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   }
 
   private fun createArea(timeOffset: Int, depth: Int): Rectangle {
-    val x = coordinator.toScreenPixel(timeOffset.toLong(), TimeUnit.MILLISECONDS)
+    val x = coordinator.toPixel(timeOffset.toLong(), TimeUnit.MILLISECONDS)
     return Rectangle(
-      x - ScriptGraphics.BORDER_PRECISION,
+      x - ScriptGraphics.BORDER_PRECISION.mulScale(),
       depth * myDepthDelta,
-      ScriptGraphics.BORDER_PRECISION * 2,
+      ScriptGraphics.BORDER_PRECISION.mulScale() * 2,
       height - depth * myDepthDelta
     )
   }
@@ -219,10 +227,11 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
             is Statement -> screencast.codeModel.findDragBoundary(hovered.codeBlock)
           }
           val trueLeft = if (left == -1) 0 else left
-          val trueRight = if (right == -1) (coordinator.toNanoseconds(width) / 1_000_000).toInt() else right
-          val allowedRange = coordinator.toScreenPixel((trueLeft..trueRight).msToNs(), TimeUnit.NANOSECONDS)
+          val trueRight = if (right == -1) (coordinator.toNanoseconds(width.mulScale()) / 1_000_000).toInt() else right
+          val allowedRange =
+            coordinator.toPixelRange(trueLeft..trueRight, TimeUnit.MILLISECONDS)
           myTempBorder = DraggedBorder(
-            point.x,
+            point.x.mulScale(),
             screencast.codeModel.findDepth(hovered.codeBlock) * myDepthDelta,
             hovered.isLeft,
             allowedRange,
@@ -236,7 +245,7 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     override fun onDrag(point: Point) {
       super.onDrag(point)
       if (myTempBorder != null) {
-        myTempBorder!!.x = point.x.coerceIn(myTempBorder!!.allowedRange)
+        myTempBorder!!.x = point.x.mulScale().coerceIn(myTempBorder!!.allowedRange)
         repaint()
       }
     }
@@ -305,11 +314,13 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
   private fun Graphics2D.drawTempBorder(border: DraggedBorder) {
     stroke = ScriptGraphics.BORDER_STROKE
     color = WaveformGraphics.WORD_MOVING_SEPARATOR_COLOR
-    drawLine(border.x, border.y, border.x, height)
+    val x = border.x.divScaleF()
+    val y = border.y.toFloat()
+    drawLine(x, y, x, height.toFloat())
     when {
-      border.source is Statement -> drawBorderMark(false, border.x, 0, border.y)
-      border.isLeft -> drawLine(border.x, border.y, border.x + ScriptGraphics.PADDING.toInt(), border.y)
-      else -> drawLine(border.x - ScriptGraphics.PADDING.toInt(), border.y, border.x, border.y)
+      border.source is Statement -> drawBorderMark(false, border.x, 0, y)
+      border.isLeft -> drawLine(x, y, x + ScriptGraphics.PADDING.toInt(), y)
+      else -> drawLine(x - ScriptGraphics.PADDING.toInt(), y, x, y)
     }
   }
 
@@ -319,22 +330,36 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     metrics: FontMetrics
   ) {
     val screenRange = block.x1..block.x2
-    val innerRange = screenRange.padded(ScriptGraphics.PADDING.toInt())
     if (block is CodeArea.BlockArea) {
       color = block.color
-      fillRect(screenRange.start, block.y, screenRange.length, height - block.y)
+      fillRect(
+        screenRange.start.divScaleF(),
+        block.y.toFloat(),
+        screenRange.length.divScaleF(),
+        (height - block.y).toFloat()
+      )
     }
     stroke = ScriptGraphics.BORDER_STROKE
     color = ScriptGraphics.CODE_BLOCK_BORDER
-    drawLine(screenRange.start, block.y, screenRange.start, height)
+    drawLine(screenRange.start.divScaleF(), block.y.toFloat(), screenRange.start.divScaleF(), height.toFloat())
     if (block is CodeArea.BlockArea) {
-      drawLine(screenRange.end, block.y, screenRange.end, height)
+      drawLine(
+        screenRange.endInclusive.divScaleF(),
+        block.y.toFloat(),
+        screenRange.endInclusive.divScaleF(),
+        height.toFloat()
+      )
     }
+    val inStart = screenRange.start.divScaleF() + ScriptGraphics.PADDING
+    val inEnd = screenRange.endInclusive.divScaleF() - ScriptGraphics.PADDING
+    val length = max((inEnd - inStart).roundToInt(), 0)
     val string = myShortenedCode.getOrPut(block.code) {
-      TextFormatter.createEllipsis(block.code.code, innerRange.length, getLength)
+      TextFormatter.createEllipsis(block.code.code, length, getLength)
     }
     color = ScriptGraphics.FONT_COLOR
-    drawString(string, innerRange.start, block.y + metrics.height + ScriptGraphics.PADDING.toInt())
+    if (!string.isEmpty()) {
+      drawString(string, inStart, block.y + metrics.height + ScriptGraphics.PADDING)
+    }
   }
 
   data class Border(
@@ -369,21 +394,6 @@ class ScriptView(val screencast: ScreencastFile, givenCoordinator: Coordinator?)
     ) : CodeArea(x1, x2, y, statement)
   }
 
-  private inner class Cache<T>(private val recalculate: () -> T) {
-    private var myStorage: T? = null
-
-    init {
-      myCaches.add(this)
-    }
-
-    fun get(): T {
-      return if (myStorage != null) myStorage!! else recalculate().also { myStorage = it }
-    }
-
-    fun resetCache() {
-      myStorage = null
-    }
-  }
 
   companion object {
     private val AREA_COMPARATOR = Comparator

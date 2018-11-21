@@ -7,8 +7,8 @@ import vladsaif.syncedit.plugin.editor.audioview.waveform.SelectionModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformModel
 import vladsaif.syncedit.plugin.util.IntRangeUnion
 import vladsaif.syncedit.plugin.util.empty
-import vladsaif.syncedit.plugin.util.end
 import vladsaif.syncedit.plugin.util.inside
+import vladsaif.syncedit.plugin.util.mulScale
 import java.awt.Cursor
 import java.awt.Point
 import java.awt.event.MouseEvent
@@ -17,12 +17,12 @@ import kotlin.math.min
 
 class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotifier() {
   private val mySelectedRanges = IntRangeUnion()
-  private var myLocator: WaveformModel? = null
+  private lateinit var myLocator: WaveformModel
   private var myCacheCoherent = false
   private var myCacheSelectedRanges = listOf<IntRange>()
   private var myMoveRange: IntRange = IntRange.EMPTY
   private var myIsPressedOverBorder: Boolean = false
-  private var myWordBorderIndex: Int = -1
+  private var myDraggedBorder: Border? = null
   private var myStartDifference: Int = -1
   private var myTempSelectedRange: IntRange = IntRange.EMPTY
     set(value) {
@@ -80,8 +80,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       e ?: return
       super.mouseClicked(e)
       if (!e.isLeftMouseButton) return
-      val model = myLocator ?: return
-      val rangeUnderClick = model.getContainingWordRange(e.x)
+      val rangeUnderClick = myLocator.getContainingWordRange(e.x.mulScale())
       if (rangeUnderClick.empty) return
       if (e.isShiftDown) {
         resetSelection()
@@ -109,20 +108,14 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
         resetSelection()
         fireStateChanged()
       }
-      myIsPressedOverBorder = isOverBorder(start) && JBSwingUtilities.isLeftMouseButton(start)
-      if (myIsPressedOverBorder) {
-        val number = getBorderNumber(start)
-        myStartDifference = point.x - getBorder(number)
-        myWordBorderIndex = number
-        var leftBorder = 0
-        var rightBorder = Int.MAX_VALUE
-        if (number - 1 >= 0) {
-          leftBorder = getBorder(number - 1)
-        }
-        if (number + 1 < myLocator!!.wordCoordinates.size * 2) {
-          rightBorder = getBorder(number + 1)
-        }
-        myMoveRange = IntRange(leftBorder, rightBorder)
+      val border = borderUnderCursor(start)
+      myIsPressedOverBorder = border != null && JBSwingUtilities.isLeftMouseButton(start)
+      if (myIsPressedOverBorder && border != null /* for smart cast only */) {
+        myStartDifference = point.x.mulScale() -
+            if (border.isLeft) border.source.pixelRange.start
+            else border.source.pixelRange.endInclusive
+        myDraggedBorder = border
+        myMoveRange = border.allowedPixelRange
       }
     }
 
@@ -145,24 +138,18 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     }
   }
 
-  private fun getBorder(index: Int): Int {
-    return myLocator?.wordCoordinates?.get(index / 2)?.let {
-      if (index % 2 == 0) {
-        it.start
-      } else {
-        it.end
-      }
-    } ?: -1
-  }
-
   private fun dragControlSelection(start: Point, point: Point) {
-    myTempSelectedRange = IntRange(min(start.x, point.x), max(start.x, point.x))
+    val x = start.x.mulScale()
+    val pointX = point.x.mulScale()
+    myTempSelectedRange = IntRange(min(x, pointX), max(x, pointX))
     fireStateChanged()
   }
 
   private fun dragSelection(start: Point, point: Point) {
-    val border = IntRange(min(start.x, point.x), max(start.x, point.x))
-    myTempSelectedRange = myLocator?.getCoveredRange(border) ?: return
+    val x = start.x.mulScale()
+    val pointX = point.x.mulScale()
+    val border = IntRange(min(x, pointX), max(x, pointX))
+    myTempSelectedRange = myLocator.getCoveredRange(border)
     fireStateChanged()
   }
 
@@ -175,65 +162,92 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun dragBorder(point: Point) {
-    movingBorder = myMoveRange.inside(point.x - myStartDifference)
+    movingBorder = myMoveRange.inside(point.x.mulScale() - myStartDifference)
     fireStateChanged()
   }
 
   private fun dragBorderFinished() {
-    val locator = myLocator ?: return
-    val model = myLocator?.screencast ?: return
-    val audioModel = model.audioDataModel ?: return
-    val data = model.data ?: return
-
-    val oldWord = data[myWordBorderIndex / 2]
-    var leftBorder = 0
-    var rightBorder = Int.MAX_VALUE
-    if (myWordBorderIndex - 1 >= 0) {
-      leftBorder = data[(myWordBorderIndex - 1) / 2].range.let {
-        if ((myWordBorderIndex - 1) % 2 == 0) {
-          it.start
-        } else {
-          it.end
-        }
-      }
-    }
-    if (myWordBorderIndex + 1 < data.words.size * 2) {
-      rightBorder = data[(myWordBorderIndex + 1) / 2].range.let {
-        if ((myWordBorderIndex + 1) % 2 == 0) {
-          it.start
-        } else {
-          it.end
-        }
-      }
-    }
-    val borderPx = IntRange(movingBorder, movingBorder)
-    val frameRange = locator.coordinator.pixelRangeToFrameRange(borderPx)
-
-    val moveMsBorder = IntRange(leftBorder, rightBorder)
-    val newMs = moveMsBorder.inside(audioModel.frameRangeToMsRange(frameRange).start)
-    val newMsRange = if (myWordBorderIndex % 2 == 0) {
-      IntRange(newMs, oldWord.range.end)
+    val locator = myLocator
+    val model = myLocator.screencast
+    val border = myDraggedBorder!!
+    val moveMsBorder = border.allowedMsRange
+    val editionModel = model.editionModel
+    val coordinator = locator.screencast.coordinator
+    val newMs =
+      coordinator.toMilliseconds(editionModel.overlay(coordinator.toFrame(movingBorder)))
+        .coerceIn(moveMsBorder)
+    val newMsRange = if (border.isLeft) {
+      newMs..border.source.word.range.endInclusive
     } else {
-      IntRange(oldWord.range.start, newMs)
+      border.source.word.range.start..newMs
     }
     movingBorder = -1
-    model.changeRange(myWordBorderIndex / 2, newMsRange)
+    model.changeRange(border.index, newMsRange)
   }
 
   private val MouseEvent.isControlKeyDown get() = UIUtil.isControlKeyDown(this)
   private val MouseEvent.isLeftMouseButton get() = JBSwingUtilities.isLeftMouseButton(this)
 
   private fun isOverBorder(e: MouseEvent): Boolean {
-    return getBorderNumber(e) >= 0
+    val scaledPixel = e.x.mulScale()
+    for (wordView in myLocator.wordsView) {
+      if (scaledPixel in wordView.leftBorder || scaledPixel in wordView.rightBorder) {
+        return true
+      }
+    }
+    return false
   }
 
-  // Return number of first border that includes this point
-  // This needed for predictability of click behaviour
-  private fun getBorderNumber(e: MouseEvent): Int {
-    val borders = myLocator?.wordBorders ?: return -1
-    for ((index, border) in borders.withIndex()) {
-      if (e.x in border) return index
+  private fun borderUnderCursor(e: MouseEvent): Border? {
+    var index = -1
+    var isLeft = false
+    val scaledPixel = e.x.mulScale()
+    for ((i, wordView) in myLocator.wordsView.withIndex()) {
+      if (scaledPixel in wordView.leftBorder) {
+        isLeft = true
+        index = i
+        break
+      }
+      if (scaledPixel in wordView.rightBorder) {
+        isLeft = false
+        index = i
+        break
+      }
     }
-    return -1
+    if (index == -1) return null
+    val coordinator = myLocator.screencast.coordinator
+    val editionModel = myLocator.screencast.editionModel
+    val audioFrames = with(myLocator.audioDataModel) { offsetFrames..offsetFrames + totalFrames }
+    val audioPixels = coordinator.toPixelRange(editionModel.impose(audioFrames))
+    val audioMs = coordinator.toMillisecondsRange(editionModel.impose(audioFrames))
+    var leftBorder = audioPixels.start
+    var rightBorder = audioPixels.endInclusive
+    var msLeft = audioMs.start
+    var msRight = audioMs.endInclusive
+    val source: WaveformModel.WordView = myLocator.wordsView[index]
+    if (isLeft) {
+      if (index - 1 >= 0) {
+        leftBorder = myLocator.wordsView[index - 1].pixelRange.endInclusive.coerceIn(audioPixels)
+        msLeft = myLocator.wordsView[index - 1].word.range.endInclusive
+      }
+      rightBorder = source.pixelRange.endInclusive.coerceIn(audioPixels)
+      msRight = source.word.range.endInclusive
+    } else {
+      leftBorder = source.pixelRange.start.coerceIn(audioPixels)
+      msLeft = source.word.range.start
+      if (index + 1 < myLocator.wordsView.size) {
+        rightBorder = myLocator.wordsView[index + 1].pixelRange.start.coerceIn(audioPixels)
+        msRight = myLocator.wordsView[index + 1].word.range.start
+      }
+    }
+    return Border(source, index, isLeft, leftBorder..rightBorder, msLeft..msRight)
   }
+
+  data class Border(
+    val source: WaveformModel.WordView,
+    val index: Int,
+    val isLeft: Boolean,
+    val allowedPixelRange: IntRange,
+    val allowedMsRange: IntRange
+  )
 }

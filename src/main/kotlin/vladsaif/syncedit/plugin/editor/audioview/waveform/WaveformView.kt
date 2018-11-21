@@ -6,16 +6,18 @@ import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MultiSelectionModel
 import vladsaif.syncedit.plugin.model.ScreencastFile
-import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.util.*
 import java.awt.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
-import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
-class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), ChangeListener {
+class WaveformView(
+  screencast: ScreencastFile,
+  audioDataModel: AudioDataModel
+) : JBPanel<WaveformView>(), ChangeListener, DrawingFixture by DrawingFixture.create() {
   private val myWordFont
     get() = JBUI.Fonts.label()
 
@@ -25,11 +27,21 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
     }
   }
 
-  val model = WaveformModel(screencast)
+  val model = WaveformModel(screencast, audioDataModel)
   var selectionModel = MultiSelectionModel()
+  private val myCoordinator = model.screencast.coordinator
 
   init {
     preferredSize = Dimension(Toolkit.getDefaultToolkit().screenSize.width, height)
+  }
+
+  override fun getPreferredSize(): Dimension {
+    val superValue = super.getPreferredSize()
+    val audio = model.audioDataModel
+    return Dimension(
+      (myCoordinator.toPixel(audio.totalFrames + audio.offsetFrames) / JBUI.pixScale()).roundToInt() + 200,
+      superValue.height
+    )
   }
 
   /**
@@ -54,15 +66,16 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
     super.paintComponent(graphics)
     graphics ?: return
     with(graphics as Graphics2D) {
+      setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       background = UIUtil.getPanelBackground()
       clearRect(0, 0, width, height)
       drawWordsBackGround()
       drawSelectedRanges()
-      drawHorizontalLine()
+      drawEndLine()
       drawAveragedWaveform(model.audioData[0])
       drawWords()
       drawMovingBorder()
-      val position = model.playFramePosition.get()
+      val position = model.playFramePosition
       if (position != -1L) {
         drawPosition(position)
       }
@@ -71,13 +84,32 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
 
   private fun Graphics2D.drawWordsBackGround() {
     val usedRange = model.drawRange
-    val words = model.screencast.data?.words ?: return
     color = WaveformGraphics.MAPPING_HIGHLIGHT_COLOR
-    for (word in words) {
-      val (x1, x2) = model.getCoordinates(word)
+    for (word in model.wordsView) {
+      val (x1, x2) = word.pixelRange
       if (IntRange(x1, x2).intersects(usedRange)) {
-        fillRect(x1, 0, x2 - x1, height)
+        fillRect(x1 / JBUI.pixScale(), 0.0f, (x2 - x1) / JBUI.pixScale(), height.toFloat())
       }
+    }
+  }
+
+  private fun Graphics2D.drawEndLine() {
+    color = WaveformGraphics.HORIZONTAL_LINE
+    stroke = BasicStroke(1.0f)
+    val audioRange = model.editionModel.impose(0 until model.audioDataModel.totalFrames)
+    val offsetFrames = model.audioDataModel.offsetFrames
+    val startX = model.screencast.coordinator.toPixel(offsetFrames)
+    val halfHeight = (height / 2).toFloat()
+    if (startX in model.drawRange) {
+      val pixStartX = startX / JBUI.pixScale()
+      drawLine(pixStartX, 0.0f, pixStartX, height.toFloat())
+      drawLine(0.0f, halfHeight, pixStartX, halfHeight)
+    }
+    val endX = model.screencast.coordinator.toPixel(offsetFrames + audioRange.endInclusive)
+    if (endX in model.drawRange) {
+      val pixEndX = endX / JBUI.pixScale()
+      drawLine(pixEndX, 0.0f, pixEndX, height.toFloat())
+      drawLine(0.0f, halfHeight, pixEndX, halfHeight)
     }
   }
 
@@ -92,26 +124,18 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
   }
 
   private fun Graphics2D.drawSelectedRange(selected: IntRange, border: IntRange) {
-    val selectedVisible = border.intersect(selected)
+    val selectedVisible = border.intersectWith(selected)
     color = WaveformGraphics.AUDIO_SELECTION_COLOR
     if (!selectedVisible.empty) {
-      fillRect(selectedVisible.start, 0, selectedVisible.length, height)
+      fillRect(selectedVisible.start.divScaleF(), 0.0f, selectedVisible.length.divScaleF(), height.toFloat())
     }
   }
 
   private fun Graphics2D.drawPosition(position: Long) {
-    val x = model.coordinator.getPixel(position)
+    val x = model.screencast.coordinator.toPixel(position).divScaleF()
     color = WaveformGraphics.AUDIO_PLAY_LINE_COLOR
-    stroke = BasicStroke(WaveformGraphics.ROOT_MEAN_SQUARE_STROKE_WIDTH)
-    drawLine(x, 0, x, height)
-  }
-
-  /**
-   * Draw horizontal in center of component showing the zero pitch of sound.
-   */
-  private fun Graphics2D.drawHorizontalLine() {
-    color = Color.BLACK
-    drawLine(0, height / 2, width, height / 2)
+    stroke = BasicStroke(1.0f)
+    drawLine(x, 0.0f, x, height.toFloat())
   }
 
   /**
@@ -121,67 +145,49 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
    * @see AveragedSampleData
    */
   private fun Graphics2D.drawAveragedWaveform(data: AveragedSampleData) {
-    val workRange = IntRange.from(data.skippedChunks, data.size)
-    val editedRanges = model.editionModel.editions.map {
-      Pair(model.coordinator.frameRangeToPixelRange(it.first), it.second)
-    }
-    val workPieces = mutableListOf<Pair<IntRange, EditionModel.EditionType>>()
-    editedRanges.forEach {
-      val x = it.first intersect workRange
-      if (!x.empty) {
-        workPieces.add(Pair(x, it.second))
+    val offsetChunk =
+      (Math.floorDiv(model.audioDataModel.offsetFrames, myCoordinator.framesPerPixel)).toInt()
+    var skipCut = 0
+    val workRange = offsetChunk + data.skippedChunks until offsetChunk + data.skippedChunks + data.size
+    stroke = BasicStroke(JBUI.scale(1.0f))
+    for ((range, type) in model.editionModel.editions) {
+      val screenRange = myCoordinator.toPixelRange(range)
+      when (type) {
+        NO_CHANGES -> {
+          for (x in screenRange intersectWith workRange) {
+            val index = x - offsetChunk - data.skippedChunks
+            val scaledX = (x - skipCut) / JBUI.pixScale()
+            val yTop = (height - (data.highestPeaks[index] * height).toDouble() / data.maxPeak) / 2
+            val yBottom = (height - (data.lowestPeaks[index] * height).toDouble() / data.maxPeak) / 2
+            color = WaveformGraphics.AUDIO_PEAK_COLOR
+            drawLine(scaledX, yTop.toFloat(), scaledX, yBottom.toFloat())
+            val rmsHeight = (data.rootMeanSquare[index] * height).toDouble() / data.maxPeak / 4
+            val yAverage = (height - (data.averagePeaks[index] * height).toDouble() / data.maxPeak) / 2
+            color = WaveformGraphics.AUDIO_RMS_COLOR
+            drawLine(scaledX, (yAverage - rmsHeight).toFloat(), scaledX, (yAverage + rmsHeight).toFloat())
+          }
+        }
+        MUTE -> {
+          color = WaveformGraphics.AUDIO_PEAK_COLOR
+          for (x in screenRange intersectWith workRange) {
+            val scaledX = (x - skipCut) / JBUI.pixScale()
+            drawLine(scaledX, (height / 2).toFloat(), scaledX, (height / 2).toFloat())
+          }
+        }
+        CUT -> skipCut += screenRange.length
       }
-    }
-    stroke = BasicStroke(WaveformGraphics.PEAK_STROKE_WIDTH)
-    drawWaveformPiece(workPieces, WaveformGraphics.AUDIO_PEAK_CUT_COLOR, WaveformGraphics.AUDIO_PEAK_COLOR) {
-      val yTop = (height - (data.highestPeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
-      val yBottom = (height - (data.lowestPeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
-      drawLine(it, yTop.toInt(), it, yBottom.toInt())
-    }
-    stroke = BasicStroke(WaveformGraphics.ROOT_MEAN_SQUARE_STROKE_WIDTH)
-    color = WaveformGraphics.AUDIO_RMS_COLOR
-    drawWaveformPiece(workPieces, WaveformGraphics.AUDIO_RMS_CUT_COLOR, WaveformGraphics.AUDIO_RMS_COLOR) {
-      val rmsHeight = (data.rootMeanSquare[it - data.skippedChunks] * height).toDouble() / data.maxPeak / 4
-      val yAverage = (height - (data.averagePeaks[it - data.skippedChunks] * height).toDouble() / data.maxPeak) / 2
-      drawLine(it, (yAverage - rmsHeight).toInt(), it, (yAverage + rmsHeight).toInt())
     }
   }
 
-  private inline fun Graphics2D.drawWaveformPiece(
-    workPieces: List<Pair<IntRange, EditionModel.EditionType>>,
-    cutColor: Color,
-    noChangeColor: Color,
-    painter: (Int) -> Unit
-  ) {
-    var last = Int.MIN_VALUE
-    loop@ for (piece in workPieces) {
-      color = when (piece.second) {
-        CUT -> cutColor
-        NO_CHANGES -> noChangeColor
-        MUTE -> continue@loop
-      }
-      val range = piece.first
-      for (i in max(range.start, last)..range.end) {
-        painter(i)
-      }
-      last = range.end
-    }
-  }
-
-  /**
-   * Draw words and their bounds.
-   *
-   * If word do not fit in its bounds, it is replaced with dashed line.
-   */
   private fun Graphics2D.drawWords() {
     val usedRange = model.drawRange
-    val words = model.screencast.data?.words ?: return
-    for (word in words) {
-      val coordinates = model.getCoordinates(word)
+    for (word in model.wordsView) {
+      val coordinates = word.pixelRange.mapInt { (it / JBUI.pixScale()).roundToInt() }
       if (coordinates.intersects(usedRange)) {
-        drawCenteredWord(word.filteredText, coordinates)
+        drawCenteredWord(word.word.text, coordinates)
       }
-      val (leftBound, rightBound) = coordinates
+      val leftBound = word.pixelRange.start / JBUI.pixScale()
+      val rightBound = word.pixelRange.endInclusive / JBUI.pixScale()
       color = WaveformGraphics.WORD_SEPARATOR_COLOR
       stroke = BasicStroke(
         WaveformGraphics.WORD_SEPARATOR_WIDTH,
@@ -191,28 +197,28 @@ class WaveformView(screencast: ScreencastFile) : JBPanel<WaveformView>(), Change
         FloatArray(1) { WaveformGraphics.DASH_WIDTH },
         0f
       )
-      if (leftBound > usedRange.start) {
-        drawLine(leftBound, 0, leftBound, height)
+      if (word.pixelRange.start > usedRange.start) {
+        drawLine(leftBound, 0.0f, leftBound, height.toFloat())
       }
-      if (rightBound < usedRange.end) {
-        drawLine(rightBound, 0, rightBound, height)
+      if (word.pixelRange.endInclusive < usedRange.endInclusive) {
+        drawLine(rightBound, 0.0f, rightBound, height.toFloat())
       }
     }
   }
 
   private fun Graphics2D.drawMovingBorder() {
-    val x = selectionModel.movingBorder
-    if (x == -1) return
+    if (selectionModel.movingBorder == -1) return
+    val x = selectionModel.movingBorder.divScaleF()
     color = WaveformGraphics.WORD_MOVING_SEPARATOR_COLOR
     stroke = BasicStroke(
-      WaveformGraphics.WORD_SEPARATOR_WIDTH,
+      1.0f,
       BasicStroke.CAP_BUTT,
       BasicStroke.JOIN_BEVEL,
       0f,
       FloatArray(1) { WaveformGraphics.DASH_WIDTH },
       0f
     )
-    drawLine(x, 0, x, height)
+    drawLine(x, 0.0f, x, height.toFloat())
   }
 
   private fun Graphics2D.drawCenteredWord(word: String, borders: IntRange) {

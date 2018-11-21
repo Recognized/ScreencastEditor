@@ -46,7 +46,7 @@ class LongRangeUnion {
   fun intersection(range: LongRange): List<LongRange> {
     val ret = mutableListOf<LongRange>()
     for (x in myRanges) {
-      val intersection = x intersect range
+      val intersection = x intersectWith range
       if (!intersection.empty) {
         ret.add(intersection)
       }
@@ -94,8 +94,8 @@ class LongRangeUnion {
     while (i < myRanges.size) {
       val cur = myRanges[i]
       if (cur.start <= range.end) {
-        right -= rightPart.intersect(cur).length
-        left -= leftPart.intersect(cur).length
+        right -= rightPart.intersectWith(cur).length
+        left -= leftPart.intersectWith(cur).length
       } else
         break
       ++i

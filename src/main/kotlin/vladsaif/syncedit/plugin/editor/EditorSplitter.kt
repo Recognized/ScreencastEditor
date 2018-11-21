@@ -4,7 +4,6 @@ import com.intellij.openapi.ui.Divider
 import com.intellij.openapi.ui.Splitter
 import com.intellij.util.ui.UIUtil
 import gnu.trove.TLongObjectHashMap
-import vladsaif.syncedit.plugin.editor.scriptview.Coordinator
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptGraphics.BIG_MARK_HEIGHT
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptGraphics.SMALL_MARK_HEIGHT
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptGraphics.STROKE_WIDTH
@@ -19,7 +18,7 @@ import javax.swing.JComponent
 import kotlin.math.max
 
 class EditorSplitter(
-  waveformView: JComponent,
+  waveforms: JComponent,
   scriptView: JComponent,
   private val coordinator: Coordinator
 ) : Splitter(true, 0.5f, 0.0f, 1.0f) {
@@ -27,7 +26,7 @@ class EditorSplitter(
   private val myFormatCache = TLongObjectHashMap<SizedString>()
 
   init {
-    firstComponent = waveformView
+    firstComponent = waveforms
     secondComponent = scriptView
     dividerWidth = getFontMetrics(UIUtil.getLabelFont()).height + (BIG_MARK_HEIGHT * 2).toInt()
   }
@@ -60,7 +59,7 @@ class EditorSplitter(
         var timeStart = (coordinator.toNanoseconds(start) ceil halfInterval) * halfInterval // align mark
         val timeEnd = coordinator.toNanoseconds(end)
         while (timeStart <= timeEnd) {
-          val currentPos = coordinator.toScreenPixel(timeStart, TimeUnit.NANOSECONDS)
+          val currentPos = coordinator.toPixel(timeStart, TimeUnit.NANOSECONDS)
           drawLine(currentPos, bounds.height, currentPos, (bounds.height - SMALL_MARK_HEIGHT).toInt())
           timeStart += halfInterval
         }
@@ -72,7 +71,7 @@ class EditorSplitter(
         var timeStart = max((coordinator.toNanoseconds(start) ceil myInterval) * myInterval, 0)
         val timeEnd = coordinator.toNanoseconds(end)
         while (timeStart <= timeEnd) {
-          val currentPos = coordinator.toScreenPixel(timeStart, TimeUnit.NANOSECONDS)
+          val currentPos = coordinator.toPixel(timeStart, TimeUnit.NANOSECONDS)
           drawLine(currentPos, bounds.height, currentPos, (bounds.height - BIG_MARK_HEIGHT).toInt())
           var sizedString: SizedString? = myFormatCache.get(timeStart)
           if (sizedString == null) {

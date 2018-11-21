@@ -1,10 +1,8 @@
 package vladsaif.syncedit.plugin.sound.impl
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.diagnostic.logger
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.editor.audioview.skipFramesMpeg
-import vladsaif.syncedit.plugin.editor.audioview.waveform.toDecodeFormat
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.Player
@@ -22,17 +20,12 @@ class PlayerImpl(
   private val editionModel: EditionModel
 ) : Player {
   private val mySource: SourceDataLine
-  private var myProcessUpdater: (Long) -> Unit = {}
   private var myOnStopAction: () -> Unit = {}
   private var mySignalStopReceived = false
 
   init {
     val fileFormat = SoundProvider.getAudioFileFormat(getAudioStream().buffered())
-    mySource = AudioSystem.getSourceDataLine(fileFormat.format.toDecodeFormat())
-  }
-
-  override fun setProcessUpdater(updater: (Long) -> Unit) {
-    myProcessUpdater = updater
+    mySource = AudioSystem.getSourceDataLine(fileFormat.format)
   }
 
   override fun pause() {
@@ -67,6 +60,10 @@ class PlayerImpl(
     myOnStopAction = action
   }
 
+  override fun getFramePosition(): Long {
+    return mySource.longFramePosition
+  }
+
   override fun play(errorHandler: (Throwable) -> Unit) {
     mySource.start()
     thread(start = true) {
@@ -88,13 +85,10 @@ class PlayerImpl(
     ApplicationManager.getApplication().invokeLater { mySource.start() }
     val frameSize = decodedStream.format.frameSize
     val buffer = ByteArray(1 shl 14)
-    var totalFrames = 0L
     outer@ for (edition in editions) {
       var needBytes = edition.first.length * frameSize
       when (edition.second) {
         CUT -> {
-          totalFrames += needBytes / frameSize
-          myProcessUpdater(totalFrames)
           while (needBytes != 0L && !mySignalStopReceived) {
             if (decodedStream is DecodedMpegAudioInputStream) {
               decodedStream.skipFramesMpeg(buffer, edition.first.length)
@@ -119,9 +113,7 @@ class PlayerImpl(
               if (mySignalStopReceived) {
                 break@outer
               }
-              myProcessUpdater(totalFrames)
               writeOrBlock(buffer, zeroesCount)
-              totalFrames += zeroesCount / frameSize
               needBytes -= zeroesCount
             }
             if (needSkip != 0L) {
@@ -146,14 +138,11 @@ class PlayerImpl(
               break@outer
             }
             needBytes -= read
-            myProcessUpdater(totalFrames)
             writeOrBlock(buffer, read)
-            totalFrames += read / frameSize
           }
         }
       }
     }
-    LOG.info("Played ${totalFrames / decodedStream.format.frameRate}ms")
   }
 
   private fun writeOrBlock(buffer: ByteArray, size: Int) {
@@ -164,8 +153,6 @@ class PlayerImpl(
     }
   }
 }
-
-private val LOG = logger<PlayerImpl>()
 
 fun Int.modFloor(modulus: Int): Int {
   return this - this % modulus

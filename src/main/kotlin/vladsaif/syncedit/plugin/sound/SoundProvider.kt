@@ -134,6 +134,17 @@ object SoundProvider {
       false
     )
 
+  private fun AudioFormat.toPcm(sampleRate: Float) =
+    AudioFormat(
+      AudioFormat.Encoding.PCM_SIGNED,
+      sampleRate,
+      16,
+      channels,
+      2 * channels,
+      sampleRate,
+      false
+    )
+
   // This is needed to make possible converting audio to recognizable WAV format without temporary file storage
   // and without storing whole decoded file in RAM, because it can be very big.
   // Idea of this code is just to convert and send audio stream on the fly,
@@ -170,6 +181,22 @@ object SoundProvider {
     val length = countFrames(supplier)
     withPcmStream(supplier.get()) {
       action(createSizedAudioStream(it, length))
+    }
+  }
+
+  fun <T> withWaveformPcmStream(source: InputStream, sampleRate: Float = 44100f, action: (AudioInputStream) -> T): T {
+    return getAudioInputStream(source).use { encoded ->
+      when {
+        encoded.format == encoded.format.toPcm(sampleRate) -> {
+          action(encoded)
+        }
+        else -> {
+          if (!isConversionSupported(encoded.format.toPcm(sampleRate), encoded.format)) {
+            throw UnsupportedAudioFileException("Audio is not supported.")
+          }
+          getAudioInputStream(encoded.format.toPcm(sampleRate), encoded).use(action)
+        }
+      }
     }
   }
 

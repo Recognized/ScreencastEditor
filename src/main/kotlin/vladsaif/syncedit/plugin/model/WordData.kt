@@ -12,7 +12,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter
 @XmlAccessorType(XmlAccessType.FIELD)
 data class WordData(
   @field:XmlElement
-  private val text: String,
+  val text: String,
   @field:XmlJavaTypeAdapter(IntRangeAdapter::class)
   val range: IntRange,
   @field:XmlAttribute
@@ -29,7 +29,7 @@ data class WordData(
   private constructor() : this("", IntRange.EMPTY)
 
   enum class State {
-    EXCLUDED, MUTED, PRESENTED
+    MUTED, PRESENTED
   }
 
   override fun compareTo(other: WordData) = range.compareTo(other.range)

@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.actions.errorScriptContainsErrors
+import vladsaif.syncedit.plugin.editor.Coordinator
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.SimpleAudioModel
 import vladsaif.syncedit.plugin.format.ScreencastFileType
@@ -44,7 +45,8 @@ import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
-import vladsaif.syncedit.plugin.model.WordData.State.*
+import vladsaif.syncedit.plugin.model.WordData.State.MUTED
+import vladsaif.syncedit.plugin.model.WordData.State.PRESENTED
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
@@ -60,6 +62,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import java.util.stream.Collectors
 import javax.swing.event.ChangeListener
@@ -98,6 +101,7 @@ class ScreencastFile(
   val audioInputStream: InputStream
     get() = getInputStreamByType(file, AUDIO) ?: throw IllegalStateException("Audio is not set")
   val codeModel = CodeModel(listOf())
+  // TODO MAKE LAZY
   val isAudioSet: Boolean
     get() = isDataSet(file, AUDIO)
   val transcriptPsi: TranscriptPsiFile?
@@ -105,6 +109,7 @@ class ScreencastFile(
   var transcriptFile: VirtualFile? = null
     private set
   private var scriptFile: VirtualFile? = null
+  val coordinator: Coordinator = Coordinator()
   var scriptViewFile: VirtualFile? = null
     private set
   val scriptViewDoc: Document?
@@ -142,19 +147,7 @@ class ScreencastFile(
   }
 
   fun loadTranscriptData(newData: TranscriptData) {
-    data = newData
-    bulkChange {
-      val words = data?.words ?: return@bulkChange
-      val audio = audioDataModel ?: return@bulkChange
-      editionModel.reset()
-      for (word in words) {
-        when (word.state) {
-          EXCLUDED -> editionModel.cut(audio.msRangeToFrameRange(word.range))
-          MUTED -> editionModel.mute(audio.msRangeToFrameRange(word.range))
-          PRESENTED -> editionModel.undo(audio.msRangeToFrameRange(word.range))
-        }
-      }
-    }
+    data = synchronizeWithEditionModel(newData)
   }
 
   private fun initializeEditionModel() {
@@ -167,7 +160,7 @@ class ScreencastFile(
       when (type) {
         CUT -> editionModel.cut(range)
         MUTE -> editionModel.mute(range)
-        NO_CHANGES -> editionModel.undo(range)
+        NO_CHANGES -> editionModel.unmute(range)
       }
     }
   }
@@ -213,6 +206,9 @@ class ScreencastFile(
       }
     }
     withContext(ExEDT) {
+      if (isAudioSet) {
+        coordinator.framesPerSecond = (audioDataModel!!.framesPerMillisecond * 1000).toLong()
+      }
       if (isEditionModelSet) {
         initializeEditionModel()
       }
@@ -249,17 +245,16 @@ class ScreencastFile(
     if (isAudioSet) {
       for ((range, type) in editionState.editions) {
         if (type == CUT) {
-          msDeleted.union(audioDataModel!!.frameRangeToMsRange(range))
+          msDeleted.union(coordinator.toMillisecondsRange(range))
         }
       }
     }
     // Change word ranges because of deletions
     val newTranscriptData = data?.words?.asSequence()
-      ?.filter { it.state != WordData.State.EXCLUDED }
       ?.map { it.copy(range = msDeleted.impose(it.range)) }
       ?.filter { !it.range.empty }
       ?.toList()
-      ?.let { TranscriptData(it) }
+      ?.let { TranscriptData(it, listOf()) }
 
     // TODO update offsets
     val newScript = scriptDocument?.text
@@ -306,62 +301,62 @@ class ScreencastFile(
 
   private fun replaceWords(replacements: List<Pair<Int, WordData>>) {
     if (replacements.isEmpty()) return
-    data = data?.replaceWords(replacements)
+    data = data?.replace(replacements)
   }
 
   fun renameWord(index: Int, text: String) {
-    data = data?.renameWord(index, text)
+    data = data?.rename(index, text)
   }
 
   fun changeRange(index: Int, newRange: IntRange) {
-    val word = data?.get(index) ?: return
-    val newFrameRange = audioDataModel!!.msRangeToFrameRange(newRange)
+    val dataT = data ?: return
+    val word = dataT[index]
+    val newFrameRange = coordinator.toFrameRange(newRange, TimeUnit.MILLISECONDS)
     bulkChange {
       when (word.state) {
-        EXCLUDED, MUTED -> {
-          undo(audioDataModel!!.msRangeToFrameRange(word.range))
-          if (word.state == EXCLUDED) cut(newFrameRange)
-          else mute(newFrameRange)
+        MUTED -> {
+          unmute(coordinator.toFrameRange(word.range, TimeUnit.MILLISECONDS))
+          mute(newFrameRange)
         }
         PRESENTED -> Unit
       }
     }
-    data = data?.replaceWords(listOf(index to word.copy(range = newRange)))
+    data = dataT.replace(listOf(index to word.copy(range = newRange)))
   }
 
   fun concatenateWords(indexRange: IntRange) {
-    data = data?.concatenateWords(indexRange)
+    data = data?.concatenate(indexRange)
   }
 
   fun excludeWords(indices: IntArray) {
     applyEdition(indices, EditionModel::cut)
-    data = data?.excludeWords(indices)
+    data = data?.delete(indices)
   }
 
   fun excludeWord(index: Int) {
     data?.let { data ->
       bulkChange {
-        cut(audioDataModel!!.msRangeToFrameRange(data.words[index].range))
+        cut(coordinator.toFrameRange(data.words[index].range, TimeUnit.MILLISECONDS))
       }
     }
-    data = data?.excludeWord(index)
+    data = data?.delete(index)
   }
 
   fun showWords(indices: IntArray) {
-    applyEdition(indices, EditionModel::undo)
-    data = data?.showWords(indices)
+    applyEdition(indices, EditionModel::unmute)
+    data = data?.unmute(indices)
   }
 
   fun muteWords(indices: IntArray) {
     applyEdition(indices, EditionModel::mute)
-    data = data?.muteWords(indices)
+    data = data?.mute(indices)
   }
 
   private fun applyEdition(indices: IntArray, action: EditionModel.(LongRange) -> Unit) {
     data?.let { data ->
       bulkChange {
         for (i in indices) {
-          action(audioDataModel!!.msRangeToFrameRange(data.words[i].range))
+          action(coordinator.toFrameRange(data.words[i].range, TimeUnit.MILLISECONDS))
         }
       }
     }
@@ -395,27 +390,52 @@ class ScreencastFile(
 //  }
 
   private fun onEditionModelChanged() {
-    val preparedEditions = data?.let { getWordReplacements(it) } ?: return
     myTranscriptListenerEnabled = false
     try {
-      replaceWords(preparedEditions)
+      data?.let { data = synchronizeWithEditionModel(it) }
     } finally {
       myTranscriptListenerEnabled = true
     }
   }
 
-  private fun getWordReplacements(data: TranscriptData): List<Pair<Int, WordData>> {
-    val audio = audioDataModel ?: return listOf()
-    val editions = editionModel.editions.map { audio.frameRangeToMsRange(it.first) to it.second.toWordDataState() }
-    val preparedEditions = mutableListOf<Pair<Int, WordData>>()
-    for (edition in editions) {
-      for ((i, word) in data.words.withIndex()) {
-        if (word.range in edition.first && word.state != edition.second) {
-          preparedEditions.add(i to word.copy(state = edition.second))
-        }
+  private fun synchronizeWithEditionModel(data: TranscriptData): TranscriptData {
+    val editions =
+      editionModel.editions.map { coordinator.toMillisecondsRange(it.first) to it.second }
+    val newWords = data.words.toMutableSet()
+    val deletedWords = data.deletedWords.toMutableSet()
+    val processList = { list: List<WordData>, edition: Pair<IntRange, EditionModel.EditionType> ->
+      var wasInRange = false
+      for (word in list) {
+        if (word.range in edition.first) {
+          wasInRange = true
+          when (edition.second) {
+            CUT -> {
+              newWords -= word
+              deletedWords += word
+            }
+            MUTE -> {
+              newWords -= word
+              deletedWords -= word
+              newWords += if (word.state != MUTED) {
+                word.copy(state = MUTED)
+              } else {
+                word
+              }
+            }
+            NO_CHANGES -> {
+              newWords -= word
+              deletedWords -= word
+              newWords += if (word.state != PRESENTED) word.copy(state = PRESENTED) else word
+            }
+          }
+        } else if (wasInRange) break
       }
     }
-    return preparedEditions.toList()
+    for (edition in editions) {
+      processList(data.words, edition)
+      processList(data.deletedWords, edition)
+    }
+    return TranscriptData(newWords.toList(), deletedWords.toList())
   }
 
   private fun updateTranscript() {
@@ -570,12 +590,6 @@ class ScreencastFile(
           }
         }
       }
-    }
-
-    private fun EditionModel.EditionType.toWordDataState() = when (this) {
-      CUT -> EXCLUDED
-      MUTE -> MUTED
-      NO_CHANGES -> PRESENTED
     }
   }
 }

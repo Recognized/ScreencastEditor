@@ -49,7 +49,7 @@ val EDITION_MODEL = DefaultEditionModel().apply {
 }
 val AUDIO_PATH: Path = RESOURCES_PATH.resolve("demo.wav")
 val SCRIPT_TEXT =
-    """|timeOffset(ms = 1000L)
+  """|timeOffset(ms = 1000L)
        |ideFrame {
        |    invokeAction("vladsaif.syncedit.plugin.OpenDiff")
        |    timeOffset(1000L)

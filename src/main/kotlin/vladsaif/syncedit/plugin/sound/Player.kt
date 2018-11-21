@@ -2,12 +2,9 @@ package vladsaif.syncedit.plugin.sound
 
 interface Player : AutoCloseable {
 
-  /**
-   * Set [updater] that will be sometimes called with the number of frames written to the source data line.
-   */
-  fun setProcessUpdater(updater: (Long) -> Unit)
-
   fun setOnStopAction(action: () -> Unit)
+
+  fun getFramePosition(): Long
 
   fun play(errorHandler: (Throwable) -> Unit)
 
