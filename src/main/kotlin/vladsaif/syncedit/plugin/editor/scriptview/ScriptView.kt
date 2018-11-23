@@ -21,7 +21,6 @@ import java.awt.event.ComponentEvent
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
 import java.util.concurrent.TimeUnit
-import javax.swing.event.ChangeListener
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -54,11 +53,11 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
   }
 
   init {
-    screencast.codeModel.addChangeListener(ChangeListener {
+    screencast.addCodeListener {
       resetCache()
       revalidate()
       repaint()
-    })
+    }
     addComponentListener(object : ComponentAdapter() {
       override fun componentResized(e: ComponentEvent?) {
         myBordersRectangles.resetCache()
@@ -293,7 +292,9 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
     val delta = max(myTempMovingDelta, -myFirstBorder.get())
     val start = coordinator.toNanoseconds(myFirstBorder.get())
     val end = coordinator.toNanoseconds(myFirstBorder.get() + delta)
-    screencast.codeModel.shiftAll(end - start, TimeUnit.NANOSECONDS)
+    screencast.performModification {
+      codeModel.shiftAll(end - start, TimeUnit.NANOSECONDS)
+    }
   }
 
   private fun updateBlock(newBorder: DraggedBorder) {
@@ -308,7 +309,9 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
         )
       }
     }
-    screencast.codeModel.replace(newBorder.source, newCode)
+    screencast.performModification {
+      codeModel.replace(newBorder.source, newCode)
+    }
   }
 
   private fun Graphics2D.drawTempBorder(border: DraggedBorder) {

@@ -1,21 +1,45 @@
 package vladsaif.syncedit.plugin.sound
 
-import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.util.end
 import java.io.StringReader
 import java.util.*
 
-interface EditionModel : ChangeNotifier {
-  enum class EditionType {
-    CUT, MUTE, NO_CHANGES
-  }
+interface EditionModelView {
 
   /**
    * @return Sorted by first element of pair list of editions that were made.
    */
-  val editions: List<Pair<LongRange, EditionType>>
+  val editions: List<Pair<LongRange, EditionModel.EditionType>>
+
+  fun impose(frameRange: LongRange): LongRange
+
+  fun impose(frame: Long): Long {
+    return impose(frame..frame).start
+  }
+
+  fun overlay(frameRange: LongRange): LongRange
+
+  fun overlay(frame: Long): Long {
+    return overlay(frame..frame).start
+  }
+
+  fun copy(): EditionModel
+
+  fun serialize(): ByteArray {
+    return buildString {
+      for ((range, type) in editions) {
+        append("${range.start} ${range.end} $type\n")
+      }
+    }.toByteArray(Charsets.UTF_8)
+  }
+}
+
+interface EditionModel : EditionModelView {
+  enum class EditionType {
+    CUT, MUTE, NO_CHANGES
+  }
 
   /**
    * Cut a frame range.
@@ -41,26 +65,15 @@ interface EditionModel : ChangeNotifier {
    */
   fun reset()
 
-  fun copy(): EditionModel
-
-  fun impose(frameRange: LongRange): LongRange
-
-  fun impose(frame: Long): Long {
-    return impose(frame..frame).start
-  }
-
-  fun overlay(frameRange: LongRange): LongRange
-
-  fun overlay(frame: Long): Long {
-    return overlay(frame..frame).start
-  }
-
-  fun serialize(): ByteArray {
-    return buildString {
-      for ((range, type) in editions) {
-        append("${range.start} ${range.end} $type\n")
+  fun load(other: EditionModel) {
+    reset()
+    for ((range, type) in other.editions) {
+      when (type) {
+        CUT -> cut(range)
+        MUTE -> mute(range)
+        NO_CHANGES -> Unit
       }
-    }.toByteArray(Charsets.UTF_8)
+    }
   }
 
   companion object {

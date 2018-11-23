@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.editor.toolbar
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.project.Project
@@ -56,8 +55,8 @@ object ScreencastToolWindow {
     val audioPanel = ActionPanel(editorPane)
     audioPanel.disposeAction = { editorPane.waveformController!!.stopImmediately() }
     val controlPanel = ActionPanel(audioPanel)
-    controlPanel.addActionGroup(createMainActionGroup(screencast, controlPanel, editorPane))
-    audioPanel.addActionGroup(createAudioRelatedActionGroup(editorPane, controlPanel))
+    controlPanel.addActionGroups(createMainActionGroup(screencast, controlPanel, editorPane))
+    audioPanel.addActionGroups(createAudioRelatedActionGroup(editorPane, controlPanel))
     val content = ContentFactory.SERVICE.getInstance().createContent(controlPanel, screencast.name, false)
     val toolWindow = getToolWindow(screencast.project)
     addForAllLeaves(FocusRequestor(controlPanel, screencast.project), controlPanel)
@@ -101,17 +100,21 @@ object ScreencastToolWindow {
     parentDisposable: Disposable
   ): ActionGroup {
     with(ActionGroupBuilder(parent, parentDisposable)) {
-      add("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
-        ApplicationManager.getApplication().invokeLater {
+      add("Undo", "Undo last change", AllIcons.Actions.Undo, screencast::undo, screencast::isUndoAvailable)
+      add("Redo", "Redo last undo", AllIcons.Actions.Redo, screencast::redo, screencast::isRedoAvailable)
+//      add("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
+//        ApplicationManager.getApplication().invokeLater {
           //          KotlinCompileUtil.compileAndRun(screencast.getPlayScript())
-        }
-      })
+//        }
+//      })
+      separator()
       add("Open transcript", "Open transcript in editor", TRANSCRIPT, {
         openTranscript(screencast)
       })
       add("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
         openScript(screencast)
       })
+      separator()
       add("Save changes", "Save edited screencast", AllIcons.Actions.Menu_saveall, {
         saveChanges(screencast)
       })
@@ -145,9 +148,10 @@ object ScreencastToolWindow {
         add("Stop", "Stop audio", STOP, this::stopImmediately) {
           playState !is WaveformController.PlayState.Stopped
         }
-        add("Undo", "Undo changes in selected area", AllIcons.Actions.Undo, this::undo, this::hasSelection)
+        separator()
         add("Clip", "Clip audio", DELETE, this::cutSelected, this::hasSelection)
         add("Mute", "Mute selected", VOLUME_OFF, this::muteSelected, this::hasSelection)
+        separator()
         add("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, zoomController::zoomIn)
         add("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, zoomController::zoomOut)
         return done()
@@ -170,7 +174,7 @@ object ScreencastToolWindow {
   }
 
   private class ActionGroupBuilder(val parent: JComponent, val parentDisposable: Disposable) {
-    private val myGroup = DefaultActionGroup()
+    private val myActionGroup = DefaultActionGroup()
 
     fun add(
       what: String,
@@ -190,19 +194,23 @@ object ScreencastToolWindow {
       }
       // TODO
       getShortcutSet(what)?.let { anAction.registerCustomShortcutSet(it, parent, parentDisposable) }
-      myGroup.add(anAction)
+      myActionGroup.add(anAction)
+    }
+
+    fun separator() {
+      myActionGroup.add(Separator.getInstance())
     }
 
     fun add(action: AnAction) {
       getShortcutSet("Play/Pause")?.let { action.registerCustomShortcutSet(it, parent, parentDisposable) }
-      myGroup.add(action)
+      myActionGroup.add(action)
     }
 
-    fun done() = myGroup
+    fun done() = myActionGroup
 
     private fun getShortcutSet(action: String): ShortcutSet? = when (action) {
       "Play/Pause" -> CustomShortcutSet.fromString("ctrl P")
-      "Stop" -> CustomShortcutSet.fromString("ctrl O")
+      "Stop" -> CustomShortcutSet.fromString("ctrl alt P")
       "Undo" -> KeymapUtil.getActiveKeymapShortcuts(IdeActions.ACTION_UNDO)
       "Redo" -> KeymapUtil.getActiveKeymapShortcuts(IdeActions.ACTION_REDO)
       "Clip" -> KeymapUtil.getActiveKeymapShortcuts(IdeActions.ACTION_CUT)

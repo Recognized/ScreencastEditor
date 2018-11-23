@@ -3,8 +3,8 @@ package vladsaif.syncedit.plugin.sound.impl
 import com.intellij.openapi.application.ApplicationManager
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.editor.audioview.skipFramesMpeg
-import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.EditionModelView
 import vladsaif.syncedit.plugin.sound.Player
 import vladsaif.syncedit.plugin.sound.SoundProvider
 import vladsaif.syncedit.plugin.util.length
@@ -17,7 +17,7 @@ import kotlin.math.min
 
 class PlayerImpl(
   private val getAudioStream: () -> InputStream,
-  private val editionModel: EditionModel
+  private val editionModel: EditionModelView
 ) : Player {
   private val mySource: SourceDataLine
   private var myOnStopAction: () -> Unit = {}

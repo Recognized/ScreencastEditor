@@ -40,7 +40,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
    * Cut fragment will be skipped when playing, but not deleted.
    */
   fun cutSelected() {
-    edit(view.model.editionModel::cut)
+    edit(EditionModel::cut)
   }
 
   /**
@@ -49,16 +49,18 @@ class WaveformController(private val view: WaveformView) : Disposable {
    * Muted fragment will be silenced when playing, but not changed.
    */
   fun muteSelected() {
-    edit(view.model.editionModel::mute)
+    edit(EditionModel::mute)
   }
 
   fun undo() {
-    edit(view.model.editionModel::unmute)
+    edit(EditionModel::unmute)
   }
 
-  private inline fun edit(consumer: (LongRange) -> Unit) {
-    view.selectionModel.selectedRanges.forEach {
-      consumer(myScreencast.editionModel.overlay(myScreencast.coordinator.toFrameRange(it)))
+  private inline fun edit(crossinline consumer: EditionModel.(LongRange) -> Unit) {
+    myScreencast.performModification {
+      view.selectionModel.selectedRanges.forEach {
+        editionModel.consumer(myScreencast.editionModel.overlay(myScreencast.coordinator.toFrameRange(it)))
+      }
     }
     view.stateChanged(ChangeEvent(view.model.editionModel))
   }

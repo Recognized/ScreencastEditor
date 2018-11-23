@@ -6,6 +6,6 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
 class MuteAction : TranscriptRefactoringAction() {
 
   override fun doAction(model: ScreencastFile, words: List<TranscriptWord>) {
-    model.muteWords(words.map { it.number }.toIntArray())
+    model.performModification { muteWords(words.map { it.number }.toIntArray()) }
   }
 }

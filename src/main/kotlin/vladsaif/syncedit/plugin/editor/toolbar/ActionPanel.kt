@@ -15,11 +15,11 @@ class ActionPanel(content: JComponent) : SimpleToolWindowPanel(false, false), Di
     add(content)
   }
 
-  fun addActionGroup(actionGroup: ActionGroup) {
+  fun addActionGroups(group: ActionGroup) {
     setToolbar(
       ActionManager.getInstance().createActionToolbar(
         ActionPlaces.TOOLBAR,
-        actionGroup,
+        group,
         false
       ).component
     )

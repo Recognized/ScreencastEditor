@@ -182,7 +182,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       border.source.word.range.start..newMs
     }
     movingBorder = -1
-    model.changeRange(border.index, newMsRange)
+    model.performModification { changeRange(border.index, newMsRange) }
   }
 
   private val MouseEvent.isControlKeyDown get() = UIUtil.isControlKeyDown(this)

@@ -6,22 +6,27 @@ import com.intellij.openapi.diagnostic.logger
 import gnu.trove.TObjectIntHashMap
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.actions.times
-import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
-import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.util.end
 import vladsaif.syncedit.plugin.util.floorToInt
 import vladsaif.syncedit.plugin.util.shift
 import java.util.concurrent.TimeUnit
 
-class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() {
+interface CodeModelView {
+  val codes: List<Code>
+  fun findDepth(code: Code): Int
+  fun serialize(): String
+  fun findDragBoundary(beingFind: Statement): Pair<Int, Int>
+  fun findDragBoundary(beingFind: Block, isLeft: Boolean): Pair<Int, Int>
+}
+
+class CodeModel(blocks: List<Code>) : CodeModelView {
   private val myDepthCache = TObjectIntHashMap<Code>()
 
-  var codes: List<Code> = listOf()
+  override var codes: List<Code> = listOf()
     set(value) {
       field = value.sortedBy { it.startTime }
       myDepthCache.clear()
       recalculateDepth(field)
-      fireStateChanged()
     }
 
   init {
@@ -44,7 +49,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     return codes.joinToString(separator = "")
   }
 
-  fun findDepth(code: Code): Int {
+  override fun findDepth(code: Code): Int {
     return if (myDepthCache.containsKey(code)) myDepthCache[code] else -1
   }
 
@@ -80,7 +85,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     return somethingChanged to if (somethingChanged) list else currentLevel
   }
 
-  fun serialize(): String {
+  override fun serialize(): String {
     val builder = MarkedTextBuilder(true)
     val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
@@ -151,9 +156,9 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
     return null
   }
 
-  fun findDragBoundary(beingFind: Statement) = findDragBoundary(beingFind, true)
+  override fun findDragBoundary(beingFind: Statement) = findDragBoundary(beingFind, true)
 
-  fun findDragBoundary(beingFind: Block, isLeft: Boolean) = findDragBoundary(beingFind as Code, isLeft)
+  override fun findDragBoundary(beingFind: Block, isLeft: Boolean) = findDragBoundary(beingFind as Code, isLeft)
 
   private fun findDragBoundary(beingFind: Code, isLeft: Boolean): Pair<Int, Int> {
     val parent = findParent(beingFind)
@@ -200,7 +205,7 @@ class CodeModel(blocks: List<Code>) : ChangeNotifier by DefaultChangeNotifier() 
   fun transformedByScript(ktFile: KtFile): CodeModel {
     val root = createEditableTree()
     val mod = TreeDistance.treeDistanceZhangShasha(root, RawTreeNode.buildFromPsi(ktFile))
-    LOG.info("Transform cost: ${mod.sumBy {it.cost}}")
+    LOG.info("Transform cost: ${mod.sumBy { it.cost }}")
     TreeDistance.transformTree(root, mod)
     return RawTreeNode.toCodeModel(root)
   }

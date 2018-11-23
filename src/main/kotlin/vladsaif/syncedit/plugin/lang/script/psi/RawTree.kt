@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.lang.script.psi
 import com.github.tmatek.zhangshasha.EditableTreeNode
 import com.github.tmatek.zhangshasha.TreeNode
 import com.github.tmatek.zhangshasha.TreeOperation
-import com.intellij.openapi.diagnostic.logger
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.CodeEntry
 import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.Offset
@@ -113,7 +112,6 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   }
 
   companion object {
-    private val LOG = logger<RawTreeNode>()
 
     fun buildFromPsi(ktFile: KtFile): RawTreeNode {
       val nodes = BlockVisitor.fold<RawTreeNode>(ktFile) { element, list, isBlock ->
@@ -166,7 +164,6 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
         code,
         listOf(Offset(-1, 0)) + list.filterIsInstance(Offset::class.java)
       )
-      LOG.info("Plain tree build: ${list.joinToString("\n")}")
       val (codes, _) = fold<Code>(code, 0) { entry, inner ->
         val (k, total) = output.fraction[entry] ?: 1 to 1
         val range = output.time[entry]!!

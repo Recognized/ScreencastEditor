@@ -83,7 +83,7 @@ interface SpeechRecognizer {
         }
         withContext(ExEDT) {
           ApplicationManager.getApplication().runWriteAction {
-            file.loadTranscriptData(data)
+            file.performModification { setTranscriptData(data) }
           }
         }
       } catch (ex: Throwable) {

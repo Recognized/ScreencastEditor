@@ -7,7 +7,7 @@ import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.model.WordData
-import vladsaif.syncedit.plugin.sound.EditionModel
+import vladsaif.syncedit.plugin.sound.EditionModelView
 import vladsaif.syncedit.plugin.util.Cache.Companion.cache
 import vladsaif.syncedit.plugin.util.INTERSECTS_CMP
 import vladsaif.syncedit.plugin.util.end
@@ -33,7 +33,9 @@ class WaveformModel(
   private var myLastLoadedFramesPerPixel: Long = -1L
   private var myIsBroken = AtomicBoolean(false)
   private val myTranscriptListener: () -> Unit
-  private val myEditionModelListener: ChangeListener
+  private val myEditionModelListener: () -> Unit = {
+    fireStateChanged()
+  }
   var playFramePosition = -1L
    set(value) {
      field = value
@@ -52,7 +54,7 @@ class WaveformModel(
       val length = range.length * 3
       return range.start - length..range.endInclusive + length
     }
-  val editionModel: EditionModel get() = screencast.editionModel
+  val editionModel: EditionModelView get() = screencast.editionModel
   val wordsView: List<WordView> get() = myWordView.get()
 
   private fun calculateWordView(): List<WordView> {
@@ -66,18 +68,15 @@ class WaveformModel(
   }
 
   init {
-    myEditionModelListener = ChangeListener {
-      fireStateChanged()
-    }
     screencast.coordinator.addChangeListener(ChangeListener {
       loadData()
     })
-    editionModel.addChangeListener(myEditionModelListener)
+    screencast.addEditionListener(myEditionModelListener)
     myTranscriptListener = {
       myWordView.resetCache()
       fireStateChanged()
     }
-    screencast.addTranscriptDataListener(myTranscriptListener)
+    screencast.addTranscriptListener(myTranscriptListener)
   }
 
   data class WordView(val word: WordData, val pixelRange: IntRange) {
@@ -93,8 +92,8 @@ class WaveformModel(
 
   override fun dispose() {
     LOG.info("Disposed: waveform model of ${this.screencast}")
-    screencast.removeTranscriptDataListener(myTranscriptListener)
-    screencast.editionModel.removeChangeListener(myEditionModelListener)
+    screencast.removeTranscriptListener(myTranscriptListener)
+    screencast.removeEditionListener(myEditionModelListener)
   }
 
   private inner class LoadTask(

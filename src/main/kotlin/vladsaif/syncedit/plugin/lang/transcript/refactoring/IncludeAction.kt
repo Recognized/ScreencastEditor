@@ -10,6 +10,8 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
 class IncludeAction : TranscriptRefactoringAction() {
 
   override fun doAction(model: ScreencastFile, words: List<TranscriptWord>) {
-    model.showWords(words.map { it.number }.toIntArray())
+    model.performModification {
+      showWords(words.map { it.number }.toIntArray())
+    }
   }
 }

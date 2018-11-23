@@ -10,6 +10,8 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
 class ExcludeAction : TranscriptRefactoringAction() {
 
   override fun doAction(model: ScreencastFile, words: List<TranscriptWord>) {
-    model.excludeWords(words.map { it.number }.toIntArray())
+    model.performModification {
+      excludeWords(words.map { it.number }.toIntArray())
+    }
   }
 }

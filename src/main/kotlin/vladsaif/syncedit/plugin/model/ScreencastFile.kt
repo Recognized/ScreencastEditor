@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.model
 
+import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
@@ -29,6 +30,7 @@ import com.intellij.util.io.isFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlin.idea.debugger.readAction
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.actions.errorScriptContainsErrors
 import vladsaif.syncedit.plugin.editor.Coordinator
@@ -40,7 +42,9 @@ import vladsaif.syncedit.plugin.format.ScreencastZipper.Companion.getInputStream
 import vladsaif.syncedit.plugin.format.ScreencastZipper.Companion.isDataSet
 import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import vladsaif.syncedit.plugin.format.transferTo
+import vladsaif.syncedit.plugin.lang.script.psi.Code
 import vladsaif.syncedit.plugin.lang.script.psi.CodeModel
+import vladsaif.syncedit.plugin.lang.script.psi.CodeModelView
 import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.lang.transcript.fork.TranscriptFactoryListener
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
@@ -49,11 +53,10 @@ import vladsaif.syncedit.plugin.model.WordData.State.MUTED
 import vladsaif.syncedit.plugin.model.WordData.State.PRESENTED
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.EditionModelView
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.util.ExEDT
-import vladsaif.syncedit.plugin.util.IntRangeUnion
 import vladsaif.syncedit.plugin.util.contains
-import vladsaif.syncedit.plugin.util.empty
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -61,49 +64,43 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import java.util.function.Supplier
 import java.util.stream.Collectors
-import javax.swing.event.ChangeListener
 
-/**
- * Main class that holds information about transcript data,
- * changes that were made of it or of audio data.
- *
- * @constructor
- * @throws java.io.IOException If I/O error occurs while reading xml
- */
 class ScreencastFile(
   val project: Project,
   val file: Path
 ) : Disposable {
 
-  private val myListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
-  private var myEditionListenerEnabled = true
-  private var myTranscriptListenerEnabled = true
+  private val myTranscriptListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
+  private val myEditionListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
+  private val myCodeListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
+  private val isTranscriptSet: Boolean by lazy { isDataSet(file, TRANSCRIPT_DATA) }
+  private val isScriptSet: Boolean by lazy { isDataSet(file, SCRIPT) }
+  private val isEditionModelSet: Boolean by lazy { isDataSet(file, EDITION_MODEL) }
   private val myTranscriptInputStream: InputStream
     get() = getInputStreamByType(file, TRANSCRIPT_DATA) ?: throw IllegalStateException("Transcript is not set")
-  private val isTranscriptSet: Boolean
-    get() = isDataSet(file, TRANSCRIPT_DATA)
   private val myScriptInputStream: InputStream
     get() = getInputStreamByType(file, SCRIPT) ?: throw IllegalStateException("Script is not set")
-  private val isScriptSet: Boolean
-    get() = isDataSet(file, SCRIPT)
-  private val isEditionModelSet: Boolean
-    get() = isDataSet(file, EDITION_MODEL)
   private val myEditionModelInputStream: InputStream
     get() = getInputStreamByType(file, EDITION_MODEL) ?: throw IllegalStateException("Edition model is not set")
+  private val myEditionModel: EditionModel = DefaultEditionModel()
+  private val myCodeModel = CodeModel(listOf())
+  private var isInsideModification: Boolean = false
+  private var isUndoRedoAction: Boolean = false
+  private val myUndoStack = ArrayDeque<ScreencastUndoableAction>()
+  private val myRedoStack = ArrayDeque<ScreencastUndoableAction>()
+  val editionModel: EditionModelView = myEditionModel
+  val codeModel: CodeModelView = myCodeModel
   val name: String
     get() = file.fileName.toString().substringBefore(ScreencastFileType.dotExtension)
   var audioDataModel: AudioDataModel? = null
     private set
   val audioInputStream: InputStream
     get() = getInputStreamByType(file, AUDIO) ?: throw IllegalStateException("Audio is not set")
-  val codeModel = CodeModel(listOf())
-  // TODO MAKE LAZY
-  val isAudioSet: Boolean
-    get() = isDataSet(file, AUDIO)
+  val isAudioSet: Boolean by lazy { isDataSet(file, AUDIO) }
   val transcriptPsi: TranscriptPsiFile?
     get() = getPsi(project, transcriptFile)
   var transcriptFile: VirtualFile? = null
@@ -120,21 +117,10 @@ class ScreencastFile(
     get() = scriptPsi?.viewProvider?.document
   val scriptPsi: KtFile?
     get() = getPsi(project, scriptFile)
-  val editionModel: EditionModel = DefaultEditionModel()
   var data: TranscriptData? = null
-    private set(value) {
-      ApplicationManager.getApplication().assertIsDispatchThread()
-      if (value != field) {
-        if (CommandProcessor.getInstance().currentCommand != null
-          && !UndoManager.getInstance(project).isUndoInProgress
-          && !UndoManager.getInstance(project).isRedoInProgress
-        ) {
-          UndoManager.getInstance(project).undoableActionPerformed(TranscriptDataUndoableAction(field!!, value))
-        }
-        field = value
-        fireTranscriptDataChanged()
-      }
-    }
+    private set
+
+  private var fakeFile: VirtualFile? = null
 
   init {
     if (!file.exists()) {
@@ -146,8 +132,81 @@ class ScreencastFile(
     EditorFactory.getInstance().addEditorFactoryListener(TranscriptFactoryListener(), this)
   }
 
-  fun loadTranscriptData(newData: TranscriptData) {
-    data = synchronizeWithEditionModel(newData)
+  val isUndoAvailable: Boolean
+    get() = !myUndoStack.isEmpty()
+
+  val isRedoAvailable: Boolean
+    get() = !myRedoStack.isEmpty()
+
+  fun undo() {
+    undoOrRedo(true)
+  }
+
+  fun redo() {
+    undoOrRedo(false)
+  }
+
+  private fun undoOrRedo(isUndo: Boolean) {
+    val action = (if (isUndo) myUndoStack.pollLast() else myRedoStack.pollLast())
+      ?: throw IllegalStateException("Undo/Redo is not available")
+    isUndoRedoAction = true
+    if (isUndo) {
+      action.undo()
+      myRedoStack.clear()
+      myRedoStack.addLast(action)
+    } else {
+      action.redo()
+      myUndoStack.addLast(action)
+    }
+    isUndoRedoAction = false
+  }
+
+  @Synchronized
+  fun performModification(action: ModificationScope.() -> Unit) {
+    if (isInsideModification) {
+      ModificationScope().action()
+      return
+    }
+    isInsideModification = true
+    val dataBefore = data
+    val editionModelBefore = myEditionModel.copy()
+    val codesBefore = codeModel.codes
+    ModificationScope().action()
+    val editionModelAfter = myEditionModel
+    val dataAfter = if (dataBefore != null && dataBefore == data) {
+      synchronizeWithEditionModel(dataBefore)
+    } else {
+      data
+    }
+    val undoableAction = ScreencastUndoableAction()
+    val codesAfter = codeModel.codes
+    if (dataBefore != dataAfter) {
+      undoableAction.transcriptUpdate = dataBefore to dataAfter
+      myTranscriptListeners.forEach { it() }
+    }
+    if (codesBefore != codesAfter) {
+      undoableAction.codeUpdate = codesBefore to codesAfter
+      myCodeListeners.forEach { it() }
+    }
+    if (editionModelBefore != editionModelAfter) {
+      undoableAction.editionModelUpdate = editionModelBefore to editionModelAfter
+      myEditionListeners.forEach { it() }
+    }
+    if (CommandProcessor.getInstance().currentCommand != null) {
+      with(UndoManager.getInstance(project)) {
+        if (!isRedoInProgress && !isUndoInProgress) {
+          undoableActionPerformed(undoableAction)
+        }
+      }
+    }
+    if (!isUndoRedoAction) {
+      myRedoStack.clear()
+      myUndoStack.addLast(undoableAction)
+      if (myUndoStack.size > MAX_UNDO_ACTIONS) {
+        myUndoStack.removeFirst()
+      }
+    }
+    isInsideModification = false
   }
 
   private fun initializeEditionModel() {
@@ -158,9 +217,9 @@ class ScreencastFile(
     val modelFromZip = EditionModel.deserialize(output.toByteArray())
     for ((range, type) in modelFromZip.editions) {
       when (type) {
-        CUT -> editionModel.cut(range)
-        MUTE -> editionModel.mute(range)
-        NO_CHANGES -> editionModel.unmute(range)
+        CUT -> myEditionModel.cut(range)
+        MUTE -> myEditionModel.mute(range)
+        NO_CHANGES -> myEditionModel.unmute(range)
       }
     }
   }
@@ -173,7 +232,7 @@ class ScreencastFile(
     ).also { it.putUserData(KEY, this@ScreencastFile) }
     PsiDocumentManager.getInstance(project).commitDocument(getPsi<KtFile>(project, tempFile)!!.viewProvider.document!!)
     if (!PsiTreeUtil.hasErrorElements(getPsi<KtFile>(project, tempFile)!!)) {
-      codeModel.codes = TimeOffsetParser.parse(getPsi(project, tempFile)!!).codes
+      myCodeModel.codes = TimeOffsetParser.parse(getPsi(project, tempFile)!!).codes
     } else {
       errorScriptContainsErrors(this@ScreencastFile)
       // TODO
@@ -184,7 +243,7 @@ class ScreencastFile(
       KotlinFileType.INSTANCE
     )
     PsiDocumentManager.getInstance(project).commitDocument(scriptDocument!!)
-    val markedText = codeModel.createTextWithoutOffsets()
+    val markedText = myCodeModel.createTextWithoutOffsets()
     scriptViewFile = createVirtualFile(
       "$name.kts",
       markedText.text,
@@ -196,7 +255,7 @@ class ScreencastFile(
   private fun initializeTranscript() {
     val newData = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
     if (isEditionModelSet) data = newData
-    else loadTranscriptData(newData)
+    else data = synchronizeWithEditionModel(newData)
   }
 
   suspend fun initialize() {
@@ -218,20 +277,40 @@ class ScreencastFile(
       if (isTranscriptSet) {
         initializeTranscript()
       }
+      fakeFile = createVirtualFile("empty", "", XmlFileType.INSTANCE)
       installListeners()
     }
   }
 
   private fun installListeners() {
-    addTranscriptDataListener {
+    addTranscriptListener {
+      // Synchronize edition model with transcript data if it was changed in editor.
+      // Also do not forget to reset coordinates cache.
+      val data = data
+      if (transcriptPsi == null && data != null) {
+        transcriptFile = createVirtualFile(
+          "$name.transcript",
+          data.text,
+          TranscriptFileType
+        )
+        transcriptFile!!.putUserData(KEY, this)
+      }
+      with(UndoManager.getInstance(project)) {
+        if (!isRedoInProgress && !isUndoInProgress) {
+          // But transcript should be updated always, otherwise it will cause errors.
+          val nonNullData = data ?: return@addTranscriptListener
+          transcriptPsi?.virtualFile?.updateDoc { doc ->
+            with(PsiDocumentManager.getInstance(project)) {
+              doPostponedOperationsAndUnblockDocument(doc)
+              doc.setText(nonNullData.text)
+              commitDocument(doc)
+            }
+          }
+        }
+      }
       val files = listOfNotNull(transcriptFile, scriptFile)
       PsiDocumentManager.getInstance(project).reparseFiles(files, true)
     }
-    editionModel.addChangeListener(ChangeListener {
-      if (myEditionListenerEnabled) {
-        onEditionModelChanged()
-      }
-    })
   }
 
   /**
@@ -239,43 +318,43 @@ class ScreencastFile(
    *
    * @return function that saves this screencast in the state when [getHardSaveFunction] was called
    */
-  fun getHardSaveFunction(): (progressUpdater: (Double) -> Unit, Path) -> Unit {
-    val editionState = editionModel.copy()
-    val msDeleted = IntRangeUnion()
-    if (isAudioSet) {
-      for ((range, type) in editionState.editions) {
-        if (type == CUT) {
-          msDeleted.union(coordinator.toMillisecondsRange(range))
-        }
-      }
-    }
-    // Change word ranges because of deletions
-    val newTranscriptData = data?.words?.asSequence()
-      ?.map { it.copy(range = msDeleted.impose(it.range)) }
-      ?.filter { !it.range.empty }
-      ?.toList()
-      ?.let { TranscriptData(it, listOf()) }
-
-    // TODO update offsets
-    val newScript = scriptDocument?.text
-
-    return { progressUpdater, out ->
-      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
-      ScreencastZipper(tempFile).use { zipper ->
-        if (isAudioSet) {
-          zipper.addAudio(Supplier { audioInputStream }, editionState, progressUpdater)
-        }
-        newTranscriptData?.let(zipper::addTranscriptData)
-        newScript?.let(zipper::addScript)
-      }
-      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
-    }
-  }
+//  fun getHardSaveFunction(): (progressUpdater: (Double) -> Unit, Path) -> Unit {
+//    val editionState = myEditionModel.copy()
+//    val msDeleted = IntRangeUnion()
+//    if (isAudioSet) {
+//      for ((range, type) in editionState.editions) {
+//        if (type == CUT) {
+//          msDeleted.union(coordinator.toMillisecondsRange(range))
+//        }
+//      }
+//    }
+//     Change word ranges because of deletions
+//    val newTranscriptData = data?.words?.asSequence()
+//      ?.map { it.copy(range = msDeleted.impose(it.range)) }
+//      ?.filter { !it.range.empty }
+//      ?.toList()
+//      ?.let { TranscriptData(it, listOf()) }
+//
+//     TODO update offsets
+//    val newScript = scriptDocument?.text
+//
+//    return { progressUpdater, out ->
+//      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
+//      ScreencastZipper(tempFile).use { zipper ->
+//        if (isAudioSet) {
+//          zipper.addAudio(Supplier { audioInputStream }, editionState, progressUpdater)
+//        }
+//        newTranscriptData?.let(zipper::addTranscriptData)
+//        newScript?.let(zipper::addScript)
+//      }
+//      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
+//    }
+//  }
 
   fun getLightSaveFunction(): (Path) -> Unit {
     val newTranscriptData = data
-    val newScript = scriptDocument?.text
-    val newEditionModel = editionModel.copy()
+    val newScript = readAction { scriptDocument?.text }
+    val newEditionModel = myEditionModel.copy()
 
     return { out ->
       val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
@@ -291,88 +370,30 @@ class ScreencastFile(
     }
   }
 
-  fun addTranscriptDataListener(listener: () -> Unit) {
-    myListeners += listener
+  fun addTranscriptListener(listener: () -> Unit) {
+    myTranscriptListeners += listener
   }
 
-  fun removeTranscriptDataListener(listener: () -> Unit) {
-    myListeners -= listener
+  fun removeTranscriptListener(listener: () -> Unit) {
+    myTranscriptListeners -= listener
   }
 
-  private fun replaceWords(replacements: List<Pair<Int, WordData>>) {
-    if (replacements.isEmpty()) return
-    data = data?.replace(replacements)
+  fun addCodeListener(listener: () -> Unit) {
+    myCodeListeners += listener
   }
 
-  fun renameWord(index: Int, text: String) {
-    data = data?.rename(index, text)
+  fun removeCodeListener(listener: () -> Unit) {
+    myCodeListeners -= listener
   }
 
-  fun changeRange(index: Int, newRange: IntRange) {
-    val dataT = data ?: return
-    val word = dataT[index]
-    val newFrameRange = coordinator.toFrameRange(newRange, TimeUnit.MILLISECONDS)
-    bulkChange {
-      when (word.state) {
-        MUTED -> {
-          unmute(coordinator.toFrameRange(word.range, TimeUnit.MILLISECONDS))
-          mute(newFrameRange)
-        }
-        PRESENTED -> Unit
-      }
-    }
-    data = dataT.replace(listOf(index to word.copy(range = newRange)))
+  fun addEditionListener(listener: () -> Unit) {
+    myEditionListeners += listener
   }
 
-  fun concatenateWords(indexRange: IntRange) {
-    data = data?.concatenate(indexRange)
+  fun removeEditionListener(listener: () -> Unit) {
+    myEditionListeners -= listener
   }
 
-  fun excludeWords(indices: IntArray) {
-    applyEdition(indices, EditionModel::cut)
-    data = data?.delete(indices)
-  }
-
-  fun excludeWord(index: Int) {
-    data?.let { data ->
-      bulkChange {
-        cut(coordinator.toFrameRange(data.words[index].range, TimeUnit.MILLISECONDS))
-      }
-    }
-    data = data?.delete(index)
-  }
-
-  fun showWords(indices: IntArray) {
-    applyEdition(indices, EditionModel::unmute)
-    data = data?.unmute(indices)
-  }
-
-  fun muteWords(indices: IntArray) {
-    applyEdition(indices, EditionModel::mute)
-    data = data?.mute(indices)
-  }
-
-  private fun applyEdition(indices: IntArray, action: EditionModel.(LongRange) -> Unit) {
-    data?.let { data ->
-      bulkChange {
-        for (i in indices) {
-          action(coordinator.toFrameRange(data.words[i].range, TimeUnit.MILLISECONDS))
-        }
-      }
-    }
-  }
-
-  private fun bulkChange(action: EditionModel.() -> Unit) {
-    try {
-      editionModel.isNotificationSuppressed = true
-      myEditionListenerEnabled = false
-      editionModel.action()
-    } finally {
-      editionModel.isNotificationSuppressed = false
-      editionModel.fireStateChanged()
-      myEditionListenerEnabled = true
-    }
-  }
 
 //  private fun updateRangeHighlighters() {
 //    val document = scriptDocument ?: return
@@ -389,18 +410,9 @@ class ScreencastFile(
 //    }
 //  }
 
-  private fun onEditionModelChanged() {
-    myTranscriptListenerEnabled = false
-    try {
-      data?.let { data = synchronizeWithEditionModel(it) }
-    } finally {
-      myTranscriptListenerEnabled = true
-    }
-  }
-
   private fun synchronizeWithEditionModel(data: TranscriptData): TranscriptData {
     val editions =
-      editionModel.editions.map { coordinator.toMillisecondsRange(it.first) to it.second }
+      myEditionModel.editions.map { coordinator.toMillisecondsRange(it.first) to it.second }
     val newWords = data.words.toMutableSet()
     val deletedWords = data.deletedWords.toMutableSet()
     val processList = { list: List<WordData>, edition: Pair<IntRange, EditionModel.EditionType> ->
@@ -438,51 +450,16 @@ class ScreencastFile(
     return TranscriptData(newWords.toList(), deletedWords.toList())
   }
 
-  private fun updateTranscript() {
-    val nonNullData = data ?: return
-    transcriptPsi?.virtualFile?.updateDoc { doc ->
-      with(PsiDocumentManager.getInstance(project)) {
-        doPostponedOperationsAndUnblockDocument(doc)
-        doc.setText(nonNullData.text)
-        commitDocument(doc)
-      }
-    }
-  }
-
-  private fun fireTranscriptDataChanged() {
-    // Synchronize edition model with transcript data if it was changed in editor.
-    // Also do not forger to reset coordinates cache.
-    if (myTranscriptListenerEnabled) {
-      val data = data
-      if (transcriptPsi == null && data != null) {
-        transcriptFile = createVirtualFile(
-          "$name.transcript",
-          data.text,
-          TranscriptFileType
-        )
-        transcriptFile!!.putUserData(KEY, this)
-      }
-      with(UndoManager.getInstance(project)) {
-        if (!isRedoInProgress && !isUndoInProgress) {
-          // But transcript should be updated always, otherwise it will cause errors.
-          updateTranscript()
-        }
-      }
-    }
-    for (x in myListeners) {
-      x.invoke()
-    }
-  }
-
   override fun dispose() {
     FILES.remove(file)
-    myListeners.clear()
-    data = null
+    myTranscriptListeners.clear()
+    myEditionListeners.clear()
+    myCodeListeners.clear()
   }
 
   override fun toString(): String {
-    return "ScreencastFile(file=$file, myListeners=$myListeners, data=$data, scriptPsi=$scriptPsi, " +
-        "transcriptPsi=$transcriptPsi, audioDataModel=$audioDataModel, editionModel=$editionModel)"
+    return "ScreencastFile(file=$file, data=$data, scriptPsi=$scriptPsi, " +
+        "transcriptPsi=$transcriptPsi, audioDataModel=$audioDataModel, myEditionModel=$myEditionModel)"
   }
 
   private fun createVirtualFile(name: String, text: String, type: FileType): VirtualFile {
@@ -496,34 +473,6 @@ class ScreencastFile(
     ).virtualFile
   }
 
-  private inner class TranscriptDataUndoableAction(
-    private val dataBefore: TranscriptData?,
-    private val dataAfter: TranscriptData?
-  ) : UndoableAction {
-
-    private val myAffectedDocuments = mutableSetOf<DocumentReference>()
-
-    init {
-      transcriptFile
-        ?.let { FileDocumentManager.getInstance().getDocument(it) }
-        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
-      scriptDocument
-        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
-    }
-
-    override fun redo() {
-      data = dataAfter
-    }
-
-    override fun undo() {
-      data = dataBefore
-    }
-
-    override fun isGlobal() = false
-
-    override fun getAffectedDocuments() = myAffectedDocuments.toTypedArray()
-  }
-
   private inner class ChangesReproducer : DocumentListener {
     private var myExpired = SimpleExpired()
 
@@ -533,10 +482,127 @@ class ScreencastFile(
       ApplicationManager.getApplication().invokeLater(Runnable {
         PsiDocumentManager.getInstance(project).performForCommittedDocument(scriptViewDoc!!) {
           if (!PsiTreeUtil.hasErrorElements(scriptViewPsi!!)) {
-            codeModel.codes = codeModel.transformedByScript(scriptViewPsi!!).codes
+            performModification {
+              codeModel.codes = codeModel.transformedByScript(scriptViewPsi!!).codes
+            }
           }
         }
       }, myExpired)
+    }
+  }
+
+  private inner class ScreencastUndoableAction : UndoableAction {
+
+    private val myAffectedDocuments = mutableSetOf<DocumentReference>()
+
+    init {
+      transcriptFile
+        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+      scriptFile
+        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+      scriptViewFile
+        ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
+    }
+
+    var transcriptUpdate: Pair<TranscriptData?, TranscriptData?>? = null
+    var editionModelUpdate: Pair<EditionModel, EditionModel>? = null
+    var codeUpdate: Pair<List<Code>, List<Code>>? = null
+
+    override fun redo() {
+      performModification {
+        if (transcriptUpdate != null) {
+          data = transcriptUpdate!!.second
+        }
+        if (editionModelUpdate != null) {
+          myEditionModel.load(editionModelUpdate!!.second)
+        }
+        if (codeUpdate != null) {
+          myCodeModel.codes = codeUpdate!!.second
+        }
+      }
+    }
+
+    override fun undo() {
+      performModification {
+        if (transcriptUpdate != null) {
+          data = transcriptUpdate!!.first
+        }
+        if (editionModelUpdate != null) {
+          myEditionModel.load(editionModelUpdate!!.first)
+        }
+        if (codeUpdate != null) {
+          myCodeModel.codes = codeUpdate!!.first
+        }
+      }
+    }
+
+    override fun isGlobal(): Boolean {
+      return false
+    }
+
+    override fun getAffectedDocuments(): Array<DocumentReference>? {
+      return myAffectedDocuments.toTypedArray()
+    }
+  }
+
+  inner class ModificationScope {
+    val editionModel get() = myEditionModel
+    val codeModel get() = myCodeModel
+
+    fun setTranscriptData(newData: TranscriptData?) {
+      data = newData
+    }
+
+    fun renameWord(index: Int, text: String) {
+      data = data?.rename(index, text)
+    }
+
+    fun changeRange(index: Int, newRange: IntRange) {
+      val dataT = data ?: return
+      val word = dataT[index]
+      val newFrameRange = coordinator.toFrameRange(newRange, TimeUnit.MILLISECONDS)
+      when (word.state) {
+        MUTED -> {
+          myEditionModel.unmute(coordinator.toFrameRange(word.range, TimeUnit.MILLISECONDS))
+          myEditionModel.mute(newFrameRange)
+        }
+        PRESENTED -> Unit
+      }
+      data = dataT.replace(listOf(index to word.copy(range = newRange)))
+    }
+
+    fun concatenateWords(indexRange: IntRange) {
+      data = data?.concatenate(indexRange)
+    }
+
+    fun excludeWords(indices: IntArray) {
+      applyEdition(indices, EditionModel::cut)
+      data = data?.delete(indices)
+    }
+
+    fun excludeWord(index: Int) {
+      data?.let { data ->
+        editionModel.cut(coordinator.toFrameRange(data.words[index].range, TimeUnit.MILLISECONDS))
+      }
+      data = data?.delete(index)
+    }
+
+    fun showWords(indices: IntArray) {
+      applyEdition(indices, EditionModel::unmute)
+      data = data?.unmute(indices)
+    }
+
+    fun muteWords(indices: IntArray) {
+      applyEdition(indices, EditionModel::mute)
+      data = data?.mute(indices)
+    }
+
+    private fun applyEdition(indices: IntArray, action: EditionModel.(LongRange) -> Unit) {
+      data?.let { data ->
+        for (i in indices) {
+          myEditionModel.action(coordinator.toFrameRange(data.words[i].range, TimeUnit.MILLISECONDS))
+        }
+      }
     }
   }
 
@@ -546,6 +612,7 @@ class ScreencastFile(
   }
 
   companion object {
+    private const val MAX_UNDO_ACTIONS = 15
     private val FILES: MutableMap<Path, ScreencastFile> = ConcurrentHashMap()
     private val LOG = logger<ScreencastFile>()
     val KEY = Key.create<ScreencastFile>("SCREENCAST_FILE_KEY")

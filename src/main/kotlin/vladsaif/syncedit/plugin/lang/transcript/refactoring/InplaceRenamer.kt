@@ -62,11 +62,11 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
     val model = myPsiFile?.model
     if (highlighter.startOffset == highlighter.endOffset) {
       // If word was deleted, lets exclude it
-      model?.excludeWord(myOriginalIndex)
+      model?.performModification { excludeWord(myOriginalIndex) }
       cancel()
     } else {
       val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
-      model?.renameWord(myOriginalIndex, editor.document.getText(textRange))
+      model?.performModification { renameWord(myOriginalIndex, editor.document.getText(textRange)) }
       finishEditing()
     }
   }

@@ -1,15 +1,12 @@
 package vladsaif.syncedit.plugin.sound.impl
 
-import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
-import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.util.LongRangeUnion
 import vladsaif.syncedit.plugin.util.length
-import javax.swing.event.ChangeListener
 
 
-class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionModel {
+class DefaultEditionModel : EditionModel {
   private val myCutRanges = LongRangeUnion()
   private val myMuteRanges = LongRangeUnion()
   private val myNoChangesRanges = LongRangeUnion()
@@ -28,14 +25,13 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
   init {
     // 256 is a maximum frame size in bytes
     myNoChangesRanges.union(LongRange(0, Long.MAX_VALUE / 256))
-    addChangeListener(ChangeListener { myEditionsCache = null })
   }
 
   override fun cut(frameRange: LongRange) {
     myCutRanges.union(frameRange)
     myMuteRanges.exclude(frameRange)
     myNoChangesRanges.exclude(frameRange)
-    fireStateChanged()
+    myEditionsCache = null
   }
 
   override fun mute(frameRange: LongRange) {
@@ -47,7 +43,7 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
     for (range in temp.ranges) {
       myMuteRanges.union(range)
     }
-    fireStateChanged()
+    myEditionsCache = null
   }
 
   override fun unmute(frameRange: LongRange) {
@@ -59,7 +55,7 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
     for (range in temp.ranges) {
       myNoChangesRanges.union(frameRange)
     }
-    fireStateChanged()
+    myEditionsCache = null
   }
 
   override fun reset() {
@@ -67,7 +63,7 @@ class DefaultEditionModel : ChangeNotifier by DefaultChangeNotifier(), EditionMo
     myCutRanges.exclude(infinity)
     myMuteRanges.exclude(infinity)
     myNoChangesRanges.union(infinity)
-    fireStateChanged()
+    myEditionsCache = null
   }
 
   override fun impose(frameRange: LongRange): LongRange {

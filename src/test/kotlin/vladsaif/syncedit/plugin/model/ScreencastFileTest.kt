@@ -45,8 +45,10 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test changes applied during recognition`() {
     withModel {
-      editionModel.cut(coordinator.toFrameRange(IntRange(900, 2100), TimeUnit.MILLISECONDS))
-      editionModel.mute(coordinator.toFrameRange(IntRange(2900, 4100), TimeUnit.MILLISECONDS))
+      performModification {
+        editionModel.cut(coordinator.toFrameRange(IntRange(900, 2100), TimeUnit.MILLISECONDS))
+        editionModel.mute(coordinator.toFrameRange(IntRange(2900, 4100), TimeUnit.MILLISECONDS))
+      }
       assertEquals(TRANSCRIPT_DATA.delete(0).mute(IntArray(1) { 1 }), data!!)
     }
   }
@@ -54,8 +56,10 @@ class ScreencastFileTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test light save function`() {
     withModel {
-      editionModel.cut(coordinator.toFrameRange(IntRange(900, 2100), TimeUnit.MILLISECONDS))
-      editionModel.mute(coordinator.toFrameRange(IntRange(2900, 4100), TimeUnit.MILLISECONDS))
+      performModification {
+        editionModel.cut(coordinator.toFrameRange(IntRange(900, 2100), TimeUnit.MILLISECONDS))
+        editionModel.mute(coordinator.toFrameRange(IntRange(2900, 4100), TimeUnit.MILLISECONDS))
+      }
       val func = getLightSaveFunction()
       val out = Paths.get("screencastSaved.scs")
       func(out)

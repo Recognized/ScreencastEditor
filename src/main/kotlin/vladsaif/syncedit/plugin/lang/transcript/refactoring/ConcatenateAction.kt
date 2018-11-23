@@ -19,7 +19,9 @@ class ConcatenateAction : TranscriptRefactoringAction() {
     val first = words.firstOrNull() ?: return
     val last = words.last()
     LOG.info("Concatenating: ${words.map { it.text }}")
-    model.concatenateWords(IntRange(first.number, last.number))
+    model.performModification {
+      concatenateWords(IntRange(first.number, last.number))
+    }
   }
 
   override fun update(e: AnActionEvent) {
