@@ -8,13 +8,11 @@ import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNoti
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.model.WordData
 import vladsaif.syncedit.plugin.sound.EditionModelView
+import vladsaif.syncedit.plugin.util.*
 import vladsaif.syncedit.plugin.util.Cache.Companion.cache
-import vladsaif.syncedit.plugin.util.INTERSECTS_CMP
-import vladsaif.syncedit.plugin.util.end
-import vladsaif.syncedit.plugin.util.intersects
-import vladsaif.syncedit.plugin.util.length
 import java.io.IOException
 import java.util.concurrent.CancellationException
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.event.ChangeListener
@@ -37,10 +35,10 @@ class WaveformModel(
     fireStateChanged()
   }
   var playFramePosition = -1L
-   set(value) {
-     field = value
-     fireStateChanged()
-   }
+    set(value) {
+      field = value
+      fireStateChanged()
+    }
   val audioData: List<AveragedSampleData>
     get() = myAudioData.also {
       if (myNeedInitialLoad) {
@@ -48,12 +46,12 @@ class WaveformModel(
         myNeedInitialLoad = false
       }
     }
-  val drawRange: IntRange
-    get() {
-      val range = screencast.coordinator.visibleRange
-      val length = range.length * 3
-      return range.start - length..range.endInclusive + length
-    }
+  val drawRange = cache {
+    val range = screencast.coordinator.visibleRange.mapInt { it.mulScale() }
+    val length = range.length * 3
+    val frameRange = screencast.coordinator.toFrameRange(range.start - length..range.endInclusive + length)
+    screencast.coordinator.toPixelRange(editionModel.overlay(frameRange))
+  }
   val editionModel: EditionModelView get() = screencast.editionModel
   val wordsView: List<WordView> get() = myWordView.get()
 
@@ -69,6 +67,7 @@ class WaveformModel(
 
   init {
     screencast.coordinator.addChangeListener(ChangeListener {
+      drawRange.resetCache()
       loadData()
     })
     screencast.addEditionListener(myEditionModelListener)
@@ -96,22 +95,26 @@ class WaveformModel(
     screencast.removeEditionListener(myEditionModelListener)
   }
 
+  private val loadPool = Executors.newSingleThreadExecutor()
+
   private inner class LoadTask(
     private val framesPerChunk: Int,
     private val drawRange: IntRange
   ) : Runnable {
     private var start = 0L
-    @Volatile
+    private val myIsActive = AtomicBoolean(true)
     var isActive = true
+      set(value) {
+        myIsActive.compareAndSet(true, false)
+        field = value
+      }
 
     override fun run() {
       try {
         start = System.currentTimeMillis()
         val computedResult = audioDataModel.getAveragedSampleData(framesPerChunk, drawRange) { isActive }
-        ApplicationManager.getApplication().invokeAndWait {
-          if (isActive) {
-            myAudioData = computedResult
-          }
+        if (myIsActive.compareAndSet(true, false)) {
+          myAudioData = computedResult
         }
       } catch (ex: IOException) {
         if (myIsBroken.compareAndSet(false, true)) {
@@ -137,14 +140,16 @@ class WaveformModel(
         return
       }
       myCurrentTask?.isActive = false
-      LoadTask(screencast.coordinator.framesPerPixel.toInt(), drawRange).let {
+      LoadTask(screencast.coordinator.framesPerPixel.toInt(), drawRange.get()).let {
         myCurrentTask = it
+//        loadPool.submit(it)
         ApplicationManager.getApplication().executeOnPooledThread(it)
       }
     }
   }
 
   fun resetCache() {
+    drawRange.resetCache()
     myWordView.resetCache()
     myLastLoadedVisibleRange = null
   }

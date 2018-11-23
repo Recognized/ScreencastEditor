@@ -173,11 +173,10 @@ class ScreencastFile(
     val codesBefore = codeModel.codes
     ModificationScope().action()
     val editionModelAfter = myEditionModel
-    val dataAfter = if (dataBefore != null && dataBefore == data) {
-      synchronizeWithEditionModel(dataBefore)
-    } else {
-      data
+    if (dataBefore != null && dataBefore == data && editionModelBefore != editionModelAfter) {
+      data = synchronizeWithEditionModel(dataBefore)
     }
+    val dataAfter = data
     val undoableAction = ScreencastUndoableAction()
     val codesAfter = codeModel.codes
     if (dataBefore != dataAfter) {
@@ -473,6 +472,7 @@ class ScreencastFile(
     ).virtualFile
   }
 
+
   private inner class ChangesReproducer : DocumentListener {
     private var myExpired = SimpleExpired()
 
@@ -491,8 +491,8 @@ class ScreencastFile(
     }
   }
 
-  private inner class ScreencastUndoableAction : UndoableAction {
 
+  private inner class ScreencastUndoableAction : UndoableAction {
     private val myAffectedDocuments = mutableSetOf<DocumentReference>()
 
     init {
@@ -544,6 +544,7 @@ class ScreencastFile(
       return myAffectedDocuments.toTypedArray()
     }
   }
+
 
   inner class ModificationScope {
     val editionModel get() = myEditionModel
@@ -606,10 +607,12 @@ class ScreencastFile(
     }
   }
 
+
   private class SimpleExpired : Condition<Any> {
     override fun value(t: Any?): Boolean = !isRunning
     var isRunning = true
   }
+
 
   companion object {
     private const val MAX_UNDO_ACTIONS = 15

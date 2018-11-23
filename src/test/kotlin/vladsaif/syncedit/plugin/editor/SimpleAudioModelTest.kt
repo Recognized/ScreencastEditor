@@ -58,12 +58,19 @@ class SimpleAudioModelTest(path: Path) {
 
   @Test
   fun `test data of all track do not depend on offset`() {
-    val data = myAudio.getAveragedSampleData(100000, 0..200) { true }
+    val data = myAudio.getAveragedSampleData(1000, 0..200) { true }
     withOffset(1000) {
-      assertEquals(data, getAveragedSampleData(100000, 0..200) { true })
+      assertEquals(data, getAveragedSampleData(1000, 1..201) { true })
     }
     withOffset(-1000) {
-      assertEquals(data, getAveragedSampleData(100000, 0..200) { true })
+      assertEquals(data, getAveragedSampleData(1000, -1..199) { true })
+    }
+  }
+
+  @Test
+  fun `test skipped chunks with offset`() {
+    withOffset(1000) {
+      assertEquals(10, getAveragedSampleData(100, 20..30) { true }.first().skippedChunks)
     }
   }
 

@@ -114,13 +114,18 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
   }
 
   private fun countReadFrames(framesPerChunk: Int, chunkRange: IntRange): Long {
-    val virtualChunkRange = offsetFrames / framesPerChunk..(offsetFrames + totalFrames - 1) / framesPerChunk
+    val start = Math.floorDiv(offsetFrames, framesPerChunk.toLong())
+    val end = Math.floorDiv(offsetFrames + totalFrames - 1, framesPerChunk.toLong())
+    val virtualChunkRange = start..end
     return (chunkRange intersectWith virtualChunkRange.mapInt { it.toInt() }).length * framesPerChunk.toLong()
   }
 
   private fun countSkippedFrames(framesPerChunk: Int, chunkRange: IntRange): Long {
-    val notInRead = (offsetFrames / framesPerChunk).toInt() until chunkRange.start
-    return (notInRead intersectWith chunkRange).length * framesPerChunk.toLong()
+    val start = Math.floorDiv(offsetFrames, framesPerChunk.toLong())
+    val notInRead = start.toInt() until chunkRange.start
+    val end = Math.floorDiv(offsetFrames + totalFrames - 1, framesPerChunk.toLong())
+    val virtualChunkRange = start..end
+    return (notInRead intersectWith virtualChunkRange.mapInt { it.toInt() }).length * framesPerChunk.toLong()
   }
 
   private fun AveragedSampleData.setChunk(counter: Int, chunk: Int, peaks: LongArray) {

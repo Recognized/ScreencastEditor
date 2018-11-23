@@ -38,6 +38,7 @@ class EditorPane(
     zoomController.installZoom(this)
     zoomController.addChangeListener(ChangeListener {
       scriptView.resetCache()
+      waveformView?.model?.drawRange?.resetCache()
       waveformView?.selectionModel?.resetSelection()
       waveformView?.model?.resetCache()
       updateSplitterInterval()

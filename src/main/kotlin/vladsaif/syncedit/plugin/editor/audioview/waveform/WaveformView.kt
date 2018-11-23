@@ -83,12 +83,12 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawWordsBackGround() {
-    val usedRange = model.drawRange
+    val usedRange = model.drawRange.get()
     color = WaveformGraphics.MAPPING_HIGHLIGHT_COLOR
     for (word in model.wordsView) {
       val (x1, x2) = word.pixelRange
       if (IntRange(x1, x2).intersects(usedRange)) {
-        fillRect(x1 / JBUI.pixScale(), 0.0f, (x2 - x1) / JBUI.pixScale(), height.toFloat())
+        fillRect(x1.divScaleF(), 0.0f, (x2 - x1).divScaleF(), height.toFloat())
       }
     }
   }
@@ -100,17 +100,17 @@ class WaveformView(
     val offsetFrames = model.audioDataModel.offsetFrames
     val startX = model.screencast.coordinator.toPixel(offsetFrames)
     val halfHeight = (height / 2).toFloat()
-    if (startX in model.drawRange) {
-      val pixStartX = startX / JBUI.pixScale()
+    if (startX in model.drawRange.get()) {
+      val pixStartX = startX.divScaleF()
       drawLine(pixStartX, 0.0f, pixStartX, height.toFloat())
-      drawLine(0.0f, halfHeight, pixStartX, halfHeight)
     }
     val endX = model.screencast.coordinator.toPixel(offsetFrames + audioRange.endInclusive)
-    if (endX in model.drawRange) {
-      val pixEndX = endX / JBUI.pixScale()
+    if (endX in model.drawRange.get()) {
+      val pixEndX = endX.divScaleF()
       drawLine(pixEndX, 0.0f, pixEndX, height.toFloat())
-      drawLine(0.0f, halfHeight, pixEndX, halfHeight)
     }
+    val centerLineRange = startX..endX intersectWith model.drawRange.get()
+    drawLine(centerLineRange.start.divScaleF(), halfHeight, centerLineRange.endInclusive.divScaleF(), halfHeight)
   }
 
   /**
@@ -119,7 +119,7 @@ class WaveformView(
    * @see SelectionModel
    */
   private fun Graphics2D.drawSelectedRanges() {
-    val usedRange = model.drawRange
+    val usedRange = model.drawRange.get()
     selectionModel.selectedRanges.forEach { drawSelectedRange(it, usedRange) }
   }
 
@@ -149,14 +149,14 @@ class WaveformView(
       (Math.floorDiv(model.audioDataModel.offsetFrames, myCoordinator.framesPerPixel)).toInt()
     var skipCut = 0
     val workRange = offsetChunk + data.skippedChunks until offsetChunk + data.skippedChunks + data.size
-    stroke = BasicStroke(JBUI.scale(1.0f))
+    stroke = BasicStroke(1.0f)
     for ((range, type) in model.editionModel.editions) {
       val screenRange = myCoordinator.toPixelRange(range)
       when (type) {
         NO_CHANGES -> {
           for (x in screenRange intersectWith workRange) {
             val index = x - offsetChunk - data.skippedChunks
-            val scaledX = (x - skipCut) / JBUI.pixScale()
+            val scaledX = (x - skipCut).divScaleF()
             val yTop = (height - (data.highestPeaks[index] * height).toDouble() / data.maxPeak) / 2
             val yBottom = (height - (data.lowestPeaks[index] * height).toDouble() / data.maxPeak) / 2
             color = WaveformGraphics.AUDIO_PEAK_COLOR
@@ -170,7 +170,7 @@ class WaveformView(
         MUTE -> {
           color = WaveformGraphics.AUDIO_PEAK_COLOR
           for (x in screenRange intersectWith workRange) {
-            val scaledX = (x - skipCut) / JBUI.pixScale()
+            val scaledX = (x - skipCut).divScaleF()
             drawLine(scaledX, (height / 2).toFloat(), scaledX, (height / 2).toFloat())
           }
         }
@@ -180,14 +180,14 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawWords() {
-    val usedRange = model.drawRange
+    val usedRange = model.drawRange.get()
     for (word in model.wordsView) {
-      val coordinates = word.pixelRange.mapInt { (it / JBUI.pixScale()).roundToInt() }
+      val coordinates = word.pixelRange
       if (coordinates.intersects(usedRange)) {
         drawCenteredWord(word.word.text, coordinates)
       }
-      val leftBound = word.pixelRange.start / JBUI.pixScale()
-      val rightBound = word.pixelRange.endInclusive / JBUI.pixScale()
+      val leftBound = word.pixelRange.start.divScaleF()
+      val rightBound = word.pixelRange.endInclusive.divScaleF()
       color = WaveformGraphics.WORD_SEPARATOR_COLOR
       stroke = BasicStroke(
         WaveformGraphics.WORD_SEPARATOR_WIDTH,
@@ -222,7 +222,7 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawCenteredWord(word: String, borders: IntRange) {
-    val (x1, x2) = borders
+    val (x1, x2) = borders.mapInt { it.divScale() }
     val metrics = getFontMetrics(myWordFont)
     val stringWidth = metrics.stringWidth(word)
     color = WaveformGraphics.WORD_COLOR
