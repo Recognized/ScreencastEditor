@@ -55,13 +55,23 @@ class EditorSplitter(
 
   override fun createDivider(): Divider {
     return object : DividerImpl(), DrawingFixture by DrawingFixture.create() {
+      private var myLastDrawnRange: IntRange? = null
+      private var myIsFirstTimeDrawing = true
 
       override fun paint(g: Graphics) {
+        if (myIsFirstTimeDrawing) {
+          updateInterval()
+          myIsFirstTimeDrawing = false
+        }
         val visibleRange = coordinator.visibleRange.mapInt { it.mulScale() }
         val delta = visibleRange.length * 3
         val expandedStart = max(visibleRange.start - delta, 0)
         val expandedEnd = min(visibleRange.end + delta, width.mulScale() + 1)
         val bounds = Rectangle(expandedStart, 0, expandedEnd, height)
+        if (myLastDrawnRange?.intersects(expandedStart..expandedEnd) != true) {
+          myFormatCache.clear()
+        }
+        myLastDrawnRange = expandedStart..expandedEnd
         with(g as Graphics2D) {
           setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
           stroke = BasicStroke(STROKE_WIDTH)

@@ -23,14 +23,14 @@ class WaveformController(private val view: WaveformView) : Disposable {
   private var myPlayState: PlayState = PlayState.Stopped
   private val myScreencast: ScreencastFile = view.model.screencast
   private val myTimer = Timer(1000 / 30) {
-    view.model.playFramePosition = when(val state = myPlayState) {
+    view.model.playFramePosition = when (val state = myPlayState) {
       is PlayState.Playing -> state.player.getFramePosition()
       PlayState.Stopped -> -1
       is PlayState.Paused -> return@Timer
     }
   }
   val hasSelection: Boolean
-    get() = !view.selectionModel.selectedRanges.isEmpty()
+    get() = !view.selectionModel.selectedRange.isEmpty()
   val playState: PlayState
     get() = myPlayState
 
@@ -58,9 +58,8 @@ class WaveformController(private val view: WaveformView) : Disposable {
 
   private inline fun edit(crossinline consumer: EditionModel.(LongRange) -> Unit) {
     myScreencast.performModification {
-      view.selectionModel.selectedRanges.forEach {
-        editionModel.consumer(myScreencast.editionModel.overlay(myScreencast.coordinator.toFrameRange(it)))
-      }
+      val range = view.selectionModel.selectedRange
+      editionModel.consumer(myScreencast.editionModel.overlay(myScreencast.coordinator.toFrameRange(range)))
     }
     view.stateChanged(ChangeEvent(view.model.editionModel))
   }
@@ -78,7 +77,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
         if (!view.model.screencast.isAudioSet) {
           return
         }
-        val editionModel = if (view.selectionModel.selectedRanges.isEmpty()) {
+        val editionModel = if (view.selectionModel.selectedRange.isEmpty()) {
           view.model.editionModel
         } else {
           view.selectionModel.toEditionModel()
@@ -109,9 +108,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
     val editionModel = DefaultEditionModel()
     val audioModel = view.model.screencast.audioDataModel ?: return editionModel
     editionModel.cut(LongRange(0, audioModel.totalFrames))
-    for (selected in selectedRanges) {
-      editionModel.unmute(selected.mapLong { view.model.screencast.coordinator.toFrame(it) })
-    }
+    editionModel.unmute(selectedRange.mapLong { view.model.screencast.coordinator.toFrame(it) })
     return editionModel
   }
 
@@ -152,6 +149,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
   override fun dispose() {
     stopImmediately()
   }
+
 
   sealed class PlayState {
     object Stopped : PlayState()

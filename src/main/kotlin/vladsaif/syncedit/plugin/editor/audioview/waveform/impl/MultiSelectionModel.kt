@@ -5,7 +5,6 @@ import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.editor.audioview.waveform.SelectionModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformModel
-import vladsaif.syncedit.plugin.util.IntRangeUnion
 import vladsaif.syncedit.plugin.util.empty
 import vladsaif.syncedit.plugin.util.inside
 import vladsaif.syncedit.plugin.util.mulScale
@@ -16,21 +15,12 @@ import kotlin.math.max
 import kotlin.math.min
 
 class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotifier() {
-  private val mySelectedRanges = IntRangeUnion()
   private lateinit var myLocator: WaveformModel
-  private var myCacheCoherent = false
-  private var myCacheSelectedRanges = listOf<IntRange>()
   private var myMoveRange: IntRange = IntRange.EMPTY
   private var myIsPressedOverBorder: Boolean = false
   private var myDraggedBorder: Border? = null
   private var myStartDifference: Int = -1
   private var myTempSelectedRange: IntRange = IntRange.EMPTY
-    set(value) {
-      if (myTempSelectedRange != value) {
-        myCacheCoherent = false
-        field = value
-      }
-    }
   var movingBorder: Int = -1
     private set
 
@@ -38,30 +28,10 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     this.myLocator = locator
   }
 
-  override val selectedRanges: List<IntRange>
-    get() = when {
-      myCacheCoherent -> myCacheSelectedRanges
-      myTempSelectedRange.empty -> mySelectedRanges.ranges
-      else -> mySelectedRanges.ranges.toMutableList().also { it.add(myTempSelectedRange) }
-    }.also { it: List<IntRange> ->
-      myCacheCoherent = true
-      myCacheSelectedRanges = it
-    }
+  override val selectedRange: IntRange get() = myTempSelectedRange
 
   override fun resetSelection() {
-    mySelectedRanges.clear()
     myTempSelectedRange = IntRange.EMPTY
-    myCacheCoherent = false
-  }
-
-  override fun addSelection(range: IntRange) {
-    mySelectedRanges.union(range)
-    myCacheCoherent = false
-  }
-
-  override fun removeSelected(range: IntRange) {
-    mySelectedRanges.exclude(range)
-    myCacheCoherent = false
   }
 
   val dragListener = object : MouseDragListener() {
@@ -82,12 +52,12 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       if (!e.isLeftMouseButton) return
       val rangeUnderClick = myLocator.getContainingWordRange(e.x.mulScale())
       if (rangeUnderClick.empty) return
-      if (e.isShiftDown) {
+      if (e.isControlKeyDown) {
         resetSelection()
-        if (rangeUnderClick in mySelectedRanges) {
-          removeSelected(rangeUnderClick)
+        myTempSelectedRange = if (rangeUnderClick == selectedRange) {
+          IntRange.EMPTY
         } else {
-          addSelection(rangeUnderClick)
+          rangeUnderClick
         }
       }
       fireStateChanged()
@@ -96,18 +66,14 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     override fun mousePressed(e: MouseEvent?) {
       e ?: return
       super.mousePressed(e)
-      if (!e.isShiftDown) {
-        resetSelection()
-        fireStateChanged()
-      }
+      resetSelection()
+      fireStateChanged()
     }
 
     override fun onDragStarted(point: Point) {
       val start = dragStartEvent ?: return
-      if (!start.isShiftDown) {
-        resetSelection()
-        fireStateChanged()
-      }
+      resetSelection()
+      fireStateChanged()
       val border = borderUnderCursor(start)
       myIsPressedOverBorder = border != null && JBSwingUtilities.isLeftMouseButton(start)
       if (myIsPressedOverBorder && border != null /* for smart cast only */) {
@@ -122,18 +88,17 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
     override fun onDrag(point: Point) {
       val start = dragStartEvent ?: return
       when {
-        start.isControlKeyDown && start.isLeftMouseButton -> dragControlSelection(start.point, point)
+        start.isShiftDown && start.isLeftMouseButton -> dragControlSelection(start.point, point)
         myIsPressedOverBorder -> dragBorder(point)
-        start.isLeftMouseButton && start.isShiftDown -> dragSelection(start.point, point)
+        start.isLeftMouseButton && start.isControlKeyDown -> dragSelection(start.point, point)
       }
     }
 
     override fun onDragFinished(point: Point) {
       val start = dragStartEvent ?: return
       when {
-        start.isControlKeyDown && start.isLeftMouseButton -> dragSelectionFinished()
+        (start.isControlKeyDown || start.isShiftDown) && start.isLeftMouseButton -> dragSelectionFinished()
         myIsPressedOverBorder -> dragBorderFinished()
-        start.isLeftMouseButton && start.isShiftDown -> dragSelectionFinished()
       }
     }
   }
@@ -155,8 +120,6 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
 
   private fun dragSelectionFinished() {
     if (!myTempSelectedRange.empty) {
-      addSelection(myTempSelectedRange)
-      myTempSelectedRange = IntRange.EMPTY
       fireStateChanged()
     }
   }

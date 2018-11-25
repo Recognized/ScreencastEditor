@@ -120,7 +120,7 @@ class WaveformView(
    */
   private fun Graphics2D.drawSelectedRanges() {
     val usedRange = model.drawRange.get()
-    selectionModel.selectedRanges.forEach { drawSelectedRange(it, usedRange) }
+    drawSelectedRange(selectionModel.selectedRange, usedRange)
   }
 
   private fun Graphics2D.drawSelectedRange(selected: IntRange, border: IntRange) {
