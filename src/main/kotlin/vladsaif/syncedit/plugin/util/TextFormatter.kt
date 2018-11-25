@@ -61,4 +61,29 @@ object TextFormatter {
     }
     return lines
   }
+
+  fun formatTime(ns: Long) = buildString {
+    if (ns < 0) throw IllegalArgumentException()
+    val minutes = ns / (60 * 1_000_000_000L)
+    val seconds = (ns / 1_000_000_000L) % 60
+    val nanos = ns % 1_000_000_000L
+    if (minutes != 0L) {
+      append("$minutes:")
+      if (seconds < 10L) {
+        append("0")
+      }
+    }
+    append("$seconds.")
+    when {
+      nanos < 10 -> append("00000000")
+      nanos < 100 -> append("0000000")
+      nanos < 1000 -> append("000000")
+      nanos < 10000 -> append("00000")
+      nanos < 100000 -> append("0000")
+      nanos < 1000000 -> append("000")
+      nanos < 10000000 -> append("00")
+      nanos < 100000000 -> append("0")
+    }
+    append(nanos)
+  }
 }

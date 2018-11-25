@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.util
 
+import java.util.concurrent.TimeUnit.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -46,5 +47,29 @@ class TextFormatterTest {
     assertEquals(TextFormatter.splitText(myText, 1000).map {
       TextFormatter.createEllipsis(it, 1000)
     }.join(), myText)
+  }
+
+  @Test
+  fun `test zero nanoseconds`() {
+    assertEquals("0.0", TextFormatter.formatTime(0).dropLast(8))
+  }
+
+  @Test
+  fun `test one minute`() {
+    assertEquals(
+      "1:00.0",
+      TextFormatter.formatTime(NANOSECONDS.convert(1, MINUTES)).dropLast(8)
+    )
+  }
+
+  @Test
+  fun `test ten minutes, twenty seconds and 30ms`() {
+    val ns = NANOSECONDS.convert(10, MINUTES) +
+        NANOSECONDS.convert(20, SECONDS) +
+        NANOSECONDS.convert(30, MILLISECONDS)
+    assertEquals(
+      "10:20.03",
+      TextFormatter.formatTime(ns).dropLast(7)
+    )
   }
 }

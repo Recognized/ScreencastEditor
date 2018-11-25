@@ -2,12 +2,10 @@ package vladsaif.syncedit.plugin.editor
 
 import com.intellij.openapi.Disposable
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformController
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformView
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptView
 import vladsaif.syncedit.plugin.model.ScreencastFile
-import java.util.concurrent.TimeUnit
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.ScrollPaneConstants
@@ -41,21 +39,10 @@ class EditorPane(
       waveformView?.model?.drawRange?.resetCache()
       waveformView?.selectionModel?.resetSelection()
       waveformView?.model?.resetCache()
-      updateSplitterInterval()
+      splitter.updateInterval()
     })
   }
 
-  private fun updateSplitterInterval() {
-    val unitDistance = JBUI.scale(25)
-    val interval = scriptView.coordinator.toNanoseconds(unitDistance)
-    var x = 1L
-    var temp = interval
-    while (temp > 0) {
-      temp /= 10
-      x *= 10L
-    }
-    splitter.updateInterval(x, TimeUnit.NANOSECONDS)
-  }
 
   override fun dispose() = Unit
 }
