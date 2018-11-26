@@ -1,4 +1,4 @@
-package vladsaif.syncedit.plugin.editor.audioview.waveform
+package vladsaif.syncedit.plugin.editor.audioview.waveform.impl
 
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -6,6 +6,7 @@ import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.PositionTracker
 import com.intellij.util.ui.UIUtil
+import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformModel
 import vladsaif.syncedit.plugin.util.mulScale
 import java.awt.Component
 import java.awt.Point
@@ -40,7 +41,7 @@ class WordHintBalloonListener(parent: Component, private val locator: WaveformMo
   override fun mouseMoved(e: MouseEvent?) {
     e ?: return
     if (UIUtil.isControlKeyDown(e)) {
-      myBalloonLabel.text = locator.getEnclosingWord(e.x.mulScale())?.filteredText ?: return
+      myBalloonLabel.text = locator.getEnclosingWord(e.x.mulScale() + locator.pixelOffset)?.filteredText ?: return
       myBalloonPoint = e.point
       myBalloon.show(myBalloonPositionTracker, Balloon.Position.above)
       myBalloon.revalidate()

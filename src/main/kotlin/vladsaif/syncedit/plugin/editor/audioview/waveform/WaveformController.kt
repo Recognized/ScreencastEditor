@@ -29,30 +29,18 @@ class WaveformController(private val view: WaveformView) : Disposable {
       is PlayState.Paused -> return@Timer
     }
   }
-  val hasSelection: Boolean
-    get() = !view.selectionModel.selectedRange.isEmpty()
-  val playState: PlayState
-    get() = myPlayState
+  val hasSelection: Boolean get() = !view.selectionModel.selectedRange.isEmpty()
+  val playState: PlayState get() = myPlayState
 
-  /**
-   * Cut currently selected audio range.
-   *
-   * Cut fragment will be skipped when playing, but not deleted.
-   */
   fun cutSelected() {
     edit(EditionModel::cut)
   }
 
-  /**
-   * Mute currently selected audio range.
-   *
-   * Muted fragment will be silenced when playing, but not changed.
-   */
   fun muteSelected() {
     edit(EditionModel::mute)
   }
 
-  fun undo() {
+  fun unmuteSelected() {
     edit(EditionModel::unmute)
   }
 
@@ -128,7 +116,7 @@ class WaveformController(private val view: WaveformView) : Disposable {
     stopBase(Player::stopImmediately)
   }
 
-  private fun stop() {
+  fun stop() {
     stopBase(Player::stop)
   }
 

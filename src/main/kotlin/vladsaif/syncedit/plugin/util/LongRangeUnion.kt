@@ -21,6 +21,13 @@ class LongRangeUnion {
     return startPos >= 0 && startPos == endPos
   }
 
+  fun shift(delta: Long) {
+    for ((index, range) in myRanges.withIndex()) {
+      myRanges[index] = range.shift(delta)
+    }
+    myLastCalculated = null
+  }
+
   fun exclude(range: LongRange) {
     if (range.empty) return
     myLastCalculated = null

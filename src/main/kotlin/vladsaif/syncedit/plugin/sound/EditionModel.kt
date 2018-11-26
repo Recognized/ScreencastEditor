@@ -65,6 +65,8 @@ interface EditionModel : EditionModelView {
    */
   fun reset()
 
+  fun shift(delta: Long)
+
   fun load(other: EditionModel) {
     reset()
     for ((range, type) in other.editions) {

@@ -8,6 +8,8 @@ import com.intellij.util.ui.UIUtil
 import gnu.trove.THashMap
 import gnu.trove.TObjectIdentityHashingStrategy
 import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
+import vladsaif.syncedit.plugin.editor.audioview.waveform.DraggableXAxis
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DragXAxisListener
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.Block
 import vladsaif.syncedit.plugin.lang.script.psi.Code
@@ -19,13 +21,18 @@ import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.MouseEvent
-import java.awt.event.MouseMotionAdapter
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), DrawingFixture by DrawingFixture.create() {
+class ScriptView(
+  val screencast: ScreencastFile
+) :
+  JBPanel<ScriptView>(),
+  DraggableXAxis,
+  DrawingFixture by DrawingFixture.create() {
+
   val coordinator = screencast.coordinator
   private val myBordersRectangles = cache { calculateBorders(screencast.codeModel.codes).sortedWith(AREA_COMPARATOR) }
   private val myBlockAreas = cache { calculateCodeAreas(screencast.codeModel.codes) }
@@ -34,22 +41,15 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
   private val myDepthDelta: Int = calculateDepthDelta()
   private val myFurtherMostBorder = cache { lastBlockPixel() }
   private val myFirstBorder = cache { firstBlockPixel() }
-  private var myTempMovingDelta = 0
+  private val myDragWholeScriptListener = object : DragXAxisListener() {
+    override fun onDragAction() {
+      repaint()
+    }
 
-  val preferredWidth get() = myFurtherMostBorder.get()
-
-  private fun lastBlockPixel(): Int {
-    return coordinator.toPixel(
-      screencast.codeModel.codes.lastOrNull()?.endTime?.toLong() ?: 0L,
-      TimeUnit.MILLISECONDS
-    )
-  }
-
-  private fun firstBlockPixel(): Int {
-    return coordinator.toPixel(
-      screencast.codeModel.codes.firstOrNull()?.startTime?.toLong() ?: 0L,
-      TimeUnit.MILLISECONDS
-    )
+    override fun onDragFinishedAction(delta: Int) {
+      fixScriptDelta(delta)
+      resetCache()
+    }
   }
 
   init {
@@ -67,27 +67,23 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
 
   override fun getPreferredSize(): Dimension {
     return Dimension(
-      preferredWidth.divScale() + 200,
+      myFurtherMostBorder.get().divScale() + 200,
       (myBordersRectangles.get().lastOrNull()?.area?.y ?: 0) + myDepthDelta
     )
   }
 
   fun installListeners() {
-    addMouseMotionListener(object : MouseMotionAdapter() {
-      override fun mouseMoved(e: MouseEvent) {
-        if (!e.isShiftDown && !UIUtil.isControlKeyDown(e) && overBorder(e.point) != null) {
-          e.component?.cursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
-        } else if (e.isShiftDown && !UIUtil.isControlKeyDown(e)) {
-          e.component?.cursor = Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR)
-        } else {
-          e.component?.cursor = Cursor.getDefaultCursor()
-        }
-      }
-    })
-    addMouseListener(myDragBorderListener)
-    addMouseMotionListener(myDragBorderListener)
-    addMouseListener(myDragWholeScriptListener)
-    addMouseMotionListener(myDragWholeScriptListener)
+    myDragBorderListener.install(this)
+  }
+
+  override fun activateXAxisDrag() {
+    myDragBorderListener.uninstall(this)
+    myDragWholeScriptListener.install(this)
+  }
+
+  override fun deactivateXAxisDrag() {
+    myDragBorderListener.install(this)
+    myDragWholeScriptListener.uninstall(this)
   }
 
   fun overBorder(point: Point): Border? {
@@ -108,8 +104,9 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
   override fun paint(g: Graphics) {
     with(g as Graphics2D) {
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-      if (myTempMovingDelta != 0) {
-        val delta = max(myTempMovingDelta.toDouble(), -myFirstBorder.get() / JBUI.pixScale().toDouble())
+      val dragDelta = myDragWholeScriptListener.delta
+      if (dragDelta != 0) {
+        val delta = max(dragDelta.toDouble(), -myFirstBorder.get() / JBUI.pixScale().toDouble())
         translate(delta, 0.0)
       }
       val metrics = getFontMetrics(ScriptGraphics.FONT)
@@ -157,6 +154,21 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
       }
     }
     return borders
+  }
+
+
+  private fun lastBlockPixel(): Int {
+    return coordinator.toPixel(
+      screencast.codeModel.codes.lastOrNull()?.endTime?.toLong() ?: 0L,
+      TimeUnit.MILLISECONDS
+    )
+  }
+
+  private fun firstBlockPixel(): Int {
+    return coordinator.toPixel(
+      screencast.codeModel.codes.firstOrNull()?.startTime?.toLong() ?: 0L,
+      TimeUnit.MILLISECONDS
+    )
   }
 
   private fun calculateCodeAreas(
@@ -212,6 +224,15 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
 
   private val myDragBorderListener = object : MouseDragListener() {
 
+    override fun mouseMoved(e: MouseEvent?) {
+      e ?: return
+      if (!e.isShiftDown && !UIUtil.isControlKeyDown(e) && overBorder(e.point) != null) {
+        e.component?.cursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
+      } else {
+        e.component?.cursor = Cursor.getDefaultCursor()
+      }
+    }
+
     override fun onDragStarted(point: Point) {
       super.onDragStarted(point)
       if (dragStartEvent!!.let {
@@ -257,41 +278,11 @@ class ScriptView(val screencast: ScreencastFile) : JBPanel<ScriptView>(), Drawin
     }
   }
 
-  private val myDragWholeScriptListener = object : MouseDragListener() {
-    private var myDragStarted = false
-
-    override fun onDragStarted(point: Point) {
-      super.onDragStarted(point)
-      if (dragStartEvent!!.isShiftDown && !UIUtil.isControlKeyDown(dragStartEvent!!)) {
-        myDragStarted = true
-      }
-    }
-
-    override fun onDrag(point: Point) {
-      super.onDrag(point)
-      if (myDragStarted) {
-        myTempMovingDelta = point.x - dragStartEvent!!.x
-        repaint()
-      }
-    }
-
-    override fun onDragFinished(point: Point) {
-      super.onDragFinished(point)
-      if (myDragStarted) {
-        fixCurrentScriptDelta()
-        myTempMovingDelta = 0
-        repaint()
-        myDragStarted = false
-        resetCache()
-      }
-    }
-  }
-
-  private fun fixCurrentScriptDelta() {
-    if (myTempMovingDelta == 0) return
-    val delta = max(myTempMovingDelta, -myFirstBorder.get())
+  private fun fixScriptDelta(dragDelta: Int) {
+    if (dragDelta == 0) return
+    val delta = max(dragDelta, -myFirstBorder.get().divScale())
     val start = coordinator.toNanoseconds(myFirstBorder.get())
-    val end = coordinator.toNanoseconds(myFirstBorder.get() + delta)
+    val end = coordinator.toNanoseconds(myFirstBorder.get() + delta.mulScale())
     screencast.performModification {
       codeModel.shiftAll(end - start, TimeUnit.NANOSECONDS)
     }

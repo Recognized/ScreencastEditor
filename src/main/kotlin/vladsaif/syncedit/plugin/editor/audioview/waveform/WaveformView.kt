@@ -4,57 +4,67 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DragXAxisListener
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MultiSelectionModel
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.WordHintBalloonListener
 import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
 import vladsaif.syncedit.plugin.util.*
 import java.awt.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 class WaveformView(
-  screencast: ScreencastFile,
-  audioDataModel: AudioDataModel
-) : JBPanel<WaveformView>(), ChangeListener, DrawingFixture by DrawingFixture.create() {
-  private val myWordFont
-    get() = JBUI.Fonts.label()
+  val model: WaveformModel
+) :
+  JBPanel<WaveformView>(),
+  ChangeListener,
+  DraggableXAxis,
+  DrawingFixture by DrawingFixture.create() {
 
-  init {
-    if (!screencast.isAudioSet) {
-      throw IllegalArgumentException("Cannot create view view without audio")
+  private val myCoordinator = model.screencast.coordinator
+  private val myWordFont get() = JBUI.Fonts.label()
+  private val myXAxisDrag = object : DragXAxisListener() {
+    override fun onDragAction() {
+      repaint()
+    }
+
+    override fun onDragFinishedAction(delta: Int) {
+      model.fixWaveformDelta(delta)
+      repaint()
     }
   }
-
-  val model = WaveformModel(screencast, audioDataModel)
-  var selectionModel = MultiSelectionModel()
-  private val myCoordinator = model.screencast.coordinator
-
-  init {
-    preferredSize = Dimension(Toolkit.getDefaultToolkit().screenSize.width, height)
-  }
-
-  override fun getPreferredSize(): Dimension {
-    val superValue = super.getPreferredSize()
-    val audio = model.audioDataModel
-    return Dimension(
-      (myCoordinator.toPixel(audio.totalFrames + audio.offsetFrames) / JBUI.pixScale()).roundToInt() + 200,
-      superValue.height
-    )
-  }
+  val selectionModel = MultiSelectionModel()
 
   /**
    * Activate mouse selection using drag and ctrl-shift combination,
    * enable popup balloon with word text when hovering over a word.
    */
   fun installListeners() {
-    addMouseListener(selectionModel.dragListener)
-    addMouseMotionListener(selectionModel.dragListener)
+    selectionModel.dragListener.install(this)
     addMouseMotionListener(WordHintBalloonListener(this, model))
     selectionModel.enableWordSelection(model)
     selectionModel.addChangeListener(this)
     model.addChangeListener(this)
+  }
+
+  override fun getPreferredSize(): Dimension {
+    val superValue = super.getPreferredSize()
+    val audio = model.audioDataModel
+    return Dimension(
+      myCoordinator.toPixel(audio.totalFrames + audio.offsetFrames).divScale() + 200,
+      superValue.height
+    )
+  }
+
+  override fun activateXAxisDrag() {
+    myXAxisDrag.install(this)
+    selectionModel.dragListener.uninstall(this)
+  }
+
+  override fun deactivateXAxisDrag() {
+    myXAxisDrag.uninstall(this)
+    selectionModel.dragListener.install(this)
   }
 
   override fun stateChanged(event: ChangeEvent?) {
@@ -69,6 +79,7 @@ class WaveformView(
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       background = UIUtil.getPanelBackground()
       clearRect(0, 0, width, height)
+      translate(myXAxisDrag.delta + model.pixelOffset.divScaleF().toDouble(), 0.0)
       drawWordsBackGround()
       drawSelectedRanges()
       drawEndLine()
@@ -97,14 +108,13 @@ class WaveformView(
     color = WaveformGraphics.HORIZONTAL_LINE
     stroke = BasicStroke(1.0f)
     val audioRange = model.editionModel.impose(0 until model.audioDataModel.totalFrames)
-    val offsetFrames = model.audioDataModel.offsetFrames
-    val startX = model.screencast.coordinator.toPixel(offsetFrames)
+    val startX = 0
     val halfHeight = (height / 2).toFloat()
     if (startX in model.drawRange.get()) {
       val pixStartX = startX.divScaleF()
       drawLine(pixStartX, 0.0f, pixStartX, height.toFloat())
     }
-    val endX = model.screencast.coordinator.toPixel(offsetFrames + audioRange.endInclusive)
+    val endX = model.screencast.coordinator.toPixel(audioRange.endInclusive)
     if (endX in model.drawRange.get()) {
       val pixEndX = endX.divScaleF()
       drawLine(pixEndX, 0.0f, pixEndX, height.toFloat())
@@ -132,7 +142,7 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawPosition(position: Long) {
-    val x = model.screencast.coordinator.toPixel(position).divScaleF()
+    val x = model.screencast.coordinator.toPixel(position).divScaleF() - model.pixelOffset.divScaleF()
     color = WaveformGraphics.AUDIO_PLAY_LINE_COLOR
     stroke = BasicStroke(1.0f)
     drawLine(x, 0.0f, x, height.toFloat())
@@ -145,8 +155,7 @@ class WaveformView(
    * @see AveragedSampleData
    */
   private fun Graphics2D.drawAveragedWaveform(data: AveragedSampleData) {
-    val offsetChunk =
-      (Math.floorDiv(model.audioDataModel.offsetFrames, myCoordinator.framesPerPixel)).toInt()
+    val offsetChunk = 0
     var skipCut = 0
     val workRange = offsetChunk + data.skippedChunks until offsetChunk + data.skippedChunks + data.size
     stroke = BasicStroke(1.0f)

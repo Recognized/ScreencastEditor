@@ -11,6 +11,7 @@ import javax.swing.event.ChangeListener
 import kotlin.math.max
 
 class ZoomController(val coordinator: Coordinator) : ChangeNotifier by DefaultChangeNotifier() {
+
   private lateinit var myScrollPane: JScrollPane
 
   init {
@@ -34,7 +35,7 @@ class ZoomController(val coordinator: Coordinator) : ChangeNotifier by DefaultCh
     scale(0.5f)
   }
 
-  fun installZoom(scrollPane: JScrollPane) {
+  fun install(scrollPane: JScrollPane) {
     myScrollPane = scrollPane
     scrollPane.horizontalScrollBar.addAdjustmentListener {
       coordinator.visibleRange = with(it.adjustable) {

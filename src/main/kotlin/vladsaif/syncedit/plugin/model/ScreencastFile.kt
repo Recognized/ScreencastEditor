@@ -57,6 +57,7 @@ import vladsaif.syncedit.plugin.sound.EditionModelView
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
 import vladsaif.syncedit.plugin.util.ExEDT
 import vladsaif.syncedit.plugin.util.contains
+import vladsaif.syncedit.plugin.util.shift
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -171,11 +172,13 @@ class ScreencastFile(
     val dataBefore = data
     val editionModelBefore = myEditionModel.copy()
     val codesBefore = codeModel.codes
+    val offsetFramesBefore = audioDataModel?.offsetFrames
     ModificationScope().action()
     val editionModelAfter = myEditionModel
     if (dataBefore != null && dataBefore == data && editionModelBefore != editionModelAfter) {
       data = synchronizeWithEditionModel(dataBefore)
     }
+    val offsetFramesAfter = audioDataModel?.offsetFrames
     val dataAfter = data
     val undoableAction = ScreencastUndoableAction()
     val codesAfter = codeModel.codes
@@ -591,6 +594,12 @@ class ScreencastFile(
     fun showWords(indices: IntArray) {
       applyEdition(indices, EditionModel::unmute)
       data = data?.unmute(indices)
+    }
+
+    fun shiftAll(ms: Int) {
+      val newWords = data?.words?.map { it.copy(range = it.range.shift(ms)) } ?: return
+      val newDeletedWords = data?.deletedWords?.map { it.copy(range = it.range.shift(ms)) } ?: return
+      data = TranscriptData(newWords, newDeletedWords)
     }
 
     fun muteWords(indices: IntArray) {

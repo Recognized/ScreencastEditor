@@ -53,7 +53,6 @@ object ScreencastToolWindow {
   fun openScreencastFile(screencast: ScreencastFile) {
     val editorPane = EditorPane(screencast)
     val audioPanel = ActionPanel(editorPane)
-    audioPanel.disposeAction = { editorPane.waveformController!!.stopImmediately() }
     val controlPanel = ActionPanel(audioPanel)
     controlPanel.addActionGroups(createMainActionGroup(screencast, controlPanel, editorPane))
     audioPanel.addActionGroups(createAudioRelatedActionGroup(editorPane, controlPanel))
@@ -63,6 +62,7 @@ object ScreencastToolWindow {
     content.setPreferredFocusedComponent { controlPanel }
     Disposer.register(controlPanel, audioPanel)
     Disposer.register(content, controlPanel)
+    Disposer.register(content, editorPane)
     Disposer.register(content, screencast)
     Disposer.register(content, Disposable {
       with(screencast) {
@@ -71,9 +71,6 @@ object ScreencastToolWindow {
         }
       }
     })
-    if (editorPane.waveformView != null) {
-      Disposer.register(content, editorPane.waveformView.model)
-    }
     toolWindow.contentManager.removeAllContents(true)
     toolWindow.contentManager.addContent(content)
     toolWindow.setAvailable(true, null)
@@ -104,7 +101,7 @@ object ScreencastToolWindow {
       add("Redo", "Redo last undo", AllIcons.Actions.Redo, screencast::redo, screencast::isRedoAvailable)
 //      add("Reproduce screencast", "Reproduce screencast", AllIcons.Ide.Macro.Recording_1, {
 //        ApplicationManager.getApplication().invokeLater {
-          //          KotlinCompileUtil.compileAndRun(screencast.getPlayScript())
+      //          KotlinCompileUtil.compileAndRun(screencast.getPlayScript())
 //        }
 //      })
       separator()
@@ -128,7 +125,7 @@ object ScreencastToolWindow {
   ): ActionGroup {
     with(ActionGroupBuilder(focusComponent, editorPane)) group@{
       val zoomController = editorPane.zoomController
-      with(editorPane.waveformController!!) {
+      with(editorPane) {
         val playPauseAction = object : AnAction() {
 
           override fun actionPerformed(e: AnActionEvent) {
@@ -141,19 +138,49 @@ object ScreencastToolWindow {
           }
 
           override fun update(e: AnActionEvent) {
-            e.presentation.icon = if (playState is WaveformController.PlayState.Playing) PAUSE else PLAY
+            with(e.presentation) {
+              if (playState == null) {
+                isEnabled = false
+                icon = PLAY
+                description = "Play audio"
+              } else {
+                if (playState is WaveformController.PlayState.Playing) {
+                  icon = PAUSE
+                  description = "Pause audio"
+                } else {
+                  icon = PLAY
+                  description = "Play audio"
+                }
+                isEnabled = true
+              }
+            }
           }
         }
-        add(playPauseAction)
-        add("Stop", "Stop audio", STOP, this::stopImmediately) {
-          playState !is WaveformController.PlayState.Stopped
+        val toggleDragAction = object : ToggleAction(
+          "Toggle x-axis drag",
+          "Toggle x-axis drag",
+          AllIcons.General.ArrowSplitCenterH
+        ) {
+          override fun isSelected(e: AnActionEvent) = editorPane.isXAxisDraggingEnabled
+          override fun setSelected(e: AnActionEvent, state: Boolean) {
+            if (state != editorPane.isXAxisDraggingEnabled) {
+              editorPane.toggleDragXAxis()
+            }
+          }
+        }
+        add(playPauseAction, "Play/Pause")
+        add("Stop", "Stop audio", STOP, this::stop) {
+          playState != null && playState !is WaveformController.PlayState.Stopped
         }
         separator()
-        add("Clip", "Clip audio", DELETE, this::cutSelected, this::hasSelection)
-        add("Mute", "Mute selected", VOLUME_OFF, this::muteSelected, this::hasSelection)
+        add("Clip", "Clip selected audio", DELETE, this::cut, this::hasSelection)
+        add("Unmute", "Unmute selected", VOLUME_ON, this::unmute, this::hasSelection)
+        add("Mute", "Mute selected", VOLUME_OFF, this::mute, this::hasSelection)
         separator()
         add("Zoom in", "Zoom in", AllIcons.Graph.ZoomIn, zoomController::zoomIn)
         add("Zoom out", "Zoom out", AllIcons.Graph.ZoomOut, zoomController::zoomOut)
+        separator()
+        add(toggleDragAction, "Toggle x-axis drag")
         return done()
       }
     }
@@ -192,7 +219,6 @@ object ScreencastToolWindow {
           e.presentation.isEnabled = checkAvailable()
         }
       }
-      // TODO
       getShortcutSet(what)?.let { anAction.registerCustomShortcutSet(it, parent, parentDisposable) }
       myActionGroup.add(anAction)
     }
@@ -201,8 +227,8 @@ object ScreencastToolWindow {
       myActionGroup.add(Separator.getInstance())
     }
 
-    fun add(action: AnAction) {
-      getShortcutSet("Play/Pause")?.let { action.registerCustomShortcutSet(it, parent, parentDisposable) }
+    fun add(action: AnAction, name: String) {
+      getShortcutSet(name)?.let { action.registerCustomShortcutSet(it, parent, parentDisposable) }
       myActionGroup.add(action)
     }
 

@@ -50,7 +50,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       e ?: return
       super.mouseClicked(e)
       if (!e.isLeftMouseButton) return
-      val rangeUnderClick = myLocator.getContainingWordRange(e.x.mulScale())
+      val rangeUnderClick = myLocator.getContainingWordRange(e.x.mulScale() - myLocator.pixelOffset)
       if (rangeUnderClick.empty) return
       if (e.isControlKeyDown) {
         resetSelection()
@@ -77,7 +77,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       val border = borderUnderCursor(start)
       myIsPressedOverBorder = border != null && JBSwingUtilities.isLeftMouseButton(start)
       if (myIsPressedOverBorder && border != null /* for smart cast only */) {
-        myStartDifference = point.x.mulScale() -
+        myStartDifference = point.x.mulScale() + myLocator.pixelOffset -
             if (border.isLeft) border.source.pixelRange.start
             else border.source.pixelRange.endInclusive
         myDraggedBorder = border
@@ -104,15 +104,15 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun dragControlSelection(start: Point, point: Point) {
-    val x = start.x.mulScale()
-    val pointX = point.x.mulScale()
+    val x = start.x.mulScale() + myLocator.pixelOffset
+    val pointX = point.x.mulScale() + myLocator.pixelOffset
     myTempSelectedRange = IntRange(min(x, pointX), max(x, pointX))
     fireStateChanged()
   }
 
   private fun dragSelection(start: Point, point: Point) {
-    val x = start.x.mulScale()
-    val pointX = point.x.mulScale()
+    val x = start.x.mulScale() + myLocator.pixelOffset
+    val pointX = point.x.mulScale() + myLocator.pixelOffset
     val border = IntRange(min(x, pointX), max(x, pointX))
     myTempSelectedRange = myLocator.getCoveredRange(border)
     fireStateChanged()
@@ -125,7 +125,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun dragBorder(point: Point) {
-    movingBorder = myMoveRange.inside(point.x.mulScale() - myStartDifference)
+    movingBorder = myMoveRange.inside(point.x.mulScale() + myLocator.pixelOffset - myStartDifference)
     fireStateChanged()
   }
 
@@ -152,7 +152,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   private val MouseEvent.isLeftMouseButton get() = JBSwingUtilities.isLeftMouseButton(this)
 
   private fun isOverBorder(e: MouseEvent): Boolean {
-    val scaledPixel = e.x.mulScale()
+    val scaledPixel = e.x.mulScale() - myLocator.pixelOffset
     for (wordView in myLocator.wordsView) {
       if (scaledPixel in wordView.leftBorder || scaledPixel in wordView.rightBorder) {
         return true
@@ -164,7 +164,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   private fun borderUnderCursor(e: MouseEvent): Border? {
     var index = -1
     var isLeft = false
-    val scaledPixel = e.x.mulScale()
+    val scaledPixel = e.x.mulScale() - myLocator.pixelOffset
     for ((i, wordView) in myLocator.wordsView.withIndex()) {
       if (scaledPixel in wordView.leftBorder) {
         isLeft = true

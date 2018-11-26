@@ -16,6 +16,10 @@ fun LongRange.intersects(other: LongRange): Boolean {
   return !(start > other.endInclusive || other.start > endInclusive)
 }
 
+fun LongRange.shift(delta: Long): LongRange {
+  return start + delta..endInclusive + delta
+}
+
 fun LongRange.mapLong(fn: (Long) -> Long): LongRange = fn(start)..fn(endInclusive)
 
 fun LongRange.mapInt(fn: (Long) -> Int): IntRange = fn(start)..fn(endInclusive)

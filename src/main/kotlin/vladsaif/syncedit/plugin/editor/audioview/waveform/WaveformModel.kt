@@ -12,7 +12,6 @@ import vladsaif.syncedit.plugin.util.*
 import vladsaif.syncedit.plugin.util.Cache.Companion.cache
 import java.io.IOException
 import java.util.concurrent.CancellationException
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.event.ChangeListener
@@ -34,6 +33,8 @@ class WaveformModel(
   private val myEditionModelListener: () -> Unit = {
     fireStateChanged()
   }
+  val pixelOffset: Int
+    get() = screencast.coordinator.toPixel(audioDataModel.offsetFrames)
   var playFramePosition = -1L
     set(value) {
       field = value
@@ -47,7 +48,7 @@ class WaveformModel(
       }
     }
   val drawRange = cache {
-    val range = screencast.coordinator.visibleRange.mapInt { it.mulScale() }
+    val range = screencast.coordinator.visibleRange.mapInt { it.mulScale() }.shift(-pixelOffset)
     val length = range.length * 3
     val frameRange = screencast.coordinator.toFrameRange(range.start - length..range.endInclusive + length)
     screencast.coordinator.toPixelRange(editionModel.overlay(frameRange))
@@ -95,7 +96,50 @@ class WaveformModel(
     screencast.removeEditionListener(myEditionModelListener)
   }
 
-  private val loadPool = Executors.newSingleThreadExecutor()
+  private fun loadData() {
+    if (myLastLoadedVisibleRange?.intersects(screencast.coordinator.visibleRange) != true
+      || screencast.coordinator.visibleRange.length != myLastLoadedVisibleRange?.length
+      || screencast.coordinator.framesPerPixel != myLastLoadedFramesPerPixel
+    ) {
+      myLastLoadedVisibleRange = screencast.coordinator.visibleRange
+      myLastLoadedFramesPerPixel = screencast.coordinator.framesPerPixel
+      if (myIsBroken.get()) {
+        return
+      }
+      myCurrentTask?.isActive = false
+      LoadTask(screencast.coordinator.framesPerPixel.toInt(), drawRange.get()).let {
+        myCurrentTask = it
+        ApplicationManager.getApplication().executeOnPooledThread(it)
+      }
+    }
+  }
+
+  fun resetCache() {
+    drawRange.resetCache()
+    myWordView.resetCache()
+    myLastLoadedVisibleRange = null
+  }
+
+  fun getContainingWordRange(coordinate: Int) =
+    myWordView.get().map { it.pixelRange }.find { it.contains(coordinate) } ?: IntRange.EMPTY
+
+  fun getCoveredRange(extent: IntRange): IntRange {
+    val coordinates = myWordView.get().map { it.pixelRange }
+    val left = coordinates.find { it.end >= extent.start }?.start ?: return IntRange.EMPTY
+    val right = coordinates.findLast { it.start <= extent.end }?.end ?: return IntRange.EMPTY
+    return IntRange(left, right)
+  }
+
+  fun fixWaveformDelta(delta: Int) {
+    screencast.performModification {
+      with(screencast.coordinator) {
+        val deltaFrame = toFrame(delta.mulScale())
+        audioDataModel.offsetFrames += deltaFrame
+      }
+    }
+    resetCache()
+  }
+
 
   private inner class LoadTask(
     private val framesPerChunk: Int,
@@ -129,40 +173,6 @@ class WaveformModel(
     }
   }
 
-  private fun loadData() {
-    if (myLastLoadedVisibleRange?.intersects(screencast.coordinator.visibleRange) != true
-      || screencast.coordinator.visibleRange.length != myLastLoadedVisibleRange?.length
-      || screencast.coordinator.framesPerPixel != myLastLoadedFramesPerPixel
-    ) {
-      myLastLoadedVisibleRange = screencast.coordinator.visibleRange
-      myLastLoadedFramesPerPixel = screencast.coordinator.framesPerPixel
-      if (myIsBroken.get()) {
-        return
-      }
-      myCurrentTask?.isActive = false
-      LoadTask(screencast.coordinator.framesPerPixel.toInt(), drawRange.get()).let {
-        myCurrentTask = it
-//        loadPool.submit(it)
-        ApplicationManager.getApplication().executeOnPooledThread(it)
-      }
-    }
-  }
-
-  fun resetCache() {
-    drawRange.resetCache()
-    myWordView.resetCache()
-    myLastLoadedVisibleRange = null
-  }
-
-  fun getContainingWordRange(coordinate: Int) =
-    myWordView.get().map { it.pixelRange }.find { it.contains(coordinate) } ?: IntRange.EMPTY
-
-  fun getCoveredRange(extent: IntRange): IntRange {
-    val coordinates = myWordView.get().map { it.pixelRange }
-    val left = coordinates.find { it.end >= extent.start }?.start ?: return IntRange.EMPTY
-    val right = coordinates.findLast { it.start <= extent.end }?.end ?: return IntRange.EMPTY
-    return IntRange(left, right)
-  }
 
   companion object {
     private const val MAGNET_RANGE = 10

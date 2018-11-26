@@ -24,4 +24,6 @@ public interface ScreencastEditorIcons {
   Icon TRANSCRIPT_TOOL_WINDOW = IconLoader.getIcon("/icons/transcript_tool_window.png");
   Icon VOLUME_OFF = IconLoader.getIcon("/icons/volume_off.png");
   Icon VOLUME_OFF_TOOL_WINDOW = IconLoader.getIcon("/icons/volume_off_tool_window.png");
+  Icon VOLUME_ON = IconLoader.getIcon("/icons/volume_on.png");
+  Icon VOLUME_ON_TOOL_WINDOW = IconLoader.getIcon("/icons/volume_on_tool_window.png");
 }

@@ -19,7 +19,9 @@ class EditorSplitter(
   waveforms: JComponent,
   scriptView: JComponent,
   private val coordinator: Coordinator
-) : Splitter(true, 0.5f, 0.0f, 1.0f) {
+) :
+  Splitter(true, 0.5f, 0.0f, 1.0f) {
+
   private var myInterval: Long = 1_000_000_000 // 1 second
   private var myDropLast: Int = 8
     set(value) {

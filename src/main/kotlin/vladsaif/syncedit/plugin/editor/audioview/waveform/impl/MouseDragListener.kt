@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform.impl
 
+import java.awt.Component
 import java.awt.Point
 import java.awt.event.MouseEvent
 import javax.swing.event.MouseInputAdapter
@@ -21,6 +22,16 @@ abstract class MouseDragListener : MouseInputAdapter() {
 
   override fun mouseMoved(e: MouseEvent?) {
     doEnd(e)
+  }
+
+  fun install(component: Component) {
+    component.addMouseListener(this)
+    component.addMouseMotionListener(this)
+  }
+
+  fun uninstall(component: Component) {
+    component.removeMouseListener(this)
+    component.removeMouseMotionListener(this)
   }
 
   private fun doEnd(e: MouseEvent?) {

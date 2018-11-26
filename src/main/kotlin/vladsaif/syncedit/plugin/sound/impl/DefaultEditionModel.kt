@@ -95,6 +95,13 @@ class DefaultEditionModel : EditionModel {
     return copy
   }
 
+  override fun shift(delta: Long) {
+    myCutRanges.shift(delta)
+    myMuteRanges.shift(delta)
+    myNoChangesRanges.shift(delta)
+    myEditionsCache = null
+  }
+
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
