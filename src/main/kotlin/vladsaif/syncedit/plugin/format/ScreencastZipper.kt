@@ -4,7 +4,7 @@ import com.intellij.openapi.diagnostic.logger
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.SoundProvider
-import vladsaif.syncedit.plugin.sound.impl.modFloor
+import vladsaif.syncedit.plugin.sound.modFloor
 import vladsaif.syncedit.plugin.util.length
 import java.io.IOException
 import java.io.InputStream
@@ -17,8 +17,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 import kotlin.math.min
-
-private val LOG = logger<ScreencastZipper>()
 
 class ScreencastZipper(val destination: Path) : AutoCloseable {
   private val myZipStream = ZipOutputStream(Files.newOutputStream(destination).buffered())
@@ -267,6 +265,8 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
 
 
   companion object {
+    private val LOG = logger<ScreencastZipper>()
+
     fun isDataSet(path: Path, type: EntryType): Boolean {
       return ZipFile(path.toFile()).use { file ->
         file.entries().asSequence().any { it.comment == type.name }

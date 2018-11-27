@@ -10,7 +10,6 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.Player
 import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
-import vladsaif.syncedit.plugin.sound.impl.PlayerImpl
 import vladsaif.syncedit.plugin.util.mapLong
 import java.io.IOException
 import javax.swing.Timer
@@ -70,7 +69,9 @@ class WaveformController(private val view: WaveformView) : Disposable {
         } else {
           view.selectionModel.toEditionModel()
         }
-        val player = PlayerImpl({ view.model.screencast.audioInputStream }, editionModel)
+        val player = Player.create(editionModel, view.model.audioDataModel.offsetFrames) {
+          view.model.screencast.audioInputStream
+        }
         player.setOnStopAction {
           ApplicationManager.getApplication().invokeAndWait {
             stop()

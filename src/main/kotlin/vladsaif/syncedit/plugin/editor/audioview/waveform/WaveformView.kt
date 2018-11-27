@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform
 
+import com.intellij.openapi.Disposable
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -20,7 +21,8 @@ class WaveformView(
   JBPanel<WaveformView>(),
   ChangeListener,
   DraggableXAxis,
-  DrawingFixture by DrawingFixture.create() {
+  DrawingFixture by DrawingFixture.create(),
+  Disposable {
 
   private val myCoordinator = model.screencast.coordinator
   private val myWordFont get() = JBUI.Fonts.label()
@@ -45,7 +47,13 @@ class WaveformView(
     addMouseMotionListener(WordHintBalloonListener(this, model))
     selectionModel.enableWordSelection(model)
     selectionModel.addChangeListener(this)
+    model.audioDataModel.addChangeListener(this)
     model.addChangeListener(this)
+  }
+
+  override fun dispose() {
+    model.audioDataModel.removeChangeListener(this)
+    model.removeChangeListener(this)
   }
 
   override fun getPreferredSize(): Dimension {

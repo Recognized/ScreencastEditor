@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform
 
-interface AudioDataModel {
+interface AudioDataModel : ChangeNotifier {
   /**
    * @return Total duration of the track in milliseconds.
    */
@@ -23,5 +23,9 @@ interface AudioDataModel {
    */
   var offsetFrames: Long
 
-  fun getAveragedSampleData(framesPerChunk: Int, chunkRange: IntRange, isActive: () -> Boolean): List<AveragedSampleData>
+  fun getAveragedSampleData(
+    framesPerChunk: Int,
+    chunkRange: IntRange,
+    isActive: () -> Boolean
+  ): List<AveragedSampleData>
 }

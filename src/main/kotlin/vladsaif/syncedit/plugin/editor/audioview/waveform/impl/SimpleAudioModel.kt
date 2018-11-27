@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.editor.audioview.waveform.impl
 import vladsaif.syncedit.plugin.editor.audioview.AudioSampler
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AudioDataModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AveragedSampleData
+import vladsaif.syncedit.plugin.editor.audioview.waveform.ChangeNotifier
 import vladsaif.syncedit.plugin.sound.SoundProvider
 import vladsaif.syncedit.plugin.util.intersectWith
 import vladsaif.syncedit.plugin.util.length
@@ -22,7 +23,8 @@ import kotlin.math.sqrt
  * or if it cannot be converted to decode format.
  * @throws java.io.IOException If I/O error occurs.
  */
-class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
+class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel,
+  ChangeNotifier by DefaultChangeNotifier() {
   override var trackDurationMilliseconds = 0.0
     private set
   override var millisecondsPerFrame = 0.0
@@ -35,6 +37,7 @@ class SimpleAudioModel(val getAudioStream: () -> InputStream) : AudioDataModel {
     get() = myOffsetFrames
     set(value) {
       myOffsetFrames = value
+      fireStateChanged()
     }
 
   private var myOffsetFrames = 0L

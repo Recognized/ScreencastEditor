@@ -182,6 +182,9 @@ class ScreencastFile(
     val dataAfter = data
     val undoableAction = ScreencastUndoableAction()
     val codesAfter = codeModel.codes
+    if (offsetFramesBefore != offsetFramesAfter) {
+      audioDataModel?.let { undoableAction.offsetFramesChange[it] = offsetFramesBefore!! to offsetFramesAfter!! }
+    }
     if (dataBefore != dataAfter) {
       undoableAction.transcriptUpdate = dataBefore to dataAfter
       myTranscriptListeners.forEach { it() }
@@ -256,8 +259,8 @@ class ScreencastFile(
 
   private fun initializeTranscript() {
     val newData = myTranscriptInputStream.let { TranscriptData.createFrom(it) }
-    if (isEditionModelSet) data = newData
-    else data = synchronizeWithEditionModel(newData)
+    data = if (isEditionModelSet) newData
+    else synchronizeWithEditionModel(newData)
   }
 
   suspend fun initialize() {
@@ -507,6 +510,7 @@ class ScreencastFile(
         ?.let { myAffectedDocuments.add(DocumentReferenceManager.getInstance().create(it)) }
     }
 
+    val offsetFramesChange: MutableMap<AudioDataModel, Pair<Long, Long>> = mutableMapOf()
     var transcriptUpdate: Pair<TranscriptData?, TranscriptData?>? = null
     var editionModelUpdate: Pair<EditionModel, EditionModel>? = null
     var codeUpdate: Pair<List<Code>, List<Code>>? = null
@@ -522,6 +526,10 @@ class ScreencastFile(
         if (codeUpdate != null) {
           myCodeModel.codes = codeUpdate!!.second
         }
+        for ((model, change) in offsetFramesChange) {
+          val (_, new) = change
+          model.offsetFrames = new
+        }
       }
     }
 
@@ -535,6 +543,10 @@ class ScreencastFile(
         }
         if (codeUpdate != null) {
           myCodeModel.codes = codeUpdate!!.first
+        }
+        for ((model, change) in offsetFramesChange) {
+          val (old, _) = change
+          model.offsetFrames = old
         }
       }
     }
