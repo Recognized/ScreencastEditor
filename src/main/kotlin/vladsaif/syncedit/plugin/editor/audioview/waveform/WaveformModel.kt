@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.ui.JBUI
+import vladsaif.syncedit.plugin.actions.showNotification
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.model.WordData
@@ -30,9 +31,7 @@ class WaveformModel(
   private var myLastLoadedFramesPerPixel: Long = -1L
   private var myIsBroken = AtomicBoolean(false)
   private val myTranscriptListener: () -> Unit
-  private val myEditionModelListener: () -> Unit = {
-    fireStateChanged()
-  }
+  private val myEditionModelListener: () -> Unit = { fireStateChanged() }
   val pixelOffset: Int
     get() = screencast.coordinator.toPixel(audioDataModel.offsetFrames)
   var playFramePosition = -1L

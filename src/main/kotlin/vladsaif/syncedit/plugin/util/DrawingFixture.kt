@@ -1,10 +1,8 @@
 package vladsaif.syncedit.plugin.util
 
-import com.intellij.util.ui.JBUI
 import java.awt.Graphics2D
 import java.awt.geom.Line2D
 import java.awt.geom.Rectangle2D
-import kotlin.math.roundToInt
 
 interface DrawingFixture {
 
@@ -29,20 +27,4 @@ interface DrawingFixture {
       }
     }
   }
-}
-
-fun Int.divScale(): Int {
-  return (this / JBUI.pixScale()).roundToInt()
-}
-
-fun Int.mulScale(): Int {
-  return (JBUI.pixScale(this.toFloat())).roundToInt()
-}
-
-fun Int.divScaleF(): Float {
-  return this / JBUI.pixScale()
-}
-
-fun Int.mulScaleF(): Float {
-  return JBUI.pixScale(this.toFloat())
 }

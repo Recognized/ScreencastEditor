@@ -1,11 +1,9 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform
 
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import org.picocontainer.Disposable
+import vladsaif.syncedit.plugin.actions.showNotification
 import vladsaif.syncedit.plugin.model.ScreencastFile
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.Player
@@ -150,12 +148,4 @@ class WaveformController(private val view: WaveformView) : Disposable {
   companion object {
     private val LOG = logger<WaveformController>()
   }
-}
-
-fun showNotification(
-  content: String,
-  title: String = "Error",
-  type: NotificationType = NotificationType.ERROR
-) {
-  Notifications.Bus.notify(Notification("Screencast Editor", title, content, type))
 }

@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.editor.audioview.skipFramesMpeg
 import vladsaif.syncedit.plugin.util.length
+import vladsaif.syncedit.plugin.util.modFloor
 import java.io.InputStream
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
@@ -119,9 +120,7 @@ interface Player : AutoCloseable {
         buffer.fill(0)
         var needBytes = offsetFrames * frameSize
         while (needBytes != 0L) {
-          val zeroesCount = min(buffer.size.toLong(), needBytes)
-            .toInt()
-            .modFloor(frameSize)
+          val zeroesCount = min(buffer.size.toLong(), needBytes).toInt().modFloor(frameSize)
           writeOrBlock(buffer, zeroesCount)
           needBytes -= zeroesCount
         }
@@ -148,9 +147,7 @@ interface Player : AutoCloseable {
             var needSkip = needBytes
             while (needBytes != 0L || needSkip != 0L) {
               if (needBytes != 0L) {
-                val zeroesCount = min(buffer.size.toLong(), needBytes)
-                  .toInt()
-                  .modFloor(frameSize)
+                val zeroesCount = min(buffer.size.toLong(), needBytes).toInt().modFloor(frameSize)
                 if (mySignalStopReceived) {
                   break@outer
                 }
@@ -194,8 +191,4 @@ interface Player : AutoCloseable {
       }
     }
   }
-}
-
-fun Int.modFloor(modulus: Int): Int {
-  return this - this % modulus
 }

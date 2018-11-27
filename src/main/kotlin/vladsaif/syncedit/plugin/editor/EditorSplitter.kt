@@ -135,8 +135,6 @@ class EditorSplitter(
         }
       }
 
-      private infix fun Long.ceil(other: Long) = (this + other - 1) / other
-
       private fun Graphics2D.formatTime(ns: Long): SizedString {
         val string = TextFormatter.formatTime(ns).dropLast(myDropLast)
         val width = fontMetrics.stringWidth(string)

@@ -153,7 +153,6 @@ class ScreencastFile(
     isUndoRedoAction = true
     if (isUndo) {
       action.undo()
-      myRedoStack.clear()
       myRedoStack.addLast(action)
     } else {
       action.redo()

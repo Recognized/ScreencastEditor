@@ -4,8 +4,8 @@ import com.intellij.openapi.diagnostic.logger
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.sound.EditionModel
 import vladsaif.syncedit.plugin.sound.SoundProvider
-import vladsaif.syncedit.plugin.sound.modFloor
 import vladsaif.syncedit.plugin.util.length
+import vladsaif.syncedit.plugin.util.modFloor
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -146,9 +146,7 @@ class ScreencastZipper(val destination: Path) : AutoCloseable {
           var needSkip = needBytes
           while (needBytes != 0L || needSkip != 0L) {
             if (needBytes != 0L) {
-              val zeroesCount = min(buffer.size.toLong(), needBytes)
-                .toInt()
-                .modFloor(frameSize)
+              val zeroesCount = min(buffer.size.toLong(), needBytes).toInt().modFloor(frameSize)
               progressUpdater(totalFrames.toDouble() / totalLength)
               buffered.write(buffer, 0, zeroesCount)
               totalFrames += zeroesCount / frameSize
