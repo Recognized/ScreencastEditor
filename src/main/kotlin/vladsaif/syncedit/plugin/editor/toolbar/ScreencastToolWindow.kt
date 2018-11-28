@@ -16,9 +16,9 @@ import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import icons.ScreencastEditorIcons.*
 import org.jetbrains.kotlin.idea.KotlinIcons
+import vladsaif.syncedit.plugin.actions.OpenTranscriptAction
+import vladsaif.syncedit.plugin.actions.SaveAction
 import vladsaif.syncedit.plugin.actions.openScript
-import vladsaif.syncedit.plugin.actions.openTranscript
-import vladsaif.syncedit.plugin.actions.saveChanges
 import vladsaif.syncedit.plugin.editor.EditorPane
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformController
 import vladsaif.syncedit.plugin.model.ScreencastFile
@@ -105,16 +105,12 @@ object ScreencastToolWindow {
 //        }
 //      })
       separator()
-      add("Open transcript", "Open transcript in editor", TRANSCRIPT, {
-        openTranscript(screencast)
-      })
+      add(OpenTranscriptAction(screencast), "Open transcript")
       add("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
         openScript(screencast)
       })
       separator()
-      add("Save changes", "Save edited screencast", AllIcons.Actions.Menu_saveall, {
-        saveChanges(screencast)
-      })
+      add(SaveAction(screencast), "Save changes")
       return done()
     }
   }
