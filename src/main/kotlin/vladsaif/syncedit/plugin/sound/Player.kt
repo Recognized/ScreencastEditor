@@ -31,23 +31,23 @@ interface Player : AutoCloseable {
   companion object {
 
     fun create(
-      editionModel: EditionModelView,
+      editions: EditionsView,
       offsetFrames: Long,
       getAudioStream: () -> InputStream
     ): Player {
-      return PlayerImpl(editionModel, offsetFrames, getAudioStream)
+      return PlayerImpl(editions, offsetFrames, getAudioStream)
     }
   }
 
   private class PlayerImpl(
-    editionModel: EditionModelView,
+    editions: EditionsView,
     private val offsetFrames: Long,
     private val getAudioStream: () -> InputStream
   ) : Player {
     private val mySource: SourceDataLine
     private var myOnStopAction: () -> Unit = {}
     private var mySignalStopReceived = false
-    private val myEditionModel = editionModel.copy()
+    private val myEditionModel = editions.copy()
 
     init {
       val fileFormat = SoundProvider.getAudioFileFormat(getAudioStream().buffered())
@@ -109,7 +109,7 @@ interface Player : AutoCloseable {
     }
 
     private fun applyEditionImpl(decodedStream: AudioInputStream) {
-      val editions = myEditionModel.editions
+      val editions = myEditionModel.editionsModel
       if (!mySource.isOpen) {
         mySource.open(decodedStream.format)
       }
@@ -128,7 +128,7 @@ interface Player : AutoCloseable {
       outer@ for (edition in editions) {
         var needBytes = edition.first.length * frameSize
         when (edition.second) {
-          EditionModel.EditionType.CUT -> {
+          EditionsModel.EditionType.CUT -> {
             while (needBytes != 0L && !mySignalStopReceived) {
               if (decodedStream is DecodedMpegAudioInputStream) {
                 decodedStream.skipFramesMpeg(buffer, edition.first.length)
@@ -142,7 +142,7 @@ interface Player : AutoCloseable {
               }
             }
           }
-          EditionModel.EditionType.MUTE -> {
+          EditionsModel.EditionType.MUTE -> {
             buffer.fill(0)
             var needSkip = needBytes
             while (needBytes != 0L || needSkip != 0L) {
@@ -169,7 +169,7 @@ interface Player : AutoCloseable {
               }
             }
           }
-          EditionModel.EditionType.NO_CHANGES -> {
+          EditionsModel.EditionType.NO_CHANGES -> {
             while (needBytes != 0L) {
               val read = decodedStream.read(buffer, 0, min(buffer.size.toLong(), needBytes).toInt())
               if (read == -1 || mySignalStopReceived) {

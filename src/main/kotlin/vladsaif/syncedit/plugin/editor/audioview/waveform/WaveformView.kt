@@ -1,6 +1,7 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -8,7 +9,7 @@ import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DragXAxisListener
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MultiSelectionModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.WordHintBalloonListener
-import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.EditionsModel.EditionType.*
 import vladsaif.syncedit.plugin.util.*
 import java.awt.*
 import javax.swing.event.ChangeEvent
@@ -38,6 +39,10 @@ class WaveformView(
   }
   val selectionModel = MultiSelectionModel()
 
+  init {
+    Disposer.register(model, this)
+  }
+
   /**
    * Activate mouse selection using drag and ctrl-shift combination,
    * enable popup balloon with word text when hovering over a word.
@@ -47,22 +52,23 @@ class WaveformView(
     addMouseMotionListener(WordHintBalloonListener(this, model))
     selectionModel.enableWordSelection(model)
     selectionModel.addChangeListener(this)
-    model.audioDataModel.addChangeListener(this)
+    model.audio.model.addChangeListener(this)
     model.addChangeListener(this)
   }
 
   override fun dispose() {
-    model.audioDataModel.removeChangeListener(this)
+    model.audio.model.removeChangeListener(this)
     model.removeChangeListener(this)
   }
 
   override fun getPreferredSize(): Dimension {
     val superValue = super.getPreferredSize()
-    val audio = model.audioDataModel
-    return Dimension(
-      myCoordinator.toPixel(audio.totalFrames + audio.offsetFrames).divScale() + 200,
-      superValue.height
-    )
+    with(model.audio.model) {
+      return Dimension(
+        myCoordinator.toPixel(totalFrames + offsetFrames).divScale() + 200,
+        superValue.height
+      )
+    }
   }
 
   override fun activateXAxisDrag() {
@@ -115,14 +121,14 @@ class WaveformView(
   private fun Graphics2D.drawEndLine() {
     color = WaveformGraphics.HORIZONTAL_LINE
     stroke = BasicStroke(1.0f)
-    val audioRange = model.editionModel.impose(0 until model.audioDataModel.totalFrames)
+    val audioRange = model.audio.editionsModel.impose(0 until model.audio.model.totalFrames)
     val startX = 0
     val halfHeight = (height / 2).toFloat()
     if (startX in model.drawRange.get()) {
       val pixStartX = startX.divScaleF()
       drawLine(pixStartX, 0.0f, pixStartX, height.toFloat())
     }
-    val endX = model.screencast.coordinator.toPixel(audioRange.endInclusive)
+    val endX = myCoordinator.toPixel(audioRange.endInclusive)
     if (endX in model.drawRange.get()) {
       val pixEndX = endX.divScaleF()
       drawLine(pixEndX, 0.0f, pixEndX, height.toFloat())
@@ -150,7 +156,7 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawPosition(position: Long) {
-    val x = model.screencast.coordinator.toPixel(position).divScaleF() - model.pixelOffset.divScaleF()
+    val x = myCoordinator.toPixel(position).divScaleF() - model.pixelOffset.divScaleF()
     color = WaveformGraphics.AUDIO_PLAY_LINE_COLOR
     stroke = BasicStroke(1.0f)
     drawLine(x, 0.0f, x, height.toFloat())
@@ -167,7 +173,7 @@ class WaveformView(
     var skipCut = 0
     val workRange = offsetChunk + data.skippedChunks until offsetChunk + data.skippedChunks + data.size
     stroke = BasicStroke(1.0f)
-    for ((range, type) in model.editionModel.editions) {
+    for ((range, type) in model.audio.editionsModel.editionsModel) {
       val screenRange = myCoordinator.toPixelRange(range)
       when (type) {
         NO_CHANGES -> {

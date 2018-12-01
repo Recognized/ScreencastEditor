@@ -60,13 +60,14 @@ class InplaceRenamer(val editor: Editor, private val word: TranscriptWord) {
   fun acceptTemplate() {
     val highlighter = myHighlighters[0]
     val model = myPsiFile?.model
+    val audio = myPsiFile?.audio ?: return
     if (highlighter.startOffset == highlighter.endOffset) {
       // If word was deleted, lets exclude it
-      model?.performModification { excludeWord(myOriginalIndex) }
+      model?.performModification { getEditable(audio).excludeWord(myOriginalIndex) }
       cancel()
     } else {
       val textRange = TextRange(highlighter.startOffset, highlighter.endOffset)
-      model?.performModification { renameWord(myOriginalIndex, editor.document.getText(textRange)) }
+      model?.performModification { getEditable(audio).renameWord(myOriginalIndex, editor.document.getText(textRange)) }
       finishEditing()
     }
   }

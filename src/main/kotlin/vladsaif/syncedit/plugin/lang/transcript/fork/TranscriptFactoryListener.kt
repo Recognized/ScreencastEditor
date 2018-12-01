@@ -8,7 +8,7 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileType
 import vladsaif.syncedit.plugin.lang.transcript.refactoring.InplaceRenamer
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 
 class TranscriptFactoryListener : EditorFactoryListener {
 
@@ -21,7 +21,7 @@ class TranscriptFactoryListener : EditorFactoryListener {
         isGreedyToLeft = true
         isGreedyToRight = true
       }
-      editor.putUserData(ScreencastFile.KEY, virtualFile.getUserData(ScreencastFile.KEY))
+      editor.putUserData(Screencast.SCREENCAST_KEY, virtualFile.getUserData(Screencast.SCREENCAST_KEY))
       editor.document.putUserData(InplaceRenamer.GUARDED_BLOCKS, listOf(marker))
     }
     editor.colorsScheme.setColor(EditorColors.READONLY_FRAGMENT_BACKGROUND_COLOR, null)

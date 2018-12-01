@@ -1,17 +1,17 @@
 package vladsaif.syncedit.plugin.sound
 
-import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
-import vladsaif.syncedit.plugin.sound.impl.DefaultEditionModel
+import vladsaif.syncedit.plugin.sound.EditionsModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.impl.DefaultEditionsModel
 import vladsaif.syncedit.plugin.util.end
 import java.io.StringReader
 import java.util.*
 
-interface EditionModelView {
+interface EditionsView {
 
   /**
-   * @return Sorted by first element of pair list of editions that were made.
+   * @return Sorted by first element of pair list of editionsModel that were made.
    */
-  val editions: List<Pair<LongRange, EditionModel.EditionType>>
+  val editionsModel: List<Pair<LongRange, EditionsModel.EditionType>>
 
   fun impose(frameRange: LongRange): LongRange
 
@@ -25,18 +25,18 @@ interface EditionModelView {
     return overlay(frame..frame).start
   }
 
-  fun copy(): EditionModel
+  fun copy(): EditionsModel
 
   fun serialize(): ByteArray {
     return buildString {
-      for ((range, type) in editions) {
+      for ((range, type) in editionsModel) {
         append("${range.start} ${range.end} $type\n")
       }
     }.toByteArray(Charsets.UTF_8)
   }
 }
 
-interface EditionModel : EditionModelView {
+interface EditionsModel : EditionsView {
   enum class EditionType {
     CUT, MUTE, NO_CHANGES
   }
@@ -67,9 +67,9 @@ interface EditionModel : EditionModelView {
 
   fun shift(delta: Long)
 
-  fun load(other: EditionModel) {
+  fun load(other: EditionsView) {
     reset()
-    for ((range, type) in other.editions) {
+    for ((range, type) in other.editionsModel) {
       when (type) {
         CUT -> cut(range)
         MUTE -> mute(range)
@@ -80,8 +80,8 @@ interface EditionModel : EditionModelView {
 
   companion object {
 
-    fun deserialize(bytes: ByteArray): EditionModel {
-      with(DefaultEditionModel()) {
+    fun deserialize(bytes: ByteArray): EditionsModel {
+      with(DefaultEditionsModel()) {
         val sc = Scanner(StringReader(String(bytes, Charsets.UTF_8)))
         while (sc.hasNext()) {
           val range = LongRange(sc.nextLong(), sc.nextLong())

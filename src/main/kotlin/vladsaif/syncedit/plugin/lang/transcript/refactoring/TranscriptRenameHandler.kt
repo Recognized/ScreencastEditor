@@ -22,7 +22,7 @@ class TranscriptRenameHandler : RenameHandler {
 
   override fun invoke(project: Project, editor: Editor?, file: PsiFile?, dataContext: DataContext?) {
     editor ?: return
-    file as? TranscriptPsiFile ?: return
+    if (file !is TranscriptPsiFile) return
     dataContext ?: return
     if (!isRenaming(dataContext)) return
     val word = getWord(editor, file)

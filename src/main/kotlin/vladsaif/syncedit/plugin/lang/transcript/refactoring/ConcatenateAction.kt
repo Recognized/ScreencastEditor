@@ -7,7 +7,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 
 /**
  * Concatenates selected words into one big word.
@@ -15,12 +15,12 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
  */
 class ConcatenateAction : TranscriptRefactoringAction() {
 
-  override fun doAction(model: ScreencastFile, words: List<TranscriptWord>) {
+  override fun doAction(model: Screencast, audio: Screencast.Audio, words: List<TranscriptWord>) {
     val first = words.firstOrNull() ?: return
     val last = words.last()
     LOG.info("Concatenating: ${words.map { it.text }}")
     model.performModification {
-      concatenateWords(IntRange(first.number, last.number))
+      getEditable(audio).concatenateWords(first.number..last.number)
     }
   }
 

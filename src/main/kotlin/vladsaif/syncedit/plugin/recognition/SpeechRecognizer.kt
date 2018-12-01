@@ -10,7 +10,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import kotlinx.coroutines.CancellationException
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 import vladsaif.syncedit.plugin.model.TranscriptData
 import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
 import vladsaif.syncedit.plugin.util.LibrariesLoader
@@ -56,8 +56,8 @@ interface SpeechRecognizer {
       CURRENT_RECOGNIZER = recognizer
     }
 
-    fun runRecognitionTask(model: ScreencastFile, callback: () -> Unit) {
-      val task = RecognizeTask(model, callback)
+    fun runRecognitionTask(model: Screencast, audio: Screencast.Audio, callback: () -> Unit) {
+      val task = RecognizeTask(model, audio, callback)
       ProgressManager.getInstance().run(task)
     }
 
@@ -68,7 +68,8 @@ interface SpeechRecognizer {
   }
 
   private class RecognizeTask(
-    val file: ScreencastFile,
+    val file: Screencast,
+    val audio: Screencast.Audio,
     val callback: () -> Unit
   ) : Task.Backgroundable(file.project, "Getting transcript for ${file.file.fileName}", true) {
 
@@ -84,7 +85,7 @@ interface SpeechRecognizer {
       }
       try {
         val data = try {
-          myRecognizeFuture = SpeechRecognizer.getCurrentRecognizer().recognize(Supplier { file.audioInputStream })
+          myRecognizeFuture = SpeechRecognizer.getCurrentRecognizer().recognize(Supplier { audio.audioInputStream })
           if (!myIsCancelled) {
             myRecognizeFuture!!.get()
           } else {
@@ -97,7 +98,7 @@ interface SpeechRecognizer {
         runInEdt {
           ApplicationManager.getApplication().runWriteAction {
             file.performModification {
-              setTranscriptData(data)
+              getEditable(audio).data = data
             }
           }
         }

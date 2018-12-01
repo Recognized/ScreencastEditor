@@ -5,14 +5,16 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.util.Disposer
 import javax.swing.JComponent
 
 class ActionPanel(content: JComponent) : SimpleToolWindowPanel(false, false), Disposable {
 
-  var disposeAction: () -> Unit = {}
-
   init {
     add(content)
+    if (content is Disposable) {
+      Disposer.register(this, content)
+    }
   }
 
   fun addActionGroups(group: ActionGroup) {
@@ -27,6 +29,5 @@ class ActionPanel(content: JComponent) : SimpleToolWindowPanel(false, false), Di
   }
 
   override fun dispose() {
-    disposeAction()
   }
 }

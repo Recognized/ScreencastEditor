@@ -3,20 +3,21 @@ package vladsaif.syncedit.plugin.editor
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.editor.audioview.waveform.DraggableXAxis
 import vladsaif.syncedit.plugin.editor.audioview.waveform.Waveform
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptView
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
+import java.awt.Dimension
 import java.awt.event.MouseEvent
 import javax.swing.Box
 import javax.swing.BoxLayout
-import javax.swing.JSeparator
 import javax.swing.ScrollPaneConstants
 import javax.swing.event.ChangeListener
 import javax.swing.event.MouseInputAdapter
 
 class EditorPane(
-  screencast: ScreencastFile
+  screencast: Screencast
 ) : JBScrollPane(), Disposable {
 
   private val myScriptView = ScriptView(screencast)
@@ -35,9 +36,13 @@ class EditorPane(
       myScriptView.coordinator
     )
     setViewportView(mySplitter)
-    if (screencast.isAudioSet) {
-      addWaveform(Waveform.create(screencast, screencast.audioDataModel!!))
+    screencast.pluginAudio?.let {
+      addWaveform(Waveform.create(screencast, it))
     }
+    screencast.importedAudio?.let {
+      addWaveform(Waveform.create(screencast, it))
+    }
+    Disposer.register(this, myScriptView)
     verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER
     horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS
     myScriptView.installListeners()
@@ -69,15 +74,15 @@ class EditorPane(
 
   fun addWaveform(waveform: Waveform) {
     if (myWaveforms.contains(waveform)) return
+    Disposer.register(this, waveform)
     myWaveforms.add(waveform)
     myActiveWaveform = waveform
     if (myWaveforms.size > 1) {
-      myWaveformsContainer.add(JSeparator(JSeparator.HORIZONTAL))
+      myWaveformsContainer.add(Box.createRigidArea(Dimension(width, JBUI.scale(5))))
     }
     waveform.view.addMouseListener(ActiveWaveformListener(waveform))
     myWaveformsContainer.add(waveform.view)
     waveform.view.installListeners()
-    Disposer.register(this, waveform.model)
   }
 
   fun removeWaveform(waveform: Waveform) {
@@ -92,6 +97,10 @@ class EditorPane(
   val hasSelection get() = myActiveWaveform?.controller?.hasSelection == true
 
   val playState get() = myActiveWaveform?.controller?.playState
+
+  fun getActiveAudio(): Screencast.Audio? {
+    return myActiveWaveform?.model?.audio
+  }
 
   fun play() {
     myActiveWaveform?.controller?.play()

@@ -13,7 +13,7 @@ interface TranscriptWord : PsiNameIdentifierOwner {
 
 internal class TranscriptWordImpl(node: ASTNode) : ASTWrapperPsiElement(node), TranscriptWord {
   override val data
-    get() = (parent as TranscriptPsiFile).model?.data?.words?.get(number)
+    get() = (parent as TranscriptPsiFile).audio?.data?.words?.get(number)
   override val number: Int
     get() {
       var j = 0

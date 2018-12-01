@@ -1,5 +1,6 @@
 package vladsaif.syncedit.plugin.editor.scriptview
 
+import com.intellij.openapi.Disposable
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBSwingUtilities
@@ -14,7 +15,7 @@ import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.MouseDragListener
 import vladsaif.syncedit.plugin.lang.script.psi.Block
 import vladsaif.syncedit.plugin.lang.script.psi.Code
 import vladsaif.syncedit.plugin.lang.script.psi.Statement
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 import vladsaif.syncedit.plugin.util.*
 import vladsaif.syncedit.plugin.util.Cache.Companion.cache
 import java.awt.*
@@ -27,13 +28,14 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 class ScriptView(
-  val screencast: ScreencastFile
+  val screencast: Screencast
 ) :
   JBPanel<ScriptView>(),
   DraggableXAxis,
-  DrawingFixture by DrawingFixture.create() {
+  DrawingFixture by DrawingFixture.create(),
+  Disposable {
 
-  val coordinator = screencast.coordinator
+  inline val coordinator get() = screencast.coordinator
   private val myBordersRectangles = cache { calculateBorders(screencast.codeModel.codes).sortedWith(AREA_COMPARATOR) }
   private val myBlockAreas = cache { calculateCodeAreas(screencast.codeModel.codes) }
   private var myTempBorder: DraggedBorder? = null
@@ -41,6 +43,11 @@ class ScriptView(
   private val myDepthDelta: Int = calculateDepthDelta()
   private val myFurtherMostBorder = cache { lastBlockPixel() }
   private val myFirstBorder = cache { firstBlockPixel() }
+  private val myCodeListener = {
+    resetCache()
+    revalidate()
+    repaint()
+  }
   private val myDragWholeScriptListener = object : DragXAxisListener() {
     override fun onDragAction() {
       repaint()
@@ -53,16 +60,16 @@ class ScriptView(
   }
 
   init {
-    screencast.addCodeListener {
-      resetCache()
-      revalidate()
-      repaint()
-    }
+    screencast.addCodeListener(myCodeListener)
     addComponentListener(object : ComponentAdapter() {
       override fun componentResized(e: ComponentEvent?) {
         myBordersRectangles.resetCache()
       }
     })
+  }
+
+  override fun dispose() {
+    screencast.removeCodeListener(myCodeListener)
   }
 
   override fun getPreferredSize(): Dimension {

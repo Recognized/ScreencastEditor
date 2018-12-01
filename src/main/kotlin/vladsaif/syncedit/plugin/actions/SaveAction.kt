@@ -7,9 +7,9 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 
-class SaveAction(val screencast: ScreencastFile) :
+class SaveAction(val screencast: Screencast) :
   AnAction("Save changes", "Save edited screencast", AllIcons.Actions.Menu_saveall) {
 
   private var myIsInProgress = false

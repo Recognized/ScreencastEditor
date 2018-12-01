@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @RunWith(Parameterized::class)
-class SimpleAudioModelTest(path: Path) {
+class ShiftableAudioModelTest(path: Path) {
 
   private val myAudio = SimpleAudioModel(path)
 

@@ -159,9 +159,9 @@ object RecordingManager {
           if (!indicator.isRunning) indicator.start()
         }
         try {
-          ScreencastZipper(out).use {
-            it.addScript(GeneratedCodeReceiver.getAndFlush())
-            it.useAudioOutputStream { out ->
+          ScreencastZipper.createZip(out) {
+            addScript(GeneratedCodeReceiver.getAndFlush())
+            usePluginAudioOutputStream { out ->
               val length = Files.newInputStream(rawAudio).buffered().use { raw ->
                 SoundProvider.countFrames(raw, SoundRecorder.RECORD_FORMAT)
               }

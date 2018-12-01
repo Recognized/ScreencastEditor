@@ -16,6 +16,8 @@ import kotlin.math.min
 
 class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotifier() {
   private lateinit var myLocator: WaveformModel
+  private inline val myCoordinator get() = myLocator.screencast.coordinator
+  private inline val myEditionsView get() = myLocator.audio.editionsModel
   private var myMoveRange: IntRange = IntRange.EMPTY
   private var myIsPressedOverBorder: Boolean = false
   private var myDraggedBorder: Border? = null
@@ -131,13 +133,11 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
 
   private fun dragBorderFinished() {
     val locator = myLocator
-    val model = myLocator.screencast
     val border = myDraggedBorder!!
     val moveMsBorder = border.allowedMsRange
-    val editionModel = model.editionModel
     val coordinator = locator.screencast.coordinator
     val newMs =
-      coordinator.toMilliseconds(editionModel.overlay(coordinator.toFrame(movingBorder)))
+      coordinator.toMilliseconds(myEditionsView.overlay(coordinator.toFrame(movingBorder)))
         .coerceIn(moveMsBorder)
     val newMsRange = if (border.isLeft) {
       newMs..border.source.word.range.endInclusive
@@ -145,7 +145,11 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       border.source.word.range.start..newMs
     }
     movingBorder = -1
-    model.performModification { changeRange(border.index, newMsRange) }
+    myLocator.screencast.performModification {
+      with(getEditable(myLocator.audio)) {
+        changeRange(border.index, newMsRange)
+      }
+    }
   }
 
   private val MouseEvent.isControlKeyDown get() = UIUtil.isControlKeyDown(this)
@@ -178,11 +182,9 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       }
     }
     if (index == -1) return null
-    val coordinator = myLocator.screencast.coordinator
-    val editionModel = myLocator.screencast.editionModel
-    val audioFrames = with(myLocator.audioDataModel) { offsetFrames..offsetFrames + totalFrames }
-    val audioPixels = coordinator.toPixelRange(editionModel.impose(audioFrames))
-    val audioMs = coordinator.toMillisecondsRange(editionModel.impose(audioFrames))
+    val audioFrames = with(myLocator.audio.model) { offsetFrames..offsetFrames + totalFrames }
+    val audioPixels = myCoordinator.toPixelRange(myEditionsView.impose(audioFrames))
+    val audioMs = myCoordinator.toMillisecondsRange(myEditionsView.impose(audioFrames))
     var leftBorder = audioPixels.start
     var rightBorder = audioPixels.endInclusive
     var msLeft = audioMs.start

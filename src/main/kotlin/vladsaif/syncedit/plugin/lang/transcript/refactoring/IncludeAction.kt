@@ -1,7 +1,7 @@
 package vladsaif.syncedit.plugin.lang.transcript.refactoring
 
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 
 /**
  * Includes previously excluded or muted words back to transcript.
@@ -9,9 +9,9 @@ import vladsaif.syncedit.plugin.model.ScreencastFile
  */
 class IncludeAction : TranscriptRefactoringAction() {
 
-  override fun doAction(model: ScreencastFile, words: List<TranscriptWord>) {
+  override fun doAction(model: Screencast, audio: Screencast.Audio, words: List<TranscriptWord>) {
     model.performModification {
-      showWords(words.map { it.number }.toIntArray())
+      getEditable(audio).showWords(words.map { it.number }.toIntArray())
     }
   }
 }

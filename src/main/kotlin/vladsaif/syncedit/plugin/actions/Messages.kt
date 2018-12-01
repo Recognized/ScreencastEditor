@@ -6,7 +6,7 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 import java.nio.file.Path
 
 fun showNotification(
@@ -17,31 +17,31 @@ fun showNotification(
   Notifications.Bus.notify(Notification("Screencast Editor", title, content, type))
 }
 
-fun notifySuccessfullySaved(screencastFile: ScreencastFile) {
+fun notifySuccessfullySaved(screencast: Screencast) {
   Notification(
     "Screencast Editor",
     "Saved",
-    "Successfully saved ${screencastFile.name}",
+    "Successfully saved ${screencast.name}",
     NotificationType.INFORMATION
-  ).notify(screencastFile.project)
+  ).notify(screencast.project)
 }
 
-fun errorWhileSaving(screencastFile: ScreencastFile, throwable: Throwable) {
+fun errorWhileSaving(screencast: Screencast, throwable: Throwable) {
   Notification(
     "Screencast Editor",
     "Not saved",
-    "Error occurred while saving ${screencastFile.name}: ${throwable.message}",
+    "Error occurred while saving ${screencast.name}: ${throwable.message}",
     NotificationType.ERROR
-  ).notify(screencastFile.project)
+  ).notify(screencast.project)
 }
 
-fun errorScriptContainsErrors(screencastFile: ScreencastFile) {
+fun errorScriptContainsErrors(screencast: Screencast) {
   Notification(
     "Screencast Editor",
     "Script contains errors",
-    "Script of ${screencastFile.file} is malformed",
+    "Script of ${screencast.file} is malformed",
     NotificationType.ERROR
-  ).notify(screencastFile.project)
+  ).notify(screencast.project)
 }
 
 

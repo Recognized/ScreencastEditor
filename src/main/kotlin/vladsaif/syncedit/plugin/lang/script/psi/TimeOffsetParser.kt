@@ -12,8 +12,8 @@ import vladsaif.syncedit.plugin.util.end
 import vladsaif.syncedit.plugin.util.length
 
 object TimeOffsetParser {
-  private val TIME_RANGE_KEY = Key.create<IntRange>("INT-RANGE-KEY")
-  private val FRACTION_KEY = Key.create<Pair<Int, Int>>("FRACTION-KEY")
+  private val TIME_RANGE_KEY = Key.create<IntRange>("INT-RANGE-SCREENCAST_KEY")
+  private val FRACTION_KEY = Key.create<Pair<Int, Int>>("FRACTION-SCREENCAST_KEY")
   private val TIME_OFFSET_ARGUMENT_REGEX = "(ms=)?[0-9]+L".toRegex()
 
   fun parse(psiFile: KtFile): CodeModel {

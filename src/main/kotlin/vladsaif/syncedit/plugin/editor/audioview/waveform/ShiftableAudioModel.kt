@@ -1,6 +1,6 @@
 package vladsaif.syncedit.plugin.editor.audioview.waveform
 
-interface AudioDataModel : ChangeNotifier {
+interface AudioModel : ChangeNotifier {
   /**
    * @return Total duration of the track in milliseconds.
    */
@@ -18,10 +18,7 @@ interface AudioDataModel : ChangeNotifier {
    */
   val framesPerMillisecond: Double
 
-  /**
-   * Offset of the first frame
-   */
-  var offsetFrames: Long
+  val offsetFrames: Long
 
   fun getAveragedSampleData(
     framesPerChunk: Int,
@@ -29,3 +26,13 @@ interface AudioDataModel : ChangeNotifier {
     isActive: () -> Boolean
   ): List<AveragedSampleData>
 }
+
+interface ShiftableAudioModel : AudioModel {
+
+  /**
+   * Offset of the first frame
+   */
+  override var offsetFrames: Long
+
+}
+

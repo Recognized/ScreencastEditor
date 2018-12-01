@@ -2,27 +2,27 @@ package vladsaif.syncedit.plugin.sound.impl
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import vladsaif.syncedit.plugin.sound.EditionModel
-import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.EditionsModel
+import vladsaif.syncedit.plugin.sound.EditionsModel.EditionType.*
 
 class DefaultEditionModelTest {
 
   @Test
   fun `test equals method`() {
-    assertEquals(DefaultEditionModel(), DefaultEditionModel())
+    assertEquals(DefaultEditionsModel(), DefaultEditionsModel())
     val range1 = 10L..20L
-    assertEquals(DefaultEditionModel().apply { cut(range1) }, DefaultEditionModel().apply { cut(range1) })
-    assertEquals(DefaultEditionModel().apply { mute(range1) }, DefaultEditionModel().apply { mute(range1) })
-    assertEquals(DefaultEditionModel().apply { mute(range1); unmute(range1) }, DefaultEditionModel())
+    assertEquals(DefaultEditionsModel().apply { cut(range1) }, DefaultEditionsModel().apply { cut(range1) })
+    assertEquals(DefaultEditionsModel().apply { mute(range1) }, DefaultEditionsModel().apply { mute(range1) })
+    assertEquals(DefaultEditionsModel().apply { mute(range1); unmute(range1) }, DefaultEditionsModel())
     assertEquals(
-      DefaultEditionModel().apply { mute(range1); cut(range1) },
-      DefaultEditionModel().apply { cut(range1) }
+      DefaultEditionsModel().apply { mute(range1); cut(range1) },
+      DefaultEditionsModel().apply { cut(range1) }
     )
   }
 
   @Test
   fun `test cut is not affected`() {
-    val model1 = DefaultEditionModel().apply {
+    val model1 = DefaultEditionsModel().apply {
       cut(100..200L)
       cut(300..400L)
       cut(500..600L)
@@ -34,20 +34,20 @@ class DefaultEditionModelTest {
       unmute(380..550L)
     }
     assertEquals(
-      model1.editions.filter { it.second == EditionModel.EditionType.CUT }.map { it.first },
-      model2.editions.filter { it.second == EditionModel.EditionType.CUT }.map { it.first }
+      model1.editionsModel.filter { it.second == EditionsModel.EditionType.CUT }.map { it.first },
+      model2.editionsModel.filter { it.second == EditionsModel.EditionType.CUT }.map { it.first }
     )
   }
 
   @Test
   fun `test ranges are correct`() {
-    val ranges = DefaultEditionModel().apply {
+    val ranges = DefaultEditionsModel().apply {
       cut(100..200L)
       cut(300..400L)
       cut(500..600L)
       mute(50..250L)
       mute(450..1000L)
-    }.editions
+    }.editionsModel
     val expectedRanges = listOf(
       0..49L to NO_CHANGES,
       50..99L to MUTE,
@@ -65,7 +65,7 @@ class DefaultEditionModelTest {
 
   @Test
   fun `test serialization`() {
-    val model = DefaultEditionModel().apply {
+    val model = DefaultEditionsModel().apply {
       cut(0L..200L)
       cut(400L..600L)
       cut(800L..900L)
@@ -74,6 +74,6 @@ class DefaultEditionModelTest {
       mute(10000L..40000L)
       unmute(12000L..35000L)
     }
-    assertEquals(model, EditionModel.deserialize(model.serialize()))
+    assertEquals(model, EditionsModel.deserialize(model.serialize()))
   }
 }

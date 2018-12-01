@@ -8,19 +8,20 @@ import com.intellij.psi.PsiDocumentManager
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptPsiFile
 import vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptWord
 import vladsaif.syncedit.plugin.lang.transcript.psi.getSelectedWords
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 
 abstract class TranscriptRefactoringAction : AnAction() {
 
-  abstract fun doAction(model: ScreencastFile, words: List<TranscriptWord>)
+  abstract fun doAction(model: Screencast, audio: Screencast.Audio, words: List<TranscriptWord>)
 
   override fun actionPerformed(e: AnActionEvent) {
     val project = e.getRequiredData(CommonDataKeys.PROJECT)
     val editor = e.getRequiredData(CommonDataKeys.EDITOR)
     val psi = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as TranscriptPsiFile
     val model = psi.model ?: return
+    val audio = psi.audio ?: return
     CommandProcessor.getInstance().executeCommand(project, {
-      doAction(model, getSelectedWords(editor, psi))
+      doAction(model, audio, getSelectedWords(editor, psi))
     }, this.javaClass.simpleName, "ScreencastEditor", editor.document)
   }
 

@@ -3,7 +3,6 @@ package vladsaif.syncedit.plugin.editor.toolbar
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -16,12 +15,13 @@ import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
 import icons.ScreencastEditorIcons.*
 import org.jetbrains.kotlin.idea.KotlinIcons
+import vladsaif.syncedit.plugin.actions.ImportAudioAction
 import vladsaif.syncedit.plugin.actions.OpenTranscriptAction
 import vladsaif.syncedit.plugin.actions.SaveAction
 import vladsaif.syncedit.plugin.actions.openScript
 import vladsaif.syncedit.plugin.editor.EditorPane
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformController
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -50,27 +50,17 @@ object ScreencastToolWindow {
     return toolWindow
   }
 
-  fun openScreencastFile(screencast: ScreencastFile) {
+  fun openScreencastFile(screencast: Screencast) {
     val editorPane = EditorPane(screencast)
     val audioPanel = ActionPanel(editorPane)
     val controlPanel = ActionPanel(audioPanel)
-    controlPanel.addActionGroups(createMainActionGroup(screencast, controlPanel, editorPane))
+    controlPanel.addActionGroups(createMainActionGroup(screencast, editorPane, controlPanel, editorPane))
     audioPanel.addActionGroups(createAudioRelatedActionGroup(editorPane, controlPanel))
     val content = ContentFactory.SERVICE.getInstance().createContent(controlPanel, screencast.name, false)
     val toolWindow = getToolWindow(screencast.project)
     addForAllLeaves(FocusRequestor(controlPanel, screencast.project), controlPanel)
     content.setPreferredFocusedComponent { controlPanel }
-    Disposer.register(controlPanel, audioPanel)
     Disposer.register(content, controlPanel)
-    Disposer.register(content, editorPane)
-    Disposer.register(content, screencast)
-    Disposer.register(content, Disposable {
-      with(screencast) {
-        for (file in listOfNotNull(scriptViewFile, transcriptFile)) {
-          FileEditorManager.getInstance(screencast.project).closeFile(file)
-        }
-      }
-    })
     toolWindow.contentManager.removeAllContents(true)
     toolWindow.contentManager.addContent(content)
     toolWindow.setAvailable(true, null)
@@ -92,7 +82,8 @@ object ScreencastToolWindow {
   }
 
   private fun createMainActionGroup(
-    screencast: ScreencastFile,
+    screencast: Screencast,
+    editorPane: EditorPane,
     parent: JComponent,
     parentDisposable: Disposable
   ): ActionGroup {
@@ -105,10 +96,12 @@ object ScreencastToolWindow {
 //        }
 //      })
       separator()
-      add(OpenTranscriptAction(screencast), "Open transcript")
+      add(OpenTranscriptAction(screencast, editorPane::getActiveAudio), "Open transcript")
       add("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
         openScript(screencast)
       })
+      separator()
+      add(ImportAudioAction(screencast), "Import audio")
       separator()
       add(SaveAction(screencast), "Save changes")
       return done()

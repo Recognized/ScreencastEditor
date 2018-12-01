@@ -6,9 +6,8 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.ui.JBUI
 import vladsaif.syncedit.plugin.actions.showNotification
 import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.DefaultChangeNotifier
-import vladsaif.syncedit.plugin.model.ScreencastFile
+import vladsaif.syncedit.plugin.model.Screencast
 import vladsaif.syncedit.plugin.model.WordData
-import vladsaif.syncedit.plugin.sound.EditionModelView
 import vladsaif.syncedit.plugin.util.*
 import vladsaif.syncedit.plugin.util.Cache.Companion.cache
 import java.io.IOException
@@ -18,10 +17,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.event.ChangeListener
 
 class WaveformModel(
-  val screencast: ScreencastFile,
-  val audioDataModel: AudioDataModel
+  val screencast: Screencast,
+  val audio: Screencast.Audio
 ) : ChangeNotifier by DefaultChangeNotifier(), Disposable {
 
+  private inline val myCoordinator get() = screencast.coordinator
+  private inline val myEditionsModel get() = audio.editionsModel
+  private inline val myAudioModel get() = audio.model
   private val myWordView = cache { calculateWordView() }
   @Volatile
   private var myAudioData = listOf(AveragedSampleData.ZERO)
@@ -33,7 +35,7 @@ class WaveformModel(
   private val myTranscriptListener: () -> Unit
   private val myEditionModelListener: () -> Unit = { fireStateChanged() }
   val pixelOffset: Int
-    get() = screencast.coordinator.toPixel(audioDataModel.offsetFrames)
+    get() = myCoordinator.toPixel(myAudioModel.offsetFrames)
   var playFramePosition = -1L
     set(value) {
       field = value
@@ -47,26 +49,25 @@ class WaveformModel(
       }
     }
   val drawRange = cache {
-    val range = screencast.coordinator.visibleRange.mapInt { it.mulScale() }.shift(-pixelOffset)
+    val range = myCoordinator.visibleRange.mapInt { it.mulScale() }.shift(-pixelOffset)
     val length = range.length * 3
-    val frameRange = screencast.coordinator.toFrameRange(range.start - length..range.endInclusive + length)
-    screencast.coordinator.toPixelRange(editionModel.overlay(frameRange))
+    val frameRange = myCoordinator.toFrameRange(range.start - length..range.endInclusive + length)
+    myCoordinator.toPixelRange(myEditionsModel.overlay(frameRange))
   }
-  val editionModel: EditionModelView get() = screencast.editionModel
   val wordsView: List<WordView> get() = myWordView.get()
 
   private fun calculateWordView(): List<WordView> {
     val list = mutableListOf<WordView>()
-    val words = screencast.data?.words ?: return listOf()
+    val words = audio.data?.words ?: return listOf()
     for (word in words) {
-      val wordFrameRange = screencast.coordinator.toFrameRange(word.range, TimeUnit.MILLISECONDS)
-      list.add(WordView(word, screencast.coordinator.toPixelRange(editionModel.impose(wordFrameRange))))
+      val wordFrameRange = myCoordinator.toFrameRange(word.range, TimeUnit.MILLISECONDS)
+      list.add(WordView(word, myCoordinator.toPixelRange(myEditionsModel.impose(wordFrameRange))))
     }
     return list
   }
 
   init {
-    screencast.coordinator.addChangeListener(ChangeListener {
+    myCoordinator.addChangeListener(ChangeListener {
       drawRange.resetCache()
       loadData()
     })
@@ -86,7 +87,7 @@ class WaveformModel(
   fun getEnclosingWord(coordinate: Int): WordData? {
     val index = myWordView.get().map { it.pixelRange }.binarySearch(coordinate..coordinate, IntRange.INTERSECTS_CMP)
     return if (index < 0) null
-    else screencast.data?.words?.get(index)
+    else audio.data?.words?.get(index)
   }
 
   override fun dispose() {
@@ -96,17 +97,17 @@ class WaveformModel(
   }
 
   private fun loadData() {
-    if (myLastLoadedVisibleRange?.intersects(screencast.coordinator.visibleRange) != true
-      || screencast.coordinator.visibleRange.length != myLastLoadedVisibleRange?.length
-      || screencast.coordinator.framesPerPixel != myLastLoadedFramesPerPixel
+    if (myLastLoadedVisibleRange?.intersects(myCoordinator.visibleRange) != true
+      || myCoordinator.visibleRange.length != myLastLoadedVisibleRange?.length
+      || myCoordinator.framesPerPixel != myLastLoadedFramesPerPixel
     ) {
-      myLastLoadedVisibleRange = screencast.coordinator.visibleRange
-      myLastLoadedFramesPerPixel = screencast.coordinator.framesPerPixel
+      myLastLoadedVisibleRange = myCoordinator.visibleRange
+      myLastLoadedFramesPerPixel = myCoordinator.framesPerPixel
       if (myIsBroken.get()) {
         return
       }
       myCurrentTask?.isActive = false
-      LoadTask(screencast.coordinator.framesPerPixel.toInt(), drawRange.get()).let {
+      LoadTask(myCoordinator.framesPerPixel.toInt(), drawRange.get()).let {
         myCurrentTask = it
         ApplicationManager.getApplication().executeOnPooledThread(it)
       }
@@ -131,9 +132,9 @@ class WaveformModel(
 
   fun fixWaveformDelta(delta: Int) {
     screencast.performModification {
-      with(screencast.coordinator) {
+      with(myCoordinator) {
         val deltaFrame = toFrame(delta.mulScale())
-        audioDataModel.offsetFrames += deltaFrame
+        getEditable(audio).model.offsetFrames += deltaFrame
       }
     }
     resetCache()
@@ -155,7 +156,7 @@ class WaveformModel(
     override fun run() {
       try {
         start = System.currentTimeMillis()
-        val computedResult = audioDataModel.getAveragedSampleData(framesPerChunk, drawRange) { isActive }
+        val computedResult = myAudioModel.getAveragedSampleData(framesPerChunk, drawRange) { isActive }
         if (myIsActive.compareAndSet(true, false)) {
           myAudioData = computedResult
         }

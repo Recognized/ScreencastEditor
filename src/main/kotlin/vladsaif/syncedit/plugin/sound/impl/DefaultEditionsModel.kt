@@ -1,25 +1,25 @@
 package vladsaif.syncedit.plugin.sound.impl
 
-import vladsaif.syncedit.plugin.sound.EditionModel
-import vladsaif.syncedit.plugin.sound.EditionModel.EditionType.*
+import vladsaif.syncedit.plugin.sound.EditionsModel
+import vladsaif.syncedit.plugin.sound.EditionsModel.EditionType.*
 import vladsaif.syncedit.plugin.util.LongRangeUnion
 import vladsaif.syncedit.plugin.util.length
 
 
-class DefaultEditionModel : EditionModel {
+class DefaultEditionsModel : EditionsModel {
   private val myCutRanges = LongRangeUnion()
   private val myMuteRanges = LongRangeUnion()
   private val myNoChangesRanges = LongRangeUnion()
-  private var myEditionsCache: List<Pair<LongRange, EditionModel.EditionType>>? = null
-  override val editions: List<Pair<LongRange, EditionModel.EditionType>>
+  private var myEditionsModelCache: List<Pair<LongRange, EditionsModel.EditionType>>? = null
+  override val editionsModel: List<Pair<LongRange, EditionsModel.EditionType>>
     get() {
-      myEditionsCache?.let { return it }
-      val ret: MutableList<Pair<LongRange, EditionModel.EditionType>> = mutableListOf()
+      myEditionsModelCache?.let { return it }
+      val ret: MutableList<Pair<LongRange, EditionsModel.EditionType>> = mutableListOf()
       ret.addAll(myCutRanges.ranges.map { it to CUT })
       ret.addAll(myMuteRanges.ranges.map { it to MUTE })
       ret.addAll(myNoChangesRanges.ranges.map { it to NO_CHANGES })
       ret.sortBy { (a, _) -> a.start }
-      return ret.toList().also { myEditionsCache = it }
+      return ret.toList().also { myEditionsModelCache = it }
     }
 
   init {
@@ -31,7 +31,7 @@ class DefaultEditionModel : EditionModel {
     myCutRanges.union(frameRange)
     myMuteRanges.exclude(frameRange)
     myNoChangesRanges.exclude(frameRange)
-    myEditionsCache = null
+    myEditionsModelCache = null
   }
 
   override fun mute(frameRange: LongRange) {
@@ -43,7 +43,7 @@ class DefaultEditionModel : EditionModel {
     for (range in temp.ranges) {
       myMuteRanges.union(range)
     }
-    myEditionsCache = null
+    myEditionsModelCache = null
   }
 
   override fun unmute(frameRange: LongRange) {
@@ -55,7 +55,7 @@ class DefaultEditionModel : EditionModel {
     for (range in temp.ranges) {
       myNoChangesRanges.union(frameRange)
     }
-    myEditionsCache = null
+    myEditionsModelCache = null
   }
 
   override fun reset() {
@@ -63,7 +63,7 @@ class DefaultEditionModel : EditionModel {
     myCutRanges.exclude(infinity)
     myMuteRanges.exclude(infinity)
     myNoChangesRanges.union(infinity)
-    myEditionsCache = null
+    myEditionsModelCache = null
   }
 
   override fun impose(frameRange: LongRange): LongRange {
@@ -84,8 +84,8 @@ class DefaultEditionModel : EditionModel {
     return start..end
   }
 
-  override fun copy(): EditionModel {
-    val copy = DefaultEditionModel()
+  override fun copy(): EditionsModel {
+    val copy = DefaultEditionsModel()
     for (range in myCutRanges.ranges) {
       copy.cut(range)
     }
@@ -99,14 +99,14 @@ class DefaultEditionModel : EditionModel {
     myCutRanges.shift(delta)
     myMuteRanges.shift(delta)
     myNoChangesRanges.shift(delta)
-    myEditionsCache = null
+    myEditionsModelCache = null
   }
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
 
-    other as DefaultEditionModel
+    other as DefaultEditionsModel
 
     if (myCutRanges != other.myCutRanges) return false
     if (myMuteRanges != other.myMuteRanges) return false
@@ -123,7 +123,7 @@ class DefaultEditionModel : EditionModel {
   }
 
   override fun toString(): String {
-    return editions.joinToString(separator = ", ", prefix = "[", postfix = "]") { (range, type) ->
+    return editionsModel.joinToString(separator = ", ", prefix = "[", postfix = "]") { (range, type) ->
       "$range: $type"
     }
   }
