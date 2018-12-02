@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.util
 import org.junit.Assert
 import org.junit.Test
 import java.util.*
+import kotlin.test.assertEquals
 
 class LongRangeUnionTest {
   private fun createTestModel(): LongRangeUnion {
@@ -159,5 +160,13 @@ class LongRangeUnionTest {
       resultsNoClear.add(model.impose(x))
     }
     Assert.assertArrayEquals(resultsNoClear.toTypedArray(), resultsWithClear.toTypedArray())
+  }
+
+  @Test
+  fun `test impose single dot`() {
+    with(LongRangeUnion()) {
+      union(11..100L)
+      assertEquals(20, impose(110..110L).start)
+    }
   }
 }

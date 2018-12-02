@@ -60,8 +60,8 @@ class WaveformModel(
         myNeedInitialLoad = false
       }
     }
-  val drawRange = myDrawRange.get()
-  val audioPixels = myAudioPixels.get()
+  val drawRange get() = myDrawRange.get()
+  val audioPixels get() = myAudioPixels.get()
   val wordsView: List<WordView> get() = myWordView.get()
 
   private fun calculateWordView(): List<WordView> {
