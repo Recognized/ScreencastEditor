@@ -7,6 +7,7 @@ import vladsaif.syncedit.plugin.editor.audioview.waveform.SelectionModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformModel
 import vladsaif.syncedit.plugin.util.empty
 import vladsaif.syncedit.plugin.util.inside
+import vladsaif.syncedit.plugin.util.intersectWith
 import vladsaif.syncedit.plugin.util.mulScale
 import java.awt.Cursor
 import java.awt.Point
@@ -23,6 +24,9 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   private var myDraggedBorder: Border? = null
   private var myStartDifference: Int = -1
   private var myTempSelectedRange: IntRange = IntRange.EMPTY
+    set(value) {
+      field = value intersectWith myLocator.audioPixels
+    }
   var movingBorder: Int = -1
     private set
 
@@ -79,7 +83,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       val border = borderUnderCursor(start)
       myIsPressedOverBorder = border != null && JBSwingUtilities.isLeftMouseButton(start)
       if (myIsPressedOverBorder && border != null /* for smart cast only */) {
-        myStartDifference = point.x.mulScale() + myLocator.pixelOffset -
+        myStartDifference = point.x.mulScale() - myLocator.pixelOffset -
             if (border.isLeft) border.source.pixelRange.start
             else border.source.pixelRange.endInclusive
         myDraggedBorder = border
@@ -106,16 +110,16 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun dragControlSelection(start: Point, point: Point) {
-    val x = start.x.mulScale() + myLocator.pixelOffset
-    val pointX = point.x.mulScale() + myLocator.pixelOffset
-    myTempSelectedRange = IntRange(min(x, pointX), max(x, pointX))
+    val x = start.x.mulScale() - myLocator.pixelOffset
+    val pointX = point.x.mulScale() - myLocator.pixelOffset
+    myTempSelectedRange = min(x, pointX)..max(x, pointX)
     fireStateChanged()
   }
 
   private fun dragSelection(start: Point, point: Point) {
-    val x = start.x.mulScale() + myLocator.pixelOffset
-    val pointX = point.x.mulScale() + myLocator.pixelOffset
-    val border = IntRange(min(x, pointX), max(x, pointX))
+    val x = start.x.mulScale() - myLocator.pixelOffset
+    val pointX = point.x.mulScale() - myLocator.pixelOffset
+    val border = min(x, pointX)..max(x, pointX)
     myTempSelectedRange = myLocator.getCoveredRange(border)
     fireStateChanged()
   }
@@ -127,7 +131,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
   }
 
   private fun dragBorder(point: Point) {
-    movingBorder = myMoveRange.inside(point.x.mulScale() + myLocator.pixelOffset - myStartDifference)
+    movingBorder = myMoveRange.inside(point.x.mulScale() - myLocator.pixelOffset - myStartDifference)
     fireStateChanged()
   }
 
@@ -182,7 +186,7 @@ class MultiSelectionModel : SelectionModel, ChangeNotifier by DefaultChangeNotif
       }
     }
     if (index == -1) return null
-    val audioFrames = with(myLocator.audio.model) { offsetFrames..offsetFrames + totalFrames }
+    val audioFrames = with(myLocator.audio.model) { 0..totalFrames }
     val audioPixels = myCoordinator.toPixelRange(myEditionsView.impose(audioFrames))
     val audioMs = myCoordinator.toMillisecondsRange(myEditionsView.impose(audioFrames))
     var leftBorder = audioPixels.start

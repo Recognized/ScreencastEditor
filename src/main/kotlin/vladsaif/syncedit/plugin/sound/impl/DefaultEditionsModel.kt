@@ -77,7 +77,7 @@ class DefaultEditionsModel : EditionsModel {
       if (cut.start <= start) {
         start += cut.length
       }
-      if (cut.endInclusive < end) {
+      if (cut.start <= end) {
         end += cut.length
       }
     }

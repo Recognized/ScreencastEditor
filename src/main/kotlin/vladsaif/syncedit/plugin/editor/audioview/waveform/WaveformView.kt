@@ -108,7 +108,7 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawWordsBackGround() {
-    val usedRange = model.drawRange.get()
+    val usedRange = model.drawRange
     color = WaveformGraphics.MAPPING_HIGHLIGHT_COLOR
     for (word in model.wordsView) {
       val (x1, x2) = word.pixelRange
@@ -124,16 +124,16 @@ class WaveformView(
     val audioRange = model.audio.editionsModel.impose(0 until model.audio.model.totalFrames)
     val startX = 0
     val halfHeight = (height / 2).toFloat()
-    if (startX in model.drawRange.get()) {
+    if (startX in model.drawRange) {
       val pixStartX = startX.divScaleF()
       drawLine(pixStartX, 0.0f, pixStartX, height.toFloat())
     }
     val endX = myCoordinator.toPixel(audioRange.endInclusive)
-    if (endX in model.drawRange.get()) {
+    if (endX in model.drawRange) {
       val pixEndX = endX.divScaleF()
       drawLine(pixEndX, 0.0f, pixEndX, height.toFloat())
     }
-    val centerLineRange = startX..endX intersectWith model.drawRange.get()
+    val centerLineRange = startX..endX intersectWith model.drawRange
     drawLine(centerLineRange.start.divScaleF(), halfHeight, centerLineRange.endInclusive.divScaleF(), halfHeight)
   }
 
@@ -143,7 +143,7 @@ class WaveformView(
    * @see SelectionModel
    */
   private fun Graphics2D.drawSelectedRanges() {
-    val usedRange = model.drawRange.get()
+    val usedRange = model.drawRange
     drawSelectedRange(selectionModel.selectedRange, usedRange)
   }
 
@@ -203,7 +203,7 @@ class WaveformView(
   }
 
   private fun Graphics2D.drawWords() {
-    val usedRange = model.drawRange.get()
+    val usedRange = model.drawRange
     for (word in model.wordsView) {
       val coordinates = word.pixelRange
       if (coordinates.intersects(usedRange)) {

@@ -33,7 +33,19 @@ class WaveformModel(
   private var myLastLoadedFramesPerPixel: Long = -1L
   private var myIsBroken = AtomicBoolean(false)
   private val myTranscriptListener: () -> Unit
-  private val myEditionModelListener: () -> Unit = { fireStateChanged() }
+  private val myEditionModelListener: () -> Unit = {
+    myAudioPixels.resetCache()
+    fireStateChanged()
+  }
+  private val myDrawRange = cache {
+    val range = myCoordinator.visibleRange.mapInt { it.mulScale() }.shift(-pixelOffset)
+    val length = range.length * 3
+    val frameRange = myCoordinator.toFrameRange(range.start - length..range.endInclusive + length)
+    myCoordinator.toPixelRange(myEditionsModel.overlay(frameRange))
+  }
+  private val myAudioPixels = cache {
+    0..myCoordinator.toPixel(audio.editionsModel.impose(audio.model.totalFrames - 1))
+  }
   val pixelOffset: Int
     get() = myCoordinator.toPixel(myAudioModel.offsetFrames)
   var playFramePosition = -1L
@@ -48,12 +60,8 @@ class WaveformModel(
         myNeedInitialLoad = false
       }
     }
-  val drawRange = cache {
-    val range = myCoordinator.visibleRange.mapInt { it.mulScale() }.shift(-pixelOffset)
-    val length = range.length * 3
-    val frameRange = myCoordinator.toFrameRange(range.start - length..range.endInclusive + length)
-    myCoordinator.toPixelRange(myEditionsModel.overlay(frameRange))
-  }
+  val drawRange = myDrawRange.get()
+  val audioPixels = myAudioPixels.get()
   val wordsView: List<WordView> get() = myWordView.get()
 
   private fun calculateWordView(): List<WordView> {
@@ -68,15 +76,16 @@ class WaveformModel(
 
   init {
     myCoordinator.addChangeListener(ChangeListener {
-      drawRange.resetCache()
+      myDrawRange.resetCache()
+      myAudioPixels.resetCache()
       loadData()
     })
-    screencast.addEditionListener(myEditionModelListener)
+    screencast.addEditionListener(audio, myEditionModelListener)
     myTranscriptListener = {
       myWordView.resetCache()
       fireStateChanged()
     }
-    screencast.addTranscriptListener(myTranscriptListener)
+    screencast.addTranscriptListener(audio, myTranscriptListener)
   }
 
   data class WordView(val word: WordData, val pixelRange: IntRange) {
@@ -92,8 +101,8 @@ class WaveformModel(
 
   override fun dispose() {
     LOG.info("Disposed: waveform model of ${this.screencast}")
-    screencast.removeTranscriptListener(myTranscriptListener)
-    screencast.removeEditionListener(myEditionModelListener)
+    screencast.removeTranscriptListener(audio, myTranscriptListener)
+    screencast.removeEditionListener(audio, myEditionModelListener)
   }
 
   private fun loadData() {
@@ -107,7 +116,7 @@ class WaveformModel(
         return
       }
       myCurrentTask?.isActive = false
-      LoadTask(myCoordinator.framesPerPixel.toInt(), drawRange.get()).let {
+      LoadTask(myCoordinator.framesPerPixel.toInt(), drawRange).let {
         myCurrentTask = it
         ApplicationManager.getApplication().executeOnPooledThread(it)
       }
@@ -115,7 +124,8 @@ class WaveformModel(
   }
 
   fun resetCache() {
-    drawRange.resetCache()
+    myDrawRange.resetCache()
+    myAudioPixels.resetCache()
     myWordView.resetCache()
     myLastLoadedVisibleRange = null
   }
@@ -127,7 +137,7 @@ class WaveformModel(
     val coordinates = myWordView.get().map { it.pixelRange }
     val left = coordinates.find { it.end >= extent.start }?.start ?: return IntRange.EMPTY
     val right = coordinates.findLast { it.start <= extent.end }?.end ?: return IntRange.EMPTY
-    return IntRange(left, right)
+    return left..right
   }
 
   fun fixWaveformDelta(delta: Int) {

@@ -1,47 +1,44 @@
 package vladsaif.syncedit.plugin.editor
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.ui.Divider
+import com.intellij.openapi.ui.Splitter
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
+import vladsaif.syncedit.plugin.editor.audioview.StubPanel
+import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
 import vladsaif.syncedit.plugin.editor.audioview.waveform.DraggableXAxis
 import vladsaif.syncedit.plugin.editor.audioview.waveform.Waveform
 import vladsaif.syncedit.plugin.editor.scriptview.ScriptView
 import vladsaif.syncedit.plugin.model.Screencast
-import java.awt.Dimension
+import java.awt.Graphics
 import java.awt.event.MouseEvent
-import javax.swing.Box
-import javax.swing.BoxLayout
+import javax.swing.BorderFactory
 import javax.swing.ScrollPaneConstants
 import javax.swing.event.ChangeListener
 import javax.swing.event.MouseInputAdapter
 
 class EditorPane(
-  screencast: Screencast
+  val screencast: Screencast
 ) : JBScrollPane(), Disposable {
 
   private val myScriptView = ScriptView(screencast)
   private val myWaveforms = mutableListOf<Waveform>()
-  private val myWaveformsContainer: Box = Box(BoxLayout.Y_AXIS)
-  private val mySplitter: EditorSplitter
   private var myActiveWaveform: Waveform? = null
+  private val mySplitter: EditorSplitter
   val zoomController = ZoomController(screencast.coordinator)
   var isXAxisDraggingEnabled = false
     private set
 
   init {
     mySplitter = EditorSplitter(
-      myWaveformsContainer,
+      StubPanel(),
       myScriptView,
-      myScriptView.coordinator
+      screencast.coordinator
     )
     setViewportView(mySplitter)
-    screencast.pluginAudio?.let {
-      addWaveform(Waveform.create(screencast, it))
-    }
-    screencast.importedAudio?.let {
-      addWaveform(Waveform.create(screencast, it))
-    }
+    recreateWaveforms()
     Disposer.register(this, myScriptView)
     verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER
     horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS
@@ -50,6 +47,9 @@ class EditorPane(
     zoomController.addChangeListener(ChangeListener {
       reset()
     })
+    screencast.addAudioListener {
+      recreateWaveforms()
+    }
   }
 
   fun toggleDragXAxis() {
@@ -65,32 +65,124 @@ class EditorPane(
   private fun reset() {
     myScriptView.resetCache()
     for (waveformView in myWaveforms) {
-      waveformView.model.drawRange.resetCache()
       waveformView.view.selectionModel.resetSelection()
       waveformView.model.resetCache()
     }
     mySplitter.updateInterval()
   }
 
-  fun addWaveform(waveform: Waveform) {
-    if (myWaveforms.contains(waveform)) return
-    Disposer.register(this, waveform)
-    myWaveforms.add(waveform)
-    myActiveWaveform = waveform
-    if (myWaveforms.size > 1) {
-      myWaveformsContainer.add(Box.createRigidArea(Dimension(width, JBUI.scale(5))))
+  private fun recreateWaveforms() {
+    val currentAudios = listOfNotNull(screencast.pluginAudio, screencast.importedAudio)
+    val retainedWaveforms = myWaveforms.filter { it.model.audio in currentAudios }
+    val newWaveforms = currentAudios.filter { it !in retainedWaveforms.map { x -> x.model.audio } }
+      .map { Waveform.create(screencast, it) }
+    newWaveforms.forEach {
+      it.view.installListeners()
+      it.view.addMouseListener(ActiveWaveformListener(it))
     }
-    waveform.view.addMouseListener(ActiveWaveformListener(waveform))
-    myWaveformsContainer.add(waveform.view)
-    waveform.view.installListeners()
+    val currentWaveforms = retainedWaveforms + newWaveforms
+    val newViewport = when (currentWaveforms.size) {
+      2 -> {
+        val splitter = if (mySplitter.firstComponent is WaveformSplitter) mySplitter.firstComponent as WaveformSplitter
+        else WaveformSplitter()
+        splitter.firstComponent = currentWaveforms[0].view
+        splitter.secondComponent = currentWaveforms[1].view
+        splitter
+      }
+      1 -> currentWaveforms[0].view
+      else -> StubPanel()
+    }
+    mySplitter.firstComponent = newViewport
+    myWaveforms.filter { it !in currentWaveforms }.forEach { Disposer.dispose(it) }
+    myWaveforms.clear()
+    myWaveforms.addAll(currentWaveforms)
+    revalidate()
+    repaint()
   }
 
-  fun removeWaveform(waveform: Waveform) {
-    myWaveforms.remove(waveform)
-    val index = myWaveformsContainer.components.indexOf(waveform.view)
-    myWaveformsContainer.remove(waveform.view)
-    if (index != 0) {
-      myWaveformsContainer.remove(index - 1)
+  private class WaveformSplitter : Splitter(true, 0.5f, 0.2f, 0.8f) {
+
+    init {
+      border = BorderFactory.createEmptyBorder()
+//      val x = object : MouseInputAdapter() {
+//        override fun mouseReleased(e: MouseEvent?) {
+//          forwardMouseListenerEvent(e, MouseListener::mouseReleased)
+//        }
+//
+//        override fun mouseMoved(e: MouseEvent?) {
+//          forwardMouseMotionListenerEvent(e, MouseMotionListener::mouseMoved)
+//        }
+//
+//        override fun mouseEntered(e: MouseEvent?) {
+//          forwardMouseListenerEvent(e, MouseListener::mouseEntered)
+//        }
+//
+//        override fun mouseDragged(e: MouseEvent?) {
+//          forwardMouseMotionListenerEvent(e, MouseMotionListener::mouseDragged)
+//        }
+//
+//        override fun mouseClicked(e: MouseEvent?) {
+//          forwardMouseListenerEvent(e, MouseListener::mouseClicked)
+//        }
+//
+//        override fun mouseExited(e: MouseEvent?) {
+//          forwardMouseListenerEvent(e, MouseListener::mouseExited)
+//        }
+//
+//        override fun mousePressed(e: MouseEvent?) {
+//          forwardMouseListenerEvent(e, MouseListener::mousePressed)
+//        }
+//      }
+////      addMouseMotionListener(x)
+////      addMouseListener(x)
+    }
+
+//    private fun transformEvent(mouseEvent: MouseEvent?): MouseEvent? {
+//      mouseEvent ?: return null
+//      val component = findComponentAt(mouseEvent.x, mouseEvent.y)
+//      return if (component is WaveformView) {
+//        with(component.bounds) {
+//          MouseEvent(
+//            component,
+//            mouseEvent.id,
+//            mouseEvent.`when`,
+//            mouseEvent.modifiers,
+//            mouseEvent.x - x,
+//            mouseEvent.y - y,
+//            mouseEvent.clickCount,
+//            mouseEvent.isPopupTrigger,
+//            mouseEvent.button
+//          )
+//        }
+//      } else {
+//        null
+//      }
+//    }
+//
+//    private fun forwardMouseListenerEvent(mouseEvent: MouseEvent?, action: MouseListener.(MouseEvent?) -> Unit) {
+//      val event = transformEvent(mouseEvent)
+//      event?.component?.mouseListeners?.forEach { it.action(event) }
+//    }
+//
+//    private fun forwardMouseMotionListenerEvent(
+//      mouseEvent: MouseEvent?,
+//      action: MouseMotionListener.(MouseEvent?) -> Unit
+//    ) {
+//      val event = transformEvent(mouseEvent)
+//      event?.component?.mouseMotionListeners?.forEach { it.action(event) }
+//    }
+
+    override fun createDivider(): Divider {
+      return object : DividerImpl() {
+        override fun paintComponent(g: Graphics) {
+          g.color = WaveformGraphics.HORIZONTAL_LINE
+          g.fillRect(0, 0, this.width, this.height)
+        }
+
+        override fun getHeight(): Int {
+          return JBUI.scale(1)
+        }
+      }
     }
   }
 

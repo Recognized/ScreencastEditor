@@ -200,6 +200,10 @@ object SoundProvider {
     }
   }
 
+  fun getWaveformPcmFormat(format: AudioFormat, sampleRate: Float = 44100f): AudioFormat {
+    return format.toPcm(sampleRate)
+  }
+
   private fun withPcmStream(source: InputStream, action: (AudioInputStream) -> Unit) {
     getAudioInputStream(source).use { encoded ->
       when {

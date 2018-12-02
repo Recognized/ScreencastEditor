@@ -71,9 +71,10 @@ class Screencast(
   val file: Path
 ) : Disposable {
 
-  private val myTranscriptListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
-  private val myEditionListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
-  private val myCodeListeners: MutableSet<() -> Unit> = ContainerUtil.newConcurrentSet()
+  private val myAudioEditionsListeners = ContainerUtil.newConcurrentMap<Audio, MutableSet<() -> Unit>>()
+  private val myAudioTranscriptListeners = ContainerUtil.newConcurrentMap<Audio, MutableSet<() -> Unit>>()
+  private val myAudioListeners = ContainerUtil.newConcurrentSet<() -> Unit>()
+  private val myCodeListeners = ContainerUtil.newConcurrentSet<() -> Unit>()
   private val myCodeModel = CodeModel(listOf())
   private var isInsideModification: Boolean = false
   private var isUndoRedoAction: Boolean = false
@@ -97,9 +98,25 @@ class Screencast(
     private set
   val codeModel: CodeModelView = myCodeModel
   var pluginAudio: Audio? = null
-    private set
+    private set(value) {
+      if (value == null) {
+        disposeListeners(field)
+      }
+      if (field == null && value != null) {
+        installListeners(value as EditableAudio)
+      }
+      field = value
+    }
   var importedAudio: Audio? = null
-    private set
+    private set(value) {
+      if (value == null) {
+        disposeListeners(field)
+      }
+      if (field == null && value != null) {
+        installListeners(value as EditableAudio)
+      }
+      field = value
+    }
   val coordinator: Coordinator = Coordinator()
   var scriptViewFile: VirtualFile? = null
     private set
@@ -182,21 +199,20 @@ class Screencast(
       undoableAction.codeUpdate = codesBefore to codesAfter
       myCodeListeners.forEach { it() }
     }
-    if (changes.any { (a, b) ->
-        a::class != b::class
-            || a is AudioState.ExistentState
-            && b is AudioState.ExistentState
-            && a.data != b.data
-      }) {
-      myTranscriptListeners.forEach { it() }
-    }
-    if (changes.any { (a, b) ->
-        a::class != b::class
-            || a is AudioState.ExistentState
-            && b is AudioState.ExistentState
-            && a.editionsView != b.editionsView
-      }) {
-      myEditionListeners.forEach { it() }
+    for ((before, after) in changes) {
+      if (before is AudioState.ExistentState && after is AudioState.ExistentState) {
+        if (before.data != after.data) {
+          myAudioTranscriptListeners[after.audio]?.forEach { it.invoke() }
+        }
+        if (before.editionsView != after.editionsView) {
+          myAudioEditionsListeners[after.audio]?.forEach { it.invoke() }
+        }
+      }
+      if (before is AudioState.NoState && after is AudioState.ExistentState
+        || before is AudioState.ExistentState && after is AudioState.NoState
+      ) {
+        myAudioListeners.forEach { it.invoke() }
+      }
     }
     if (CommandProcessor.getInstance().currentCommand != null) {
       with(UndoManager.getInstance(project)) {
@@ -263,6 +279,8 @@ class Screencast(
     withContext(ExEDT) {
       pluginAudio?.let {
         coordinator.framesPerSecond = (it.model.framesPerMillisecond * 1000).toLong()
+      } ?: importedAudio?.let {
+        coordinator.framesPerSecond = (it.model.framesPerMillisecond * 1000).toLong()
       }
       if (settings.pluginEditionsView != null) {
         myEditablePluginAudio?.editionsModel?.load(settings.pluginEditionsView)
@@ -277,42 +295,6 @@ class Screencast(
       if (settings.importedTranscriptData != null) {
         myEditableImportedAudio?.let { initializeTranscript(settings.importedTranscriptData, it) }
       }
-      installListeners()
-    }
-  }
-
-  private fun installListeners() {
-    addTranscriptListener {
-      // Synchronize edition model with transcript data if it was changed in editor.
-      // Also do not forget to reset coordinates cache.
-      for (audio in myAudios.filterNotNull()) {
-        val data = audio.data
-        if (audio.transcriptPsi == null && data != null) {
-          audio.transcriptFile = createVirtualFile(
-            "$name.transcript",
-            data.text,
-            TranscriptFileType
-          ).also {
-            it.putUserData(SCREENCAST_KEY, this)
-            it.putUserData(AUDIO_KEY, audio)
-          }
-        }
-        with(UndoManager.getInstance(project)) {
-          if (!isRedoInProgress && !isUndoInProgress) {
-            // But transcript should be updated always, otherwise it will cause errors.
-            val nonNullData = data ?: return@addTranscriptListener
-            audio.transcriptPsi?.virtualFile?.updateDoc { doc ->
-              with(PsiDocumentManager.getInstance(project)) {
-                doPostponedOperationsAndUnblockDocument(doc)
-                doc.setText(nonNullData.text)
-                commitDocument(doc)
-              }
-            }
-          }
-        }
-      }
-      val files = myAudios.map { it?.transcriptFile }
-      PsiDocumentManager.getInstance(project).reparseFiles(files.filterNotNull(), true)
     }
   }
 
@@ -357,12 +339,14 @@ class Screencast(
     }
   }
 
-  fun addTranscriptListener(listener: () -> Unit) {
-    myTranscriptListeners += listener
+  fun addTranscriptListener(audio: Audio, listener: () -> Unit) {
+    myAudioTranscriptListeners.computeIfAbsent(audio) {
+      ContainerUtil.newConcurrentSet<() -> Unit>()
+    }.add(listener)
   }
 
-  fun removeTranscriptListener(listener: () -> Unit) {
-    myTranscriptListeners -= listener
+  fun removeTranscriptListener(audio: Audio, listener: () -> Unit) {
+    myAudioTranscriptListeners[audio]?.remove(listener)
   }
 
   fun addCodeListener(listener: () -> Unit) {
@@ -373,14 +357,23 @@ class Screencast(
     myCodeListeners -= listener
   }
 
-  fun addEditionListener(listener: () -> Unit) {
-    myEditionListeners += listener
+  fun addEditionListener(audio: Audio, listener: () -> Unit) {
+    myAudioEditionsListeners.computeIfAbsent(audio) {
+      ContainerUtil.newConcurrentSet<() -> Unit>()
+    }.add(listener)
   }
 
-  fun removeEditionListener(listener: () -> Unit) {
-    myEditionListeners -= listener
+  fun removeEditionListener(audio: Audio, listener: () -> Unit) {
+    myAudioEditionsListeners[audio]?.remove(listener)
   }
 
+  fun addAudioListener(listener: () -> Unit) {
+    myAudioListeners += listener
+  }
+
+  fun removeAudioListener(listener: () -> Unit) {
+    myAudioListeners -= listener
+  }
 
 //  private fun updateRangeHighlighters() {
 //    val document = scriptDocument ?: return
@@ -444,8 +437,9 @@ class Screencast(
       FileEditorManager.getInstance(project).closeFile(file)
     }
     FILES.remove(file)
-    myTranscriptListeners.clear()
-    myEditionListeners.clear()
+    myAudioEditionsListeners.clear()
+    myAudioTranscriptListeners.clear()
+    myAudioListeners.clear()
     myCodeListeners.clear()
   }
 
@@ -466,11 +460,11 @@ class Screencast(
     class NoState(isPlugin: Boolean) : AudioState(isPlugin)
 
     class ExistentState(
-      isPlugin: Boolean,
+      val audio: Audio,
       val editionsView: EditionsView,
       val offsetFrames: Long,
       var data: TranscriptData?
-    ) : AudioState(isPlugin)
+    ) : AudioState(audio.isPlugin)
   }
 
   abstract inner class Audio(
@@ -493,6 +487,45 @@ class Screencast(
       }
   }
 
+  private fun installListeners(audio: EditableAudio) {
+    addTranscriptListener(audio) {
+      with(audio) {
+        val data = data
+        if (transcriptPsi == null && data != null) {
+          transcriptFile = createVirtualFile(
+            "$name.transcript",
+            data.text,
+            TranscriptFileType
+          ).also {
+            it.putUserData(SCREENCAST_KEY, this@Screencast)
+            it.putUserData(AUDIO_KEY, this)
+          }
+        }
+        with(UndoManager.getInstance(project)) {
+          if (!isRedoInProgress && !isUndoInProgress) {
+            // But transcript should be updated always, otherwise it will cause errors.
+            val nonNullData = data ?: return@addTranscriptListener
+            transcriptPsi?.virtualFile?.updateDoc { doc ->
+              with(PsiDocumentManager.getInstance(project)) {
+                doPostponedOperationsAndUnblockDocument(doc)
+                doc.setText(nonNullData.text)
+                commitDocument(doc)
+              }
+            }
+          }
+        }
+        val files = listOfNotNull(transcriptFile)
+        PsiDocumentManager.getInstance(project).reparseFiles(files, true)
+      }
+    }
+  }
+
+  private fun disposeListeners(audio: Audio?) {
+    audio ?: return
+    myAudioEditionsListeners.remove(audio)
+    myAudioTranscriptListeners.remove(audio)
+  }
+
   inner class EditableAudio(
     isPlugin: Boolean,
     override val model: ShiftableAudioModel,
@@ -502,7 +535,7 @@ class Screencast(
     override var transcriptFile: VirtualFile? = null
 
     fun getState(): AudioState {
-      return AudioState.ExistentState(isPlugin, editionsModel.copy(), model.offsetFrames, data)
+      return AudioState.ExistentState(this, editionsModel.copy(), model.offsetFrames, data)
     }
 
     fun renameWord(index: Int, text: String) {
@@ -582,9 +615,9 @@ class Screencast(
     }
   }
 
-
   private inner class ScreencastUndoableAction(private val states: List<Pair<AudioState, AudioState>>) :
     UndoableAction {
+
     private val myAffectedDocuments = mutableSetOf<DocumentReference>()
 
     init {
@@ -644,14 +677,22 @@ class Screencast(
     }
   }
 
-
   inner class ModificationScope {
     val codeModel get() = myCodeModel
     val pluginEditableAudio get() = myEditablePluginAudio
+
     val importedEditableAudio get() = myEditableImportedAudio
 
     fun getEditable(audio: Audio): EditableAudio {
       return if (audio.isPlugin) pluginEditableAudio!! else importedEditableAudio!!
+    }
+
+    fun removeAudio(audio: Audio) {
+      if (audio.isPlugin) {
+        pluginAudio = null
+      } else {
+        importedAudio = null
+      }
     }
   }
 
@@ -660,7 +701,6 @@ class Screencast(
     override fun value(t: Any?): Boolean = !isRunning
     var isRunning = true
   }
-
 
   companion object {
     private const val MAX_UNDO_ACTIONS = 15

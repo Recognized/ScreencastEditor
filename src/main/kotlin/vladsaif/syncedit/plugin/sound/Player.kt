@@ -51,7 +51,8 @@ interface Player : AutoCloseable {
 
     init {
       val fileFormat = SoundProvider.getAudioFileFormat(getAudioStream().buffered())
-      mySource = AudioSystem.getSourceDataLine(fileFormat.format)
+      val decodedFormat = SoundProvider.getWaveformPcmFormat(fileFormat.format)
+      mySource = AudioSystem.getSourceDataLine(decodedFormat)
       if (offsetFrames < 0) {
         myEditionModel.cut(0 until -offsetFrames)
       }
@@ -96,7 +97,7 @@ interface Player : AutoCloseable {
     override fun play(errorHandler: (Throwable) -> Unit) {
       mySource.start()
       thread(start = true) {
-        SoundProvider.getAudioInputStream(getAudioStream()).use { inputStream ->
+        SoundProvider.withWaveformPcmStream(getAudioStream()) { inputStream ->
           try {
             applyEditionImpl(inputStream)
           } catch (ex: Throwable) {

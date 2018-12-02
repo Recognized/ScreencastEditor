@@ -58,7 +58,13 @@ class WaveformController(private val view: WaveformView) : Disposable {
           myScreencast.coordinator.toFrameRange(
             range
           )
-        )
+        ).also {
+          println(
+            "Original: ${myScreencast.coordinator.toFrameRange(
+              range
+            )}, overlayed: $it"
+          )
+        }
       )
     }
     view.stateChanged(ChangeEvent(myAudio.editionsModel))
