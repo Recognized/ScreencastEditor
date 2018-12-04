@@ -12,6 +12,20 @@ object WaveformGraphics {
   private var STATE = ColorState()
   private val LOG = logger<WaveformGraphics>()
 
+  init {
+    LOG.info(
+      """
+      User graphics info:
+        pixScale = ${JBUI.pixScale()}
+        pixScale(1) = ${JBUI.pixScale(1.0f)}
+        scale(1) = ${JBUI.scale(1)}
+        sysScale = ${JBUI.sysScale()}
+        isUserHiDPI = ${JBUI.isUsrHiDPI()}
+        scaleFontSize(12.0f) = ${JBUI.scaleFontSize(12.0f)}
+    """.trimIndent()
+    )
+  }
+
   val AUDIO_PEAK_COLOR = STATE.audioPeak.toJBColor()
   val AUDIO_PLAY_LINE_COLOR = STATE.audioPlayLine.toJBColor()
   val AUDIO_SELECTION_COLOR = STATE.audioSelectedRange.toJBColor()

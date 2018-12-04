@@ -2,7 +2,6 @@ package vladsaif.syncedit.plugin.editor.audioview.waveform
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
-import com.intellij.ui.components.JBPanel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics
@@ -12,6 +11,7 @@ import vladsaif.syncedit.plugin.editor.audioview.waveform.impl.WordHintBalloonLi
 import vladsaif.syncedit.plugin.sound.EditionsModel.EditionType.*
 import vladsaif.syncedit.plugin.util.*
 import java.awt.*
+import javax.swing.JPanel
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 import kotlin.math.min
@@ -19,7 +19,7 @@ import kotlin.math.min
 class WaveformView(
   val model: WaveformModel
 ) :
-  JBPanel<WaveformView>(),
+  JPanel(),
   ChangeListener,
   DraggableXAxis,
   DrawingFixture by DrawingFixture.create(),
@@ -89,6 +89,9 @@ class WaveformView(
   override fun paintComponent(graphics: Graphics?) {
     super.paintComponent(graphics)
     graphics ?: return
+    val copy = graphics.create() as Graphics2D
+    copy.translate(myXAxisDrag.delta + model.pixelOffset.divScaleF().toDouble(), 0.0)
+    copy.scale(1.0 / JBUI.pixScale(), 1.0)
     with(graphics as Graphics2D) {
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       background = UIUtil.getPanelBackground()
@@ -97,7 +100,7 @@ class WaveformView(
       drawWordsBackGround()
       drawSelectedRanges()
       drawEndLine()
-      drawAveragedWaveform(model.audioData[0])
+      copy.drawAveragedWaveform(model.audioData[0])
       drawWords()
       drawMovingBorder()
       val position = model.playFramePosition
@@ -179,22 +182,22 @@ class WaveformView(
         NO_CHANGES -> {
           for (x in screenRange intersectWith workRange) {
             val index = x - offsetChunk - data.skippedChunks
-            val scaledX = (x - skipCut).divScaleF()
+            val scaledX = x - skipCut
             val yTop = (height - (data.highestPeaks[index] * height).toDouble() / data.maxPeak) / 2
             val yBottom = (height - (data.lowestPeaks[index] * height).toDouble() / data.maxPeak) / 2
             color = WaveformGraphics.AUDIO_PEAK_COLOR
-            drawLine(scaledX, yTop.toFloat(), scaledX, yBottom.toFloat())
+            drawLine(scaledX, yTop.toInt(), scaledX, yBottom.toInt())
             val rmsHeight = (data.rootMeanSquare[index] * height).toDouble() / data.maxPeak / 4
             val yAverage = (height - (data.averagePeaks[index] * height).toDouble() / data.maxPeak) / 2
             color = WaveformGraphics.AUDIO_RMS_COLOR
-            drawLine(scaledX, (yAverage - rmsHeight).toFloat(), scaledX, (yAverage + rmsHeight).toFloat())
+            drawLine(scaledX, (yAverage - rmsHeight).toInt(), scaledX, (yAverage + rmsHeight).toInt())
           }
         }
         MUTE -> {
           color = WaveformGraphics.AUDIO_PEAK_COLOR
           for (x in screenRange intersectWith workRange) {
-            val scaledX = (x - skipCut).divScaleF()
-            drawLine(scaledX, (height / 2).toFloat(), scaledX, (height / 2).toFloat())
+            val scaledX = x - skipCut
+            drawLine(scaledX, height / 2, scaledX, height / 2)
           }
         }
         CUT -> skipCut += screenRange.length
