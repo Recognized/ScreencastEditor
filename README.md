@@ -7,9 +7,12 @@ Intellij IDEA plugin for recording and editing IDE screencasts.
 ## Features
 
 **Screencast** is a zip (but with **.scs** extension) of:
-1. Recorded speech (optional)
-2. Transcript of this speech (optional)
-3. UI automation script
+1. UI automation script
+2. Recorded speech (*)
+3. Imported audio (*) 
+4. Transcript of this speech (*)
+
+_(\*) - optional_
 
 Screencast Editor allows user to record their actions inside IDE along with recording sound from microphone,
 then user can edit screencast and reproduce it.
@@ -66,25 +69,26 @@ After recording has been finished, you can san save or discard recorded screenca
 
 ![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.PNG)
 
-* <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/play@2x.png" alt="play" width="16"/> Play whole audio file or selected range only.
-* <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/pause@2x.png" alt="pause" width="16"/> Pause audio.
-* <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/stop@2x.png" alt="stop" width="16"/> Stop playing audio.
-* <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/undo.svg?sanitize=true" width="16" height="16"> Remove cut or mute effect from selected range.
-* <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/delete@2x.png" alt="cut" width="16"/> Cut selected range.
-* <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/volume_off@2x.png" alt="mute" width="16"/> Mute selected range.
-* <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/graph/zoomIn.svg?sanitize=true" width="16" height="16"> Zoom in.
-* <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/graph/zoomOut.svg?sanitize=true" width="16" height="16"> Zoom out.
-* <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/transcript@2x.png" alt="transcript" width="16"/> Open transcript. Start recognition if transcript is not yet known.
-* <img src="https://raw.githubusercontent.com/JetBrains/kotlin/1.2.70/idea/resources/org/jetbrains/kotlin/idea/icons/kotlin_script%402x.png" alt="transcript" width="16"/> Open UI script.
-* <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/menu-saveall.svg?sanitize=true" width="16"> Save changes made to this screencast.
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/transcript@2x.png" alt="transcript" width="16"/> Open transcript. Start recognition if transcript is not yet known.
+- <img src="https://raw.githubusercontent.com/JetBrains/kotlin/1.2.70/idea/resources/org/jetbrains/kotlin/idea/icons/kotlin_script%402x.png" alt="transcript" width="16"/> Open UI script.
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/toolbarDecorator/import.svg?sanitize=true" width="16"> Import audio. (It will be played instead of audio recorded by plugin during screencast replay).
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/menu-saveall.svg?sanitize=true" width="16"> Save changes made to this screencast.
 
-- Hold **Shift**+**Left Mouse Button** to select audio range by words.
-- Hold **Shift**+**Control/Meta** and drag mouse with pressed **Left Mouse Button**
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/play@2x.png" alt="play/pause" width="16"/> Play whole audio file or selected range only.
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/stop@2x.png" alt="stop" width="16"/> Stop playing audio.
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/undo.svg?sanitize=true" width="16" height="16"> Undo. (Standard Undo shortcut)
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/redo.svg?sanitize=true" width="16" height="16"> Redo. (Standard Redo shortcut)
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/delete@2x.png" alt="cut" width="16"/> Cut selected range. (Standard Cut shortcut)
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/volume_on@2x.png" alt="unmute" width="16"/> Unmute selected range.
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/volume_off@2x.png" alt="mute" width="16"/> Mute selected range. (Control + M)
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/graph/zoomIn.svg?sanitize=true" width="16" height="16"> Zoom in. (Control + Plus)
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/graph/zoomOut.svg?sanitize=true" width="16" height="16"> Zoom out. (Control + Minus)
+- <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/general/arrowSplitCenterH.svg?sanitize=true" width="16" height="16"> Toggle drag mode. (Drag whole audio or script along time axis).
+
+- Hold **Control**+**Left Mouse Button** to select audio range by words.
+- Hold **Shift** and drag mouse with pressed **Left Mouse Button**
 to select range precisely (not by words).
-- Hold **Shift** to prevent resetting current selection.
 - Drag word's or script's borders with **Left Mouse Button** to change their time range.
-
-Editions that are made to an audio synchronously adjust script timings.
 
 ![audio-editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/audio_editor1.gif)
 ```(Demo is a little bit old)```
