@@ -114,4 +114,4 @@ Visit this [page](https://cloud.google.com/speech-to-text/docs/quickstart-client
 Before using recognition in plugin you will need to set this key.
 
 **Setting key**:
-_Tools_ menu → _Screencast Editor_ -> _Google Speech Kit_ -> _Set credentials_ (choose downloaded JSON key)
+_Tools_ menu → _Screencast Editor_ → _Google Speech Kit_ → _Set credentials_ (choose downloaded JSON key)

@@ -1,8 +1,7 @@
 package vladsaif.syncedit.plugin.sound
 
 import com.intellij.openapi.application.ApplicationManager
-import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
-import vladsaif.syncedit.plugin.editor.audioview.skipFramesMpeg
+import vladsaif.syncedit.plugin.editor.audioview.skipFrames
 import vladsaif.syncedit.plugin.util.length
 import vladsaif.syncedit.plugin.util.modFloor
 import java.io.InputStream
@@ -131,16 +130,8 @@ interface Player : AutoCloseable {
         when (edition.second) {
           EditionsModel.EditionType.CUT -> {
             while (needBytes != 0L && !mySignalStopReceived) {
-              if (decodedStream is DecodedMpegAudioInputStream) {
-                decodedStream.skipFramesMpeg(buffer, edition.first.length)
-                needBytes = 0L
-              } else {
-                val skipped = decodedStream.skip(needBytes)
-                needBytes -= skipped
-                if (skipped == 0L || mySignalStopReceived) {
-                  break@outer
-                }
-              }
+              decodedStream.skipFrames(buffer, edition.first.length)
+              needBytes = 0L
             }
           }
           EditionsModel.EditionType.MUTE -> {
@@ -156,17 +147,9 @@ interface Player : AutoCloseable {
                 needBytes -= zeroesCount
               }
               if (needSkip != 0L) {
-                if (decodedStream is DecodedMpegAudioInputStream) {
-                  decodedStream.skipFramesMpeg(buffer, edition.first.length)
-                  needSkip = 0L
-                  buffer.fill(0)
-                  continue
-                }
-                val skipped = decodedStream.skip(needSkip)
-                needSkip -= skipped
-                if (skipped == 0L) {
-                  break@outer
-                }
+                decodedStream.skipFrames(buffer, edition.first.length)
+                needSkip = 0L
+                buffer.fill(0)
               }
             }
           }

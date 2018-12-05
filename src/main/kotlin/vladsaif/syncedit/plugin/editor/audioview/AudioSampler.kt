@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin.editor.audioview
 
-import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream
 import vladsaif.syncedit.plugin.util.floorToInt
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.UnsupportedAudioFileException
@@ -28,11 +27,7 @@ class AudioSampler(
       throw UnsupportedAudioFileException("Unsupported format, sample size ($sampleSizeInBits bits) less than byte")
     }
     if (skippedFrames != 0L) {
-      if (underlyingStream is DecodedMpegAudioInputStream) {
-        underlyingStream.skipFramesMpeg(buffer, skippedFrames)
-      } else {
-        underlyingStream.skipFrames(skippedFrames)
-      }
+      underlyingStream.skipFrames(buffer, skippedFrames)
     }
   }
 
@@ -86,18 +81,11 @@ class AudioSampler(
   }
 }
 
-fun AudioInputStream.skipFrames(count: Long) {
-  val bytesToSkip = count * format.frameSize
-  var skippedBytes = 0L
-  while (bytesToSkip != skippedBytes) {
-    skippedBytes += skip(bytesToSkip - skippedBytes)
-  }
-}
-
-fun DecodedMpegAudioInputStream.skipFramesMpeg(buffer: ByteArray, count: Long) {
+fun AudioInputStream.skipFrames(buffer: ByteArray, count: Long) {
   var bytesToSkip = count * format.frameSize
   while (bytesToSkip != 0L) {
     val skipped = read(buffer, 0, min(bytesToSkip.floorToInt(), buffer.size))
     bytesToSkip -= skipped
   }
 }
+
