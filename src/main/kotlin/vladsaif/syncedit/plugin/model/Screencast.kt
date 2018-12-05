@@ -58,14 +58,12 @@ import vladsaif.syncedit.plugin.util.contains
 import vladsaif.syncedit.plugin.util.shift
 import java.io.IOException
 import java.io.InputStream
-import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import java.util.stream.Collectors
 
 class Screencast(
   val project: Project,
@@ -757,12 +755,6 @@ class Screencast(
         }
       }
       return psi as? T
-    }
-
-    private fun readContents(stream: InputStream): String {
-      return stream.bufferedReader(Charset.forName("UTF-8")).use {
-        it.lines().collect(Collectors.joining("\n"))
-      }
     }
 
     private fun VirtualFile.updateDoc(action: (Document) -> Unit) {

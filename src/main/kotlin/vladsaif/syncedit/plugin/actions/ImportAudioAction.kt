@@ -15,8 +15,7 @@ import java.io.IOException
 import javax.sound.sampled.UnsupportedAudioFileException
 import kotlin.coroutines.CoroutineContext
 
-class ImportAudioAction(val screencast: Screencast) :
-  AnAction("Import audio", "Import audio", AllIcons.ToolbarDecorator.Import),
+class ImportAudioAction(val screencast: Screencast) : AnAction(),
   CoroutineScope {
   private var myIsInProgress = false
 
@@ -24,6 +23,14 @@ class ImportAudioAction(val screencast: Screencast) :
     get() = Job()
 
   override fun actionPerformed(e: AnActionEvent) {
+    if (screencast.importedAudio == null) {
+      import()
+    } else {
+      remove()
+    }
+  }
+
+  private fun import() {
     val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
     FileChooser.chooseFile(descriptor, screencast.project, null) { file ->
       myIsInProgress = true
@@ -57,9 +64,24 @@ class ImportAudioAction(val screencast: Screencast) :
     }
   }
 
+  private fun remove() {
+    screencast.performModification {
+      removeImportedAudio()
+    }
+  }
+
   override fun update(e: AnActionEvent) {
     with(e.presentation) {
-      isEnabled = true // TODO
+      isEnabled = true
+      if (screencast.importedAudio == null) {
+        icon = AllIcons.ToolbarDecorator.Import
+        text = "Import audio"
+        description = text
+      } else {
+        icon = AllIcons.General.Remove
+        text = "Remove imported audio"
+        description = text
+      }
     }
   }
 }

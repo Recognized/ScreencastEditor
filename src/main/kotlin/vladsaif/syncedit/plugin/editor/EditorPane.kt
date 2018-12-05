@@ -103,6 +103,9 @@ class EditorPane(
     myWaveforms.filter { it !in currentWaveforms }.forEach { Disposer.dispose(it) }
     myWaveforms.clear()
     myWaveforms.addAll(currentWaveforms)
+    if (myActiveWaveform !in myWaveforms) {
+      myActiveWaveform = null
+    }
     revalidate()
     repaint()
   }
