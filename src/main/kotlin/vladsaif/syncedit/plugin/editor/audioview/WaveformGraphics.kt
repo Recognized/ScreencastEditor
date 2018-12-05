@@ -30,16 +30,16 @@ object WaveformGraphics {
   val AUDIO_PLAY_LINE_COLOR = STATE.audioPlayLine.toJBColor()
   val AUDIO_SELECTION_COLOR = STATE.audioSelectedRange.toJBColor()
   val AUDIO_RMS_COLOR = STATE.audioRms.toJBColor()
+  val HORIZONTAL_LINE = JBColor(Color.BLACK, AUDIO_PEAK_COLOR)
   val MAPPING_HIGHLIGHT_COLOR = STATE.mappingHighlight.toJBColor()
   val WORD_COLOR = STATE.word.toJBColor()
   val WORD_MOVING_SEPARATOR_COLOR = STATE.wordMovingSeparator.toJBColor()
   val WORD_SEPARATOR_COLOR = STATE.wordSeparator.toJBColor()
+  val OUTER_GLOW = STATE.outerGlow.toJBColor()
 
-  val DASH_WIDTH = JBUI.scale(STATE.dashWidthDp)
-  val PEAK_STROKE_WIDTH = JBUI.scale(STATE.peakStrokeWidthDp)
-  val ROOT_MEAN_SQUARE_STROKE_WIDTH = JBUI.scale(STATE.rootMeanSquareStrokeWidthDp)
-  val WORD_SEPARATOR_WIDTH = JBUI.scale(STATE.wordSeparatorWidthDp)
-  val HORIZONTAL_LINE = JBColor(Color.BLACK, AUDIO_PEAK_COLOR)
+  val DASH_WIDTH get() = JBUI.scale(STATE.dashWidthDp)
+  val WORD_SEPARATOR_WIDTH get() = JBUI.scale(STATE.wordSeparatorWidthDp)
+  val OUTER_GLOW_WIDTH get() = JBUI.scale(STATE.outerGlowWidthDp)
 
   private infix fun Color.or(other: Color): Long {
     return (this to other).toLong()
@@ -76,11 +76,11 @@ object WaveformGraphics {
     var word = Color(150, 15, 160) or Color(255, 164, 160)
     var wordSeparator = Color(150, 15, 160) or Color(255, 164, 160)
     var wordMovingSeparator = Color(60, 60, 60) or Color(170, 70, 30)
+    var outerGlow = Color(255, 255, 100) or Color(200, 100, 70)
 
     var dashWidthDp: Float = 10f
-    var peakStrokeWidthDp: Float = 1.0f
-    var rootMeanSquareStrokeWidthDp: Float = 1.0f
     var wordSeparatorWidthDp: Float = 1.0f
+    var outerGlowWidthDp: Float = 2.0f
 
     override fun getState(): ColorState? {
       LOG.info("Getting state")

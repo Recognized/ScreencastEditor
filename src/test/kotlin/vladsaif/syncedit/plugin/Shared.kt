@@ -41,7 +41,7 @@ val IMPORTED_EDITIONS_MODEL get() = DefaultEditionsModel()
 val PLUGIN_AUDIO_PATH: Path = RESOURCES_PATH.resolve("demo.wav").toAbsolutePath()
 const val IMPORTED_AUDIO_OFFSET = 200L
 const val PLUGIN_AUDIO_OFFSET = -100L
-val IMPORTED_AUDIO_PATH: Path = RESOURCES_PATH.resolve("demo.mp3").toAbsolutePath()
+val IMPORTED_AUDIO_PATH: Path = RESOURCES_PATH.resolve("demo.mp3")
 val CODE_MODEL = codeModel {
   block("ideFrame", 1000..12000) {
     statement("invokeAction(\"vladsaif.syncedit.plugin.OpenDiff\")", 1000)

@@ -272,7 +272,10 @@ object ScreencastZipper {
     val importedEditionsView: EditionsView? = null,
     val importedTranscriptData: TranscriptData? = null,
     val script: String = ""
-  )
+  ) {
+    @field:XmlJavaTypeAdapter(PathAdapter::class)
+    val importedAudioAbsolutePath: Path? = importedAudioPath?.toAbsolutePath()
+  }
 
   private class EditionsViewAdapter : XmlAdapter<String, EditionsView>() {
     override fun marshal(v: EditionsView): String {
@@ -286,7 +289,7 @@ object ScreencastZipper {
 
   private class PathAdapter : XmlAdapter<String, Path>() {
     override fun marshal(v: Path): String {
-      return v.toAbsolutePath().toString()
+      return v.toString()
     }
 
     override fun unmarshal(v: String): Path {

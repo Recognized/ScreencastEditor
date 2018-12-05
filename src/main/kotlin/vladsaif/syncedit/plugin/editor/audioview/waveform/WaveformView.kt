@@ -38,6 +38,7 @@ class WaveformView(
     }
   }
   val selectionModel = MultiSelectionModel()
+  var isSelected: Boolean = false
 
   init {
     Disposer.register(model, this)
@@ -89,9 +90,11 @@ class WaveformView(
   override fun paintComponent(graphics: Graphics?) {
     super.paintComponent(graphics)
     graphics ?: return
-    val copy = graphics.create() as Graphics2D
-    copy.translate(myXAxisDrag.delta + model.pixelOffset.divScaleF().toDouble(), 0.0)
-    copy.scale(1.0 / JBUI.pixScale(), 1.0)
+    val waveformLayer = graphics.create() as Graphics2D
+    val outerGlowLayer = if (isSelected) graphics.create() as Graphics2D else null
+    val translateDelta = myXAxisDrag.delta + model.pixelOffset.divScaleF().toDouble()
+    waveformLayer.translate(translateDelta, 0.0)
+    waveformLayer.scale(1.0 / JBUI.pixScale(), 1.0)
     with(graphics as Graphics2D) {
       setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
       background = UIUtil.getPanelBackground()
@@ -100,13 +103,22 @@ class WaveformView(
       drawWordsBackGround()
       drawSelectedRanges()
       drawEndLine()
-      copy.drawAveragedWaveform(model.audioData[0])
+      waveformLayer.drawAveragedWaveform(model.audioData[0])
       drawWords()
       drawMovingBorder()
       val position = model.playFramePosition
       if (position != -1L) {
         drawPosition(position)
       }
+      outerGlowLayer?.drawOuterGlow()
+    }
+  }
+
+  private fun Graphics2D.drawOuterGlow() {
+    color = WaveformGraphics.OUTER_GLOW
+    stroke = BasicStroke(WaveformGraphics.OUTER_GLOW_WIDTH)
+    with(myCoordinator.visibleRange) {
+      drawRect(start, 0, length - 1, height)
     }
   }
 

@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.actions.errorScriptContainsErrors
+import vladsaif.syncedit.plugin.actions.notifyCannotReadImportedAudio
 import vladsaif.syncedit.plugin.editor.Coordinator
 import vladsaif.syncedit.plugin.editor.audioview.waveform.AudioModel
 import vladsaif.syncedit.plugin.editor.audioview.waveform.ShiftableAudioModel
@@ -80,10 +81,16 @@ class Screencast(
   private var isUndoRedoAction: Boolean = false
   private val myUndoStack = ArrayDeque<ScreencastUndoableAction>()
   private val myRedoStack = ArrayDeque<ScreencastUndoableAction>()
-  private inline val myEditablePluginAudio: EditableAudio?
-    get() = pluginAudio as EditableAudio?
-  private inline val myEditableImportedAudio: EditableAudio?
-    get() = importedAudio as EditableAudio?
+  private var myEditablePluginAudio: EditableAudio? = null
+    private set(value) {
+      updateAudio(field, value)
+      field = value
+    }
+  private var myEditableImportedAudio: EditableAudio? = null
+    private set(value) {
+      updateAudio(field, value)
+      field = value
+    }
   private inline val myAudios
     get() = listOf(myEditableImportedAudio, myEditablePluginAudio)
   private val myZip = ScreencastZip(file)
@@ -97,26 +104,8 @@ class Screencast(
   var importedAudioPath: Path? = null
     private set
   val codeModel: CodeModelView = myCodeModel
-  var pluginAudio: Audio? = null
-    private set(value) {
-      if (value == null) {
-        disposeListeners(field)
-      }
-      if (field == null && value != null) {
-        installListeners(value as EditableAudio)
-      }
-      field = value
-    }
-  var importedAudio: Audio? = null
-    private set(value) {
-      if (value == null) {
-        disposeListeners(field)
-      }
-      if (field == null && value != null) {
-        installListeners(value as EditableAudio)
-      }
-      field = value
-    }
+  val pluginAudio: Audio? get() = myEditablePluginAudio
+  val importedAudio: Audio? get() = myEditableImportedAudio
   val coordinator: Coordinator = Coordinator()
   var scriptViewFile: VirtualFile? = null
     private set
@@ -172,8 +161,8 @@ class Screencast(
     )
   }
 
-  @Synchronized
   fun performModification(action: ModificationScope.() -> Unit) {
+    ApplicationManager.getApplication().assertIsDispatchThread()
     if (isInsideModification) {
       ModificationScope().action()
       return
@@ -181,7 +170,9 @@ class Screencast(
     isInsideModification = true
     val audioBefore = getAudioState()
     val codesBefore = codeModel.codes
+    val importedPathBefore = importedAudioPath
     ModificationScope().action()
+    val importedPathAfter = importedAudioPath
     val audioAfter = getAudioState()
     val changes = audioBefore.zip(audioAfter)
     for ((before, after) in changes) {
@@ -194,6 +185,7 @@ class Screencast(
       }
     }
     val undoableAction = ScreencastUndoableAction(audioBefore.zip(audioAfter))
+    undoableAction.importedPathUpdate = importedPathBefore to importedPathAfter
     val codesAfter = codeModel.codes
     if (codesBefore != codesAfter) {
       undoableAction.codeUpdate = codesBefore to codesAfter
@@ -206,6 +198,9 @@ class Screencast(
         }
         if (before.editionsView != after.editionsView) {
           myAudioEditionsListeners[after.audio]?.forEach { it.invoke() }
+        }
+        if (before.audio != after.audio) {
+          myAudioListeners.forEach { it.invoke() }
         }
       }
       if (before is AudioState.NoState && after is AudioState.ExistentState
@@ -264,16 +259,33 @@ class Screencast(
     val settings = myZip.readSettings()
     withContext(Dispatchers.Default) {
       if (myZip.hasPluginAudio) {
-        pluginAudio = EditableAudio(true, SimpleAudioModel { myZip.audioInputStream }).apply {
+        myEditablePluginAudio = EditableAudio(true, SimpleAudioModel { myZip.audioInputStream }).apply {
           model.offsetFrames = settings.pluginAudioOffset
         }
       }
-      val importedPath = settings.importedAudioPath
-      if (importedPath != null) {
-        importedAudio = EditableAudio(false, SimpleAudioModel { Files.newInputStream(importedPath) }).apply {
-          model.offsetFrames = settings.importedAudioOffset
+
+      fun createEditableAudio(path: Path?): EditableAudio? {
+        path ?: return null
+        return try {
+          EditableAudio(false, SimpleAudioModel { Files.newInputStream(path) }).apply {
+            model.offsetFrames = settings.importedAudioOffset
+          }.also {
+            importedAudioPath = path
+          }
+        } catch (ex: Throwable) {
+          LOG.info(ex)
+          null
         }
-        importedAudioPath = importedPath
+      }
+
+      if (settings.importedAudioPath != null) {
+        myEditableImportedAudio = createEditableAudio(settings.importedAudioPath)
+            ?: createEditableAudio(settings.importedAudioAbsolutePath)
+        if (importedAudio == null) {
+          withContext(ExEDT) {
+            notifyCannotReadImportedAudio(project, settings.importedAudioPath, settings.importedAudioAbsolutePath)
+          }
+        }
       }
     }
     withContext(ExEDT) {
@@ -299,37 +311,6 @@ class Screencast(
   }
 
 //  fun getHardSaveFunction(): (progressUpdater: (Double) -> Unit, Path) -> Unit {
-//    val editionState = myEditionModel.copy()
-//    val msDeleted = IntRangeUnion()
-//    if (hasPluginAudio) {
-//      for ((range, type) in editionState.editionsModel) {
-//        if (type == CUT) {
-//          msDeleted.union(coordinator.toMillisecondsRange(range))
-//        }
-//      }
-//    }
-//     Change word ranges because of deletions
-//    val newTranscriptData = data?.words?.asSequence()
-//      ?.map { it.copy(range = msDeleted.impose(it.range)) }
-//      ?.filter { !it.range.empty }
-//      ?.toList()
-//      ?.let { TranscriptData(it, listOf()) }
-//
-//     TODO update offsets
-//    val newScript = scriptDocument?.text
-//
-//    return { progressUpdater, out ->
-//      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
-//      ScreencastZipper(tempFile).use { zipper ->
-//        if (hasPluginAudio) {
-//          zipper.addPluginAudio(Supplier { audioInputStream }, editionState, progressUpdater)
-//        }
-//        newTranscriptData?.let(zipper::addTranscriptData)
-//        newScript?.let(zipper::addScript)
-//      }
-//      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
-//    }
-//  }
 
   fun getLightSaveFunction(): (Path) -> Unit {
     return { out ->
@@ -376,16 +357,48 @@ class Screencast(
   }
 
 //  private fun updateRangeHighlighters() {
-//    val document = scriptDocument ?: return
-//    for (editor in EditorFactory.getInstance().getEditors(document)) {
-//      for ((_, marker) in textMapping) {
-//        (editor as EditorEx).markupModel.addRangeHighlighter(
-//            marker.startOffset,
-//            marker.endOffset,
-//            10000,
-//            editor.colorsScheme.getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES),
-//            HighlighterTargetArea.EXACT_RANGE
+
 //        )
+//            HighlighterTargetArea.EXACT_RANGE
+//            editor.colorsScheme.getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES),
+//            10000,
+//            marker.endOffset,
+//            marker.startOffset,
+//        (editor as EditorEx).markupModel.addRangeHighlighter(
+//      for ((_, marker) in textMapping) {
+//    for (editor in EditorFactory.getInstance().getEditors(document)) {
+//    val document = scriptDocument ?: return
+//  }
+//    }
+//      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
+//      }
+//        newScript?.let(zipper::addScript)
+//        newTranscriptData?.let(zipper::addTranscriptData)
+//        }
+//          zipper.addPluginAudio(Supplier { audioInputStream }, editionState, progressUpdater)
+//        if (hasPluginAudio) {
+//      ScreencastZipper(tempFile).use { zipper ->
+//      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
+//    return { progressUpdater, out ->
+//
+//    val newScript = scriptDocument?.text
+//     TODO update offsets
+//
+//      ?.let { TranscriptData(it, listOf()) }
+//      ?.toList()
+//      ?.filter { !it.range.empty }
+//      ?.map { it.copy(range = msDeleted.impose(it.range)) }
+//    val newTranscriptData = data?.words?.asSequence()
+//     Change word ranges because of deletions
+//    }
+//      }
+//        }
+//          msDeleted.union(coordinator.toMillisecondsRange(range))
+//        if (type == CUT) {
+//      for ((range, type) in editionState.editionsModel) {
+//    if (hasPluginAudio) {
+//    val msDeleted = IntRangeUnion()
+//    val editionState = myEditionModel.copy()
 //      }
 //    }
 //  }
@@ -443,6 +456,15 @@ class Screencast(
     myCodeListeners.clear()
   }
 
+  private fun updateAudio(field: Audio?, value: Audio?) {
+    if (value == null && field != null) {
+      myAudioEditionsListeners.remove(field)
+      myAudioTranscriptListeners.remove(field)
+    }
+    if (field == null && value != null) {
+      installListeners(value as EditableAudio)
+    }
+  }
 
   private fun createVirtualFile(name: String, text: String, type: FileType): VirtualFile {
     return PsiFileFactory.getInstance(project).createFileFromText(
@@ -460,7 +482,7 @@ class Screencast(
     class NoState(isPlugin: Boolean) : AudioState(isPlugin)
 
     class ExistentState(
-      val audio: Audio,
+      val audio: EditableAudio,
       val editionsView: EditionsView,
       val offsetFrames: Long,
       var data: TranscriptData?
@@ -518,12 +540,6 @@ class Screencast(
         PsiDocumentManager.getInstance(project).reparseFiles(files, true)
       }
     }
-  }
-
-  private fun disposeListeners(audio: Audio?) {
-    audio ?: return
-    myAudioEditionsListeners.remove(audio)
-    myAudioTranscriptListeners.remove(audio)
   }
 
   inner class EditableAudio(
@@ -625,44 +641,51 @@ class Screencast(
     }
 
     var codeUpdate: Pair<List<Code>, List<Code>>? = null
+    var importedPathUpdate: Pair<Path?, Path?>? = null
 
     override fun redo() {
       performModification {
         states.map { it.second }.forEach { load(it) }
-        if (codeUpdate != null) {
-          myCodeModel.codes = codeUpdate!!.second
+        codeUpdate?.let {
+          myCodeModel.codes = it.second
+        }
+        importedPathUpdate?.let {
+          importedAudioPath = it.second
         }
       }
     }
 
     override fun undo() {
       performModification {
+        states.map { it.first }.forEach { load(it) }
         if (codeUpdate != null) {
           myCodeModel.codes = codeUpdate!!.first
         }
-        states.map { it.first }.forEach { load(it) }
+        importedPathUpdate?.let {
+          importedAudioPath = it.first
+        }
       }
     }
 
     private fun load(state: AudioState) {
-      val workingAudio = if (state.isPlugin) {
-        myEditablePluginAudio
-      } else {
-        myEditableImportedAudio
-      }
       when (state) {
         is AudioState.NoState -> {
           if (state.isPlugin) {
-            pluginAudio = null
+            myEditablePluginAudio = null
           } else {
-            importedAudio = null
+            myEditableImportedAudio = null
           }
         }
         is AudioState.ExistentState -> {
-          workingAudio?.data = state.data
-          workingAudio?.model?.offsetFrames = state.offsetFrames
-          if (workingAudio?.editionsModel != state.editionsView) {
-            workingAudio?.editionsModel?.load(state.editionsView)
+          if (state.isPlugin) {
+            myEditablePluginAudio = state.audio
+          } else {
+            myEditableImportedAudio = state.audio
+          }
+          state.audio.data = state.data
+          state.audio.model.offsetFrames = state.offsetFrames
+          if (state.audio.editionsModel != state.editionsView) {
+            state.audio.editionsModel.load(state.editionsView)
           }
         }
       }
@@ -680,19 +703,20 @@ class Screencast(
   inner class ModificationScope {
     val codeModel get() = myCodeModel
     val pluginEditableAudio get() = myEditablePluginAudio
-
     val importedEditableAudio get() = myEditableImportedAudio
 
     fun getEditable(audio: Audio): EditableAudio {
       return if (audio.isPlugin) pluginEditableAudio!! else importedEditableAudio!!
     }
 
-    fun removeAudio(audio: Audio) {
-      if (audio.isPlugin) {
-        pluginAudio = null
-      } else {
-        importedAudio = null
-      }
+    fun importAudio(path: Path) {
+      myEditableImportedAudio = EditableAudio(false, SimpleAudioModel { Files.newInputStream(path) })
+      importedAudioPath = path
+    }
+
+    fun removeImportedAudio() {
+      myEditableImportedAudio = null
+      importedAudioPath = null
     }
   }
 

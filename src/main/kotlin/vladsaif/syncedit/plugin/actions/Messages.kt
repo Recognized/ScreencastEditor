@@ -9,26 +9,40 @@ import com.intellij.openapi.vfs.VirtualFile
 import vladsaif.syncedit.plugin.model.Screencast
 import java.nio.file.Path
 
+const val GROUP_ID = "Screencast Editor"
+
 fun showNotification(
   content: String,
   title: String = "Error",
   type: NotificationType = NotificationType.ERROR
 ) {
-  Notifications.Bus.notify(Notification("Screencast Editor", title, content, type))
+  Notifications.Bus.notify(Notification(GROUP_ID, title, content, type))
 }
 
 fun notifySuccessfullySaved(screencast: Screencast) {
   Notification(
-    "Screencast Editor",
+    GROUP_ID,
     "Saved",
     "Successfully saved ${screencast.name}",
     NotificationType.INFORMATION
   ).notify(screencast.project)
 }
 
+fun notifyCannotReadImportedAudio(project: Project, vararg paths: Path?) {
+  Notification(
+    GROUP_ID,
+    "Cannot read imported audio",
+    "Imported audio cannot be read in following paths: (${paths.filterNotNull()
+      .map { it.toAbsolutePath() }
+      .distinct()
+      .joinToString(separator = ",")})",
+    NotificationType.WARNING
+  ).notify(project)
+}
+
 fun errorWhileSaving(screencast: Screencast, throwable: Throwable) {
   Notification(
-    "Screencast Editor",
+    GROUP_ID,
     "Not saved",
     "Error occurred while saving ${screencast.name}: ${throwable.message}",
     NotificationType.ERROR
@@ -37,7 +51,7 @@ fun errorWhileSaving(screencast: Screencast, throwable: Throwable) {
 
 fun errorScriptContainsErrors(screencast: Screencast) {
   Notification(
-    "Screencast Editor",
+    GROUP_ID,
     "Script contains errors",
     "Script of ${screencast.file} is malformed",
     NotificationType.ERROR
@@ -71,7 +85,7 @@ fun errorRequirementsNotSatisfied(project: Project, ex: Exception) {
 
 fun infoCredentialsOK(project: Project?, file: VirtualFile) {
   Notification(
-    "Screencast Editor",
+    GROUP_ID,
     "Credentials",
     "Credentials are successfully installed: \"${file.path}\"",
     NotificationType.INFORMATION
