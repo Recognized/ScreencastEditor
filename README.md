@@ -8,29 +8,29 @@ Intellij IDEA plugin for recording and editing IDE screencasts.
 
 **Screencast** is a zip (but with **.scs** extension) of:
 1. UI automation script
-2. Recorded speech (*)
+2. Recorded audio (*)
 3. Imported audio (*) 
-4. Transcript of this speech (*)
+4. Transcript of zipped audio (*)
 
 _(\*) - optional_
 
-*ScreencastEditor* allows user to record their actions (in form of UI automation script) inside IDE along 
-with recording sound from microphone, then user can edit screencast and reproduce it.
-
-Actions in the script are marked with time offsets
+*ScreencastEditor* allows user to record their actions (in form of UI automation script marked with time offsets which 
+show delay between actions) inside IDE along with recording sound from microphone, then user can edit screencast and 
+reproduce it.
 
 ## Features
 
+✅ Built-in audio editor and player. (Currently supports WAV and MP3 formats).
+✅ Transcript based mode of audio editing.
+✅ If transcript is absent it can be obtained by transcribing recorded speech using external speech recognition service.
+(Now, only Google Speech-to-text API is supported).
+✅ Visual editor of script's actions' timings.
+✅ Script can be edited as regular Kotlin file without time offsets, *ScreencastEditor* will automatically try to guess 
+missing offsets.
+
+
 ![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.PNG)
 
-
-1) Built-in audio editor and player. (Currently supports WAV and MP3 formats).
-2) Transcript based mode of audio editing.
-3) If transcript is absent it can be obtained by transcribing recorded speech using external speech recognition service.
-(Now, only Google Speech-to-text API is supported).
-4) Visual editor of script's actions' timings.
-5) Script can be edited as regular Kotlin file without time offsets, *ScreencastEditor* will automatically try to guess 
-missing offsets.
 
 ## Usage
 <hr>
