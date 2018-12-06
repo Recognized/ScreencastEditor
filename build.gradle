@@ -148,6 +148,7 @@ dependencies {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
+    compile 'io.bretty:console-tree-builder:2.0'
     // https://mvnrepository.com/artifact/com.github.tmatek/zhang-shasha-java
     compile group: 'com.github.tmatek', name: 'zhang-shasha-java', version: '1.01'
     testCompile("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version") {

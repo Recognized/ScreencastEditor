@@ -1,11 +1,22 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
+import com.github.tmatek.zhangshasha.TreeDistance
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.junit.Test
 import vladsaif.syncedit.plugin.createKtFile
 
 class RawTreeTest : LightCodeInsightFixtureTestCase() {
 
+  private fun CodeBlockBuilder.createSomething(): Unit {
+    block("ideFrame", 100..1000) {
+      statement("statement1()", 200)
+      statement("statement2()", 300)
+      block("block3", 400..600) {
+        statement("statement4", 500)
+      }
+    }
+  }
+  
   @Test
   fun `test plain tree building`() {
     val model = codeModel {
@@ -113,34 +124,36 @@ class RawTreeTest : LightCodeInsightFixtureTestCase() {
   @Test
   fun `test whole text shift`() {
     val model = codeModel {
-      block("ideFrame", 1000..10000) {
-        statement("action", 1000)
-        block("editor", 2000..3000) {
-          statement("typeText", 2500)
-        }
-        block("toolsMenu", 4000..9000) {
-          block("chooseFile", 5000..7000) {
-            statement("buttonClick", 6000)
-          }
+      createSomething()
+    }
+    val expected = codeModel {
+      statement("hello", 0)
+      createSomething()
+    }
+    model.assertTransformed(expected, expected.createTextWithoutOffsets().text)
+  }
+
+  fun `test paste block of code`() {
+    val startModel = codeModel {
+      block("bigBlock", 0..2000) {
+        createSomething()
+      }
+    }
+    val expectedModel = codeModel {
+      block("bigBlock", 0..2000) {
+        createSomething()
+        block("anotherBlock", 1000..2000) {
+          statement("click1()", 1333)
+          statement("click2()", 1666)
         }
       }
     }
-    val text = """
-      |hello
-      |ideFrame {
-      |  action
-      |  editor {
-      |    typeText
-      |  }
-      |  toolsMenu {
-      |    chooseFile {
-      |      buttonClick
-      |    }
-      |  }
-      |}
-    """.trimIndent().trimMargin()
-    val expected = CodeModel(listOf(Statement("hello", 0)) + model.codes)
-    model.assertTransformed(expected, text)
+    val text = expectedModel.createTextWithoutOffsets().text
+    val root = startModel.createEditableTree()
+    val mod = TreeDistance.treeDistanceZhangShasha(root, RawTreeNode.buildFromPsi(createKtFile(text)))
+    TreeDistance.transformTree(root, mod)
+    println(RawTreeNode.buildPlainTree(root).joinToString("\n"))
+    startModel.assertTransformed(expectedModel, text)
   }
 
   private fun CodeModel.assertTransformed(expected: CodeModel, text: String) {

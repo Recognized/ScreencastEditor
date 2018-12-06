@@ -3,6 +3,8 @@ package vladsaif.syncedit.plugin.lang.script.psi
 import com.github.tmatek.zhangshasha.EditableTreeNode
 import com.github.tmatek.zhangshasha.TreeNode
 import com.github.tmatek.zhangshasha.TreeOperation
+import io.bretty.console.tree.PrintableTreeNode
+import io.bretty.console.tree.TreePrinter
 import org.jetbrains.kotlin.psi.KtFile
 import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.CodeEntry
 import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.Offset
@@ -32,7 +34,7 @@ sealed class RawTreeData {
   object Root : RawTreeData()
 }
 
-class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
+class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
   private var myParent: TreeNode? = null
   private val myChildren: MutableList<RawTreeNode> = mutableListOf()
 
@@ -42,6 +44,14 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
 
   fun addAll(nodes: Collection<RawTreeNode>) {
     myChildren.addAll(nodes)
+  }
+
+  override fun children(): MutableList<out PrintableTreeNode> {
+    return myChildren
+  }
+
+  override fun name(): String {
+    return data.toString()
   }
 
   override fun setParent(newParent: TreeNode?) {
@@ -75,7 +85,7 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
   }
 
   override fun toString(): String {
-    return "RawTreeNode{$data}"
+    return TreePrinter.toString(this)
   }
 
   override fun getTransformationCost(operation: TreeOperation, other: TreeNode?): Int {
@@ -240,11 +250,15 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode {
           }
         }
         is RawTreeData.Label -> {
-          list.add(CodeEntry(index++, data.data, data.isBlock))
+          val element = CodeEntry(index++, data.data, data.isBlock)
+          list.add(element)
           for (child in node.myChildren) {
             val (newIndex, newLastOffset) = processNode(child, list, index, lastOffset)
             index = newIndex
             lastOffset = newLastOffset
+          }
+          if (element.isBlock) {
+            element.indexRange = element.indexRange.start..index++
           }
         }
       }
