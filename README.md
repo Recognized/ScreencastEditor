@@ -4,7 +4,7 @@ Intellij IDEA plugin for recording and editing IDE screencasts.
 [Test GUI Framework](https://plugins.jetbrains.com/plugin/11114-test-gui-framework) plugin is required to be installed.
 <hr>
 
-## Features
+## Overview
 
 **Screencast** is a zip (but with **.scs** extension) of:
 1. UI automation script
@@ -14,36 +14,23 @@ Intellij IDEA plugin for recording and editing IDE screencasts.
 
 _(\*) - optional_
 
-Screencast Editor allows user to record their actions inside IDE along with recording sound from microphone,
-then user can edit screencast and reproduce it.
+*ScreencastEditor* allows user to record their actions (in form of UI automation script) inside IDE along 
+with recording sound from microphone, then user can edit screencast and reproduce it.
 
-Screencast Editor has built-in audio editor/player enhanced with transcript based editing.
-User can cut or mute pieces of audio and play edited audio.
-If transcript is absent it can be obtained by transcribing recorded speech (if it is present).
-using external speech recognition service. Now, only Google Speech-to-text API is supported. (See section below)
+Actions in the script are marked with time offsets
 
-UI automation script is a Kotlin DSL script that contains information about user actions within IDE
-(such as clicking on buttons, typing, invoking actions, etc.)
+## Features
 
-Usually, it looks like this:
-```kotlin
-ideFrame {
-    invokeAction("com.intellij.ide.actions.CutAction")
-    editor {
-        typeText("Type some text")
-    }
-    toolsMenu {
-        item("ScreencastEditor").click()
-        chooseFile {
-            button("Ok").click()
-        }
-    }
-    //...
-}
-```
+![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.PNG)
 
-Script can be edited as regular Kotlin file, but Screencast Editor also knows time ranges of every code block
-or statement in this script. You can edit them in the bottom of toolbar by dragging corresponding borders.
+
+1) Built-in audio editor and player. (Currently supports WAV and MP3 formats).
+2) Transcript based mode of audio editing.
+3) If transcript is absent it can be obtained by transcribing recorded speech using external speech recognition service.
+(Now, only Google Speech-to-text API is supported).
+4) Visual editor of script's actions' timings.
+5) Script can be edited as regular Kotlin file without time offsets, *ScreencastEditor* will automatically try to guess 
+missing offsets.
 
 ## Usage
 <hr>
@@ -66,9 +53,6 @@ After recording has been finished, you can san save or discard recorded screenca
 2. Right click on file in Project Tree → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Open Screencast_
 
 **Editor**:
-
-![editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/editor1.PNG)
-
 
 - <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/undo.svg?sanitize=true" width="16" height="16"/> Undo. (Standard **Undo** shortcut)
 - <img src="https://raw.githubusercontent.com/JetBrains/intellij-community/master/platform/icons/src/actions/redo.svg?sanitize=true" width="16" height="16"/> Redo. (Standard **Redo** shortcut)
@@ -93,9 +77,6 @@ After recording has been finished, you can san save or discard recorded screenca
 - Hold **Control** and drag with **Left Mouse Button** or click to select audio range by words.
 - Hold **Shift** and drag **Left Mouse Button** to select range precisely (not by words).
 - Drag word's or script's borders with **Left Mouse Button** to change their time range.
-
-![audio-editor1](https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/audio_editor1.gif)
-```(Demo is a little bit old)```
 
 Transcript in editor can be edited via refactoring actions:
 
