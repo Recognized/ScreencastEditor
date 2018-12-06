@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.model
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.undo.DocumentReference
 import com.intellij.openapi.command.undo.DocumentReferenceManager
@@ -75,8 +76,8 @@ class Screencast(
   private val myAudioListeners = ContainerUtil.newConcurrentSet<() -> Unit>()
   private val myCodeListeners = ContainerUtil.newConcurrentSet<() -> Unit>()
   private val myCodeModel = CodeModel(listOf())
-  private var isInsideModification: Boolean = false
-  private var isUndoRedoAction: Boolean = false
+  private var myIsInsideModification: Boolean = false
+  private var myIsUndoRedoAction: Boolean = false
   private val myUndoStack = ArrayDeque<ScreencastUndoableAction>()
   private val myRedoStack = ArrayDeque<ScreencastUndoableAction>()
   private var myEditablePluginAudio: EditableAudio? = null
@@ -89,16 +90,12 @@ class Screencast(
       updateAudio(field, value)
       field = value
     }
-  private inline val myAudios
-    get() = listOf(myEditableImportedAudio, myEditablePluginAudio)
+  private inline val myAudios get() = listOf(myEditableImportedAudio, myEditablePluginAudio)
   private val myZip = ScreencastZip(file)
   private var myScriptFile: VirtualFile? = null
-  inline val name: String
-    get() = file.fileName.toString().substringBefore(ScreencastFileType.dotExtension)
-  inline val scriptViewDoc: Document?
-    get() = scriptViewPsi?.viewProvider?.document
-  inline val scriptDocument: Document?
-    get() = scriptPsi?.viewProvider?.document
+  inline val name: String get() = file.fileName.toString().substringBefore(ScreencastFileType.dotExtension)
+  inline val scriptViewDoc: Document? get() = scriptViewPsi?.viewProvider?.document
+  inline val scriptDocument: Document? get() = scriptPsi?.viewProvider?.document
   var importedAudioPath: Path? = null
     private set
   val codeModel: CodeModelView = myCodeModel
@@ -107,10 +104,8 @@ class Screencast(
   val coordinator: Coordinator = Coordinator()
   var scriptViewFile: VirtualFile? = null
     private set
-  val scriptViewPsi: KtFile?
-    get() = getPsi(project, scriptViewFile)
-  val scriptPsi: KtFile?
-    get() = getPsi(project, myScriptFile)
+  val scriptViewPsi: KtFile? get() = getPsi(project, scriptViewFile)
+  val scriptPsi: KtFile? get() = getPsi(project, myScriptFile)
   val files: List<VirtualFile>
     get() = listOfNotNull(myScriptFile, scriptViewFile) + myAudios.mapNotNull { it?.transcriptFile }
 
@@ -124,11 +119,9 @@ class Screencast(
     EditorFactory.getInstance().addEditorFactoryListener(TranscriptFactoryListener(), this)
   }
 
-  val isUndoAvailable: Boolean
-    get() = !myUndoStack.isEmpty()
+  fun isUndoAvailable(): Boolean = !myUndoStack.isEmpty()
 
-  val isRedoAvailable: Boolean
-    get() = !myRedoStack.isEmpty()
+  fun isRedoAvailable(): Boolean = !myRedoStack.isEmpty()
 
   fun undo() {
     undoOrRedo(true)
@@ -141,7 +134,7 @@ class Screencast(
   private fun undoOrRedo(isUndo: Boolean) {
     val action = (if (isUndo) myUndoStack.pollLast() else myRedoStack.pollLast())
       ?: throw IllegalStateException("Undo/Redo is not available")
-    isUndoRedoAction = true
+    myIsUndoRedoAction = true
     if (isUndo) {
       action.undo()
       myRedoStack.addLast(action)
@@ -149,7 +142,7 @@ class Screencast(
       action.redo()
       myUndoStack.addLast(action)
     }
-    isUndoRedoAction = false
+    myIsUndoRedoAction = false
   }
 
   private fun getAudioState(): List<AudioState> {
@@ -161,15 +154,18 @@ class Screencast(
 
   fun performModification(action: ModificationScope.() -> Unit) {
     ApplicationManager.getApplication().assertIsDispatchThread()
-    if (isInsideModification) {
+    if (myIsInsideModification) {
       ModificationScope().action()
       return
     }
-    isInsideModification = true
+    myIsInsideModification = true
     val audioBefore = getAudioState()
     val codesBefore = codeModel.codes
     val importedPathBefore = importedAudioPath
-    ModificationScope().action()
+    val isCodeUpdated = with(ModificationScope()) {
+      action()
+      isCodeUpdated
+    }
     val importedPathAfter = importedAudioPath
     val audioAfter = getAudioState()
     val changes = audioBefore.zip(audioAfter)
@@ -182,10 +178,10 @@ class Screencast(
         }
       }
     }
-    val undoableAction = ScreencastUndoableAction(audioBefore.zip(audioAfter))
+    val undoableAction = ScreencastUndoableAction(audioBefore.zip(audioAfter), isCodeUpdated)
     undoableAction.importedPathUpdate = importedPathBefore to importedPathAfter
     val codesAfter = codeModel.codes
-    if (codesBefore != codesAfter) {
+    if (codesBefore != codesAfter || isCodeUpdated) {
       undoableAction.codeUpdate = codesBefore to codesAfter
       myCodeListeners.forEach { it() }
     }
@@ -214,14 +210,14 @@ class Screencast(
         }
       }
     }
-    if (!isUndoRedoAction) {
+    if (!myIsUndoRedoAction) {
       myRedoStack.clear()
       myUndoStack.addLast(undoableAction)
       if (myUndoStack.size > MAX_UNDO_ACTIONS) {
         myUndoStack.removeFirst()
       }
     }
-    isInsideModification = false
+    myIsInsideModification = false
   }
 
   private fun initializeScript(script: String) {
@@ -305,10 +301,9 @@ class Screencast(
       if (settings.importedTranscriptData != null) {
         myEditableImportedAudio?.let { initializeTranscript(settings.importedTranscriptData, it) }
       }
+      myAudioTranscriptListeners.forEach { (_, b) -> b.forEach { it.invoke() } }
     }
   }
-
-//  fun getHardSaveFunction(): (progressUpdater: (Double) -> Unit, Path) -> Unit {
 
   fun getLightSaveFunction(): (Path) -> Unit {
     return { out ->
@@ -366,39 +361,6 @@ class Screencast(
 //      for ((_, marker) in textMapping) {
 //    for (editor in EditorFactory.getInstance().getEditors(document)) {
 //    val document = scriptDocument ?: return
-//  }
-//    }
-//      Files.move(tempFile, out, StandardCopyOption.REPLACE_EXISTING)
-//      }
-//        newScript?.let(zipper::addScript)
-//        newTranscriptData?.let(zipper::addTranscriptData)
-//        }
-//          zipper.addPluginAudio(Supplier { audioInputStream }, editionState, progressUpdater)
-//        if (hasPluginAudio) {
-//      ScreencastZipper(tempFile).use { zipper ->
-//      val tempFile = Files.createTempFile("screencast", "." + ScreencastFileType.defaultExtension)
-//    return { progressUpdater, out ->
-//
-//    val newScript = scriptDocument?.text
-//     TODO update offsets
-//
-//      ?.let { TranscriptData(it, listOf()) }
-//      ?.toList()
-//      ?.filter { !it.range.empty }
-//      ?.map { it.copy(range = msDeleted.impose(it.range)) }
-//    val newTranscriptData = data?.words?.asSequence()
-//     Change word ranges because of deletions
-//    }
-//      }
-//        }
-//          msDeleted.union(coordinator.toMillisecondsRange(range))
-//        if (type == CUT) {
-//      for ((range, type) in editionState.editionsModel) {
-//    if (hasPluginAudio) {
-//    val msDeleted = IntRangeUnion()
-//    val editionState = myEditionModel.copy()
-//      }
-//    }
 //  }
 
   private fun synchronizeWithEditionModel(
@@ -475,43 +437,11 @@ class Screencast(
     ).virtualFile
   }
 
-  sealed class AudioState(val isPlugin: Boolean) {
-
-    class NoState(isPlugin: Boolean) : AudioState(isPlugin)
-
-    class ExistentState(
-      val audio: EditableAudio,
-      val editionsView: EditionsView,
-      val offsetFrames: Long,
-      var data: TranscriptData?
-    ) : AudioState(audio.isPlugin)
-  }
-
-  abstract inner class Audio(
-    val isPlugin: Boolean,
-    open val model: AudioModel,
-    open val editionsModel: EditionsView,
-    open val data: TranscriptData?
-  ) {
-    val transcriptPsi: TranscriptPsiFile?
-      get() = getPsi(project, transcriptFile)
-    open val transcriptFile: VirtualFile? = null
-
-    val audioInputStream: InputStream
-      get() {
-        return if (isPlugin) {
-          myZip.audioInputStream
-        } else {
-          Files.newInputStream(importedAudioPath!!)
-        }
-      }
-  }
-
   private fun installListeners(audio: EditableAudio) {
     addTranscriptListener(audio) {
       with(audio) {
         val data = data
-        if (transcriptPsi == null && data != null) {
+        if (transcriptFile == null && data != null) {
           transcriptFile = createVirtualFile(
             "$name.transcript",
             data.text,
@@ -538,6 +468,39 @@ class Screencast(
         PsiDocumentManager.getInstance(project).reparseFiles(files, true)
       }
     }
+  }
+
+  sealed class AudioState(val isPlugin: Boolean) {
+
+    class NoState(isPlugin: Boolean) : AudioState(isPlugin)
+    class ExistentState(
+      val audio: EditableAudio,
+      val editionsView: EditionsView,
+      val offsetFrames: Long,
+      var data: TranscriptData?
+    ) : AudioState(audio.isPlugin)
+
+  }
+
+  abstract inner class Audio(
+    val isPlugin: Boolean,
+    open val model: AudioModel,
+    open val editionsModel: EditionsView,
+    open val data: TranscriptData?
+  ) {
+    val transcriptPsi: TranscriptPsiFile?
+      get() = getPsi(project, transcriptFile)
+
+    open val transcriptFile: VirtualFile? = null
+    val audioInputStream: InputStream
+      get() {
+        return if (isPlugin) {
+          myZip.audioInputStream
+        } else {
+          Files.newInputStream(importedAudioPath!!)
+        }
+      }
+
   }
 
   inner class EditableAudio(
@@ -617,19 +580,26 @@ class Screencast(
     override fun documentChanged(event: DocumentEvent) {
       myExpired.isRunning = false
       myExpired = SimpleExpired()
-      ApplicationManager.getApplication().invokeLater(Runnable {
-        PsiDocumentManager.getInstance(project).performForCommittedDocument(scriptViewDoc!!) {
-          if (!PsiTreeUtil.hasErrorElements(scriptViewPsi!!)) {
-            performModification {
-              codeModel.codes = codeModel.transformedByScript(scriptViewPsi!!).codes
+      // If inside undo/redo action then text is set by the model, no model update required
+      if (!myIsUndoRedoAction) {
+        ApplicationManager.getApplication().invokeLater(Runnable {
+          PsiDocumentManager.getInstance(project).performForCommittedDocument(scriptViewDoc!!) {
+            if (!PsiTreeUtil.hasErrorElements(scriptViewPsi!!)) {
+              performModification {
+                codeModel.codes = codeModel.transformedByScript(scriptViewPsi!!).codes
+                notifyCodeUpdated()
+              }
             }
           }
-        }
-      }, myExpired)
+        }, myExpired)
+      }
     }
   }
 
-  private inner class ScreencastUndoableAction(private val states: List<Pair<AudioState, AudioState>>) :
+  private inner class ScreencastUndoableAction(
+    private val states: List<Pair<AudioState, AudioState>>,
+    private val isCodeUpdated: Boolean
+  ) :
     UndoableAction {
 
     private val myAffectedDocuments = mutableSetOf<DocumentReference>()
@@ -650,6 +620,7 @@ class Screencast(
         importedPathUpdate?.let {
           importedAudioPath = it.second
         }
+        codeUndoRedo(isUndo = false)
       }
     }
 
@@ -661,6 +632,42 @@ class Screencast(
         }
         importedPathUpdate?.let {
           importedAudioPath = it.first
+        }
+        codeUndoRedo(isUndo = true)
+      }
+    }
+
+    private fun codeUndoRedo(isUndo: Boolean) {
+      if (isCodeUpdated) {
+        val newCode = (if (isUndo) codeUpdate?.first else codeUpdate?.second) ?: return
+        scriptViewFile?.let {
+          val editors = FileEditorManager.getInstance(project).getEditors(it)
+          if (editors.isNotEmpty()) {
+            // Take one, because all editors have represent the same file
+            val editor = editors.first()
+            with(UndoManager.getInstance(project)) {
+              if (!isUndo && isRedoAvailable(editor)
+                || isUndo && isUndoAvailable(editor)
+              ) {
+                if (isUndo) {
+                  undo(editor)
+                } else {
+                  redo(editor)
+                }
+              } else {
+                CommandProcessor.getInstance().executeCommand(project, {
+                  runWriteAction {
+                    scriptViewDoc!!.setText(CodeModel(newCode).createTextWithoutOffsets().text)
+                  }
+                }, "rewrite code", "Screencast Editor")
+              }
+            }
+            runWriteAction {
+              // Important: commit and wait for commitment, otherwise program
+              // will exit undo/redo action and unnecessary change will be made
+              PsiDocumentManager.getInstance(project).commitDocument(scriptViewDoc!!)
+            }
+          }
         }
       }
     }
@@ -702,6 +709,8 @@ class Screencast(
     val codeModel get() = myCodeModel
     val pluginEditableAudio get() = myEditablePluginAudio
     val importedEditableAudio get() = myEditableImportedAudio
+    var isCodeUpdated: Boolean = false
+      private set
 
     fun getEditable(audio: Audio): EditableAudio {
       return if (audio.isPlugin) pluginEditableAudio!! else importedEditableAudio!!
@@ -715,6 +724,10 @@ class Screencast(
     fun removeImportedAudio() {
       myEditableImportedAudio = null
       importedAudioPath = null
+    }
+
+    fun notifyCodeUpdated() {
+      isCodeUpdated = true
     }
   }
 

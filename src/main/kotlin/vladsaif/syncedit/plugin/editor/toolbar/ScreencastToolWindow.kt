@@ -61,6 +61,7 @@ object ScreencastToolWindow {
     addForAllLeaves(FocusRequestor(controlPanel, screencast.project), controlPanel)
     content.setPreferredFocusedComponent { controlPanel }
     Disposer.register(content, controlPanel)
+    Disposer.register(content, screencast)
     toolWindow.contentManager.removeAllContents(true)
     toolWindow.contentManager.addContent(content)
     toolWindow.setAvailable(true, null)

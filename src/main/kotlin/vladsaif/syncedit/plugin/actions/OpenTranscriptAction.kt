@@ -2,11 +2,15 @@ package vladsaif.syncedit.plugin.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.ui.Messages
 import icons.ScreencastEditorIcons
+import vladsaif.syncedit.plugin.actions.tools.SetCredentials
 import vladsaif.syncedit.plugin.model.Screencast
 import vladsaif.syncedit.plugin.recognition.SpeechRecognizer
+import vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit
 import java.io.IOException
 
 class OpenTranscriptAction(
@@ -33,10 +37,26 @@ class OpenTranscriptAction(
           }
         }
       } catch (ex: IOException) {
-        errorRequirementsNotSatisfied(screencast.project, ex)
+        if (SpeechRecognizer.getCurrentRecognizer() is GSpeechKit) {
+          suggestSetCredentials(e)
+        } else {
+          errorRequirementsNotSatisfied(screencast.project, ex)
+        }
         myIsInProgress = false
       }
       else -> myIsInProgress = false
+    }
+  }
+
+  private fun suggestSetCredentials(e: AnActionEvent) {
+    val result = Messages.showYesNoDialog(
+      screencast.project,
+      "Credentials for cloud service account should be set before recognition is used. Would you like to set them?",
+      "Credentials are not set",
+      null
+    )
+    if (result == Messages.YES) {
+      ActionUtil.invokeAction(SetCredentials(), e.dataContext, e.place, e.inputEvent, null)
     }
   }
 
