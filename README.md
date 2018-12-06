@@ -21,10 +21,14 @@ reproduce it.
 ## Features
 
 ✅ Built-in audio editor and player. (Currently supports WAV and MP3 formats).
+
 ✅ Transcript based mode of audio editing.
+
 ✅ If transcript is absent it can be obtained by transcribing recorded speech using external speech recognition service.
 (Now, only Google Speech-to-text API is supported).
+
 ✅ Visual editor of script's actions' timings.
+
 ✅ Script can be edited as regular Kotlin file without time offsets, *ScreencastEditor* will automatically try to guess 
 missing offsets.
 
