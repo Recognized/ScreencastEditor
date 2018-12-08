@@ -68,7 +68,7 @@ After recording has been finished, you can san save or discard recorded screenca
 <hr/>
 
 - <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/play@2x.png" alt="play pause" width="16" height="16"/> Play whole audio file or selected range only. (**Control**+**P**)
-- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/stop@2x.png" alt="stop" width="16" height="16"/> Stop playing audio.
+- <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/stop@2x.png" alt="stop" width="16" height="16"/> Stop playing audio. (**Control**+**Alt**+**P**)
 - <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/delete@2x.png" alt="cut" width="16" height="16"/> Cut selected range. (Standard **Cut** shortcut)
 - <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/volume_on@2x.png" alt="unmute" width="16" height="16"/> Unmute selected range.
 - <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/resources/icons/volume_off@2x.png" alt="mute" width="16" height="16"/> Mute selected range. (**Control**+**M**)
@@ -94,9 +94,16 @@ Transcript in editor can be edited via refactoring actions:
 In order to use speech recognition you need to obtain key to Service Account in Google Cloud Platform.
 
 Visit this [page](https://cloud.google.com/speech-to-text/docs/quickstart-client-libraries) and do the first step 
-(_Set up a GCP Console Project_).
+(_Set up a GCP Console Project, create service account and download private JSON key_).
 
 Before using recognition in plugin you will need to set this key.
 
 **Setting key**:
 _Tools_ menu → _Screencast Editor_ → _Google Speech Kit_ → _Set credentials_ (choose downloaded JSON key)
+
+Service account must have rights to access Speech-to-Text API and to create files in Google Cloud Storage 
+(in order to temporarily store long audio files).
+
+You may manage accounts rights on this [page](https://cloud.google.com/iam/docs/granting-roles-to-service-accounts).
+
+

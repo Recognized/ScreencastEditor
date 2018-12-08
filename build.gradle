@@ -135,6 +135,7 @@ project.afterEvaluate {
 dependencies {
     compile group: "javazoom", name: "jlayer", version: "1.0.1"
     compile group: "com.googlecode.soundlibs", name: "mp3spi", version: "1.9.5.4"
+    compile 'com.google.cloud:google-cloud-storage:1.55.0'
     compile "com.google.cloud:google-cloud-speech:0.56.0-beta"
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.0.0") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
