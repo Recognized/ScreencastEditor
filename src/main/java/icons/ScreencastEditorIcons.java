@@ -14,7 +14,7 @@ public interface ScreencastEditorIcons {
   Icon PAUSE_TOOL_WINDOW = IconLoader.getIcon("/icons/pause_tool_window.png");
   Icon PLAY = IconLoader.getIcon("/icons/play.png");
   Icon PLAY_TOOL_WINDOW = IconLoader.getIcon("/icons/play_tool_window.png");
-  Icon SCREENCAST = IconLoader.getIcon("/icons/screencast.png");
+  Icon SCREENCAST = IconLoader.getIcon("/icons/Screencast.png");
   Icon SCREENCAST_TOOL_WINDOW = IconLoader.getIcon("/icons/screencast_tool_window.png");
   Icon SETTINGS = IconLoader.getIcon("/icons/settings.png");
   Icon SETTINGS_TOOL_WINDOW = IconLoader.getIcon("/icons/settings_tool_window.png");
