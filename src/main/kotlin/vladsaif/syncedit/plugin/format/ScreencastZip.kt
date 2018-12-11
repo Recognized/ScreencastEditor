@@ -1,7 +1,6 @@
 package vladsaif.syncedit.plugin.format
 
-import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.PLUGIN_AUDIO
-import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.SETTINGS
+import vladsaif.syncedit.plugin.format.ScreencastZipper.EntryType.*
 import java.io.InputStream
 import java.nio.file.Path
 import java.util.zip.ZipFile
@@ -9,8 +8,11 @@ import javax.xml.bind.JAXB
 
 class ScreencastZip(val path: Path) {
   val hasPluginAudio: Boolean by lazy { isDataSet(PLUGIN_AUDIO) }
+  val hasImportedAudio: Boolean by lazy { isDataSet(IMPORTED_AUDIO) }
   val audioInputStream: InputStream
     get() = getInputStreamByType(PLUGIN_AUDIO) ?: throw IllegalStateException("Audio is not set")
+  val importedAudioInputStream: InputStream
+    get() = getInputStreamByType(IMPORTED_AUDIO) ?: throw IllegalStateException("Imported audio is not set")
 
   fun readSettings(): ScreencastZipper.Settings {
     return getInputStreamByType(SETTINGS)?.use {

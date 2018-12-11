@@ -104,6 +104,6 @@ _Tools_ menu → _Screencast Editor_ → _Google Speech Kit_ → _Set credential
 Service account must have rights to access Speech-to-Text API and to create files in Google Cloud Storage 
 (in order to temporarily store long audio files).
 
-You may manage accounts rights on this [page](https://cloud.google.com/iam/docs/granting-roles-to-service-accounts).
+You may manage accounts' rights on this [page](https://cloud.google.com/iam/docs/granting-roles-to-service-accounts).
 
 

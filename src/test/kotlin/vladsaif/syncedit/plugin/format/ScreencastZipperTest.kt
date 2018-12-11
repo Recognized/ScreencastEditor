@@ -3,6 +3,7 @@ package vladsaif.syncedit.plugin.format
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import vladsaif.syncedit.plugin.IMPORTED_AUDIO_PATH
 import vladsaif.syncedit.plugin.PLUGIN_AUDIO_PATH
 import vladsaif.syncedit.plugin.SETTINGS
 import vladsaif.syncedit.plugin.model.Screencast
@@ -18,6 +19,7 @@ class ScreencastZipperTest : LightCodeInsightFixtureTestCase() {
   private val myScreencast by lazy {
     ScreencastZipper.createZip(myTempFile) {
       addPluginAudio(Files.newInputStream(PLUGIN_AUDIO_PATH))
+      addImportedAudio(Files.newInputStream(IMPORTED_AUDIO_PATH))
       setSettings(SETTINGS)
     }
     val screencast = Screencast(project, myTempFile)

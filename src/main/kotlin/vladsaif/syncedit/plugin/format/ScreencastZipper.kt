@@ -14,7 +14,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -35,13 +34,15 @@ object ScreencastZipper {
       screencast.pluginAudio?.let { audio ->
         it.addPluginAudio(audio.audioInputStream)
       }
+      screencast.importedAudio?.let { audio ->
+        it.addImportedAudio(audio.audioInputStream)
+      }
     }
   }
 
   fun getSettings(screencast: Screencast): Settings {
     with(screencast) {
       return Settings(
-        importedAudioPath = importedAudioPath,
         importedAudioOffset = importedAudio?.model?.offsetFrames ?: 0L,
         importedEditionsView = importedAudio?.editionsModel,
         importedTranscriptData = importedAudio?.data,
@@ -72,12 +73,13 @@ object ScreencastZipper {
       mySettings = settings
     }
 
-    fun usePluginAudioOutputStream(name: String? = null, block: (OutputStream) -> Unit) {
-      if (!myEntrySet.add(EntryType.PLUGIN_AUDIO)) {
+    fun useAudioOutputStream(isPlugin: Boolean, name: String? = null, block: (OutputStream) -> Unit) {
+      val entry = if (isPlugin) EntryType.PLUGIN_AUDIO else EntryType.IMPORTED_AUDIO
+      if (!myEntrySet.add(entry)) {
         throw IllegalStateException("Audio is already zipped.")
       }
-      val zipEntry = ZipEntry(name ?: "audio")
-      zipEntry.comment = EntryType.PLUGIN_AUDIO.name
+      val zipEntry = ZipEntry(name ?: "audio_"+entry.name)
+      zipEntry.comment = entry.name
       myZipStream.putNextEntry(zipEntry)
       val outputStream = object : OutputStream() {
         override fun write(b: Int) {
@@ -100,15 +102,19 @@ object ScreencastZipper {
     }
 
     fun addPluginAudio(inputStream: InputStream) {
-      usePluginAudioOutputStream { output ->
+      useAudioOutputStream(isPlugin = true) { output ->
         inputStream.buffered().use { input ->
           input.transferTo(output)
         }
       }
     }
 
-    fun addImportedAudio(path: Path?) {
-      mySettings = mySettings.copy(importedAudioPath = path)
+    fun addImportedAudio(inputStream: InputStream) {
+      useAudioOutputStream(isPlugin = false) { output ->
+        inputStream.buffered().use { input ->
+          input.transferTo(output)
+        }
+      }
     }
 
 //    fun addPluginAudio(
@@ -266,16 +272,11 @@ object ScreencastZipper {
     val pluginEditionsView: EditionsView? = null,
     val pluginTranscriptData: TranscriptData? = null,
     val importedAudioOffset: Long = 0,
-    @field:XmlJavaTypeAdapter(PathAdapter::class)
-    val importedAudioPath: Path? = null,
     @field:XmlJavaTypeAdapter(EditionsViewAdapter::class)
     val importedEditionsView: EditionsView? = null,
     val importedTranscriptData: TranscriptData? = null,
     val script: String = ""
-  ) {
-    @field:XmlJavaTypeAdapter(PathAdapter::class)
-    val importedAudioAbsolutePath: Path? = importedAudioPath?.toAbsolutePath()
-  }
+  )
 
   private class EditionsViewAdapter : XmlAdapter<String, EditionsView>() {
     override fun marshal(v: EditionsView): String {
@@ -287,18 +288,9 @@ object ScreencastZipper {
     }
   }
 
-  private class PathAdapter : XmlAdapter<String, Path>() {
-    override fun marshal(v: Path): String {
-      return v.toString()
-    }
-
-    override fun unmarshal(v: String): Path {
-      return Paths.get(v)
-    }
-  }
-
   enum class EntryType {
     PLUGIN_AUDIO,
+    IMPORTED_AUDIO,
     SETTINGS
   }
 }

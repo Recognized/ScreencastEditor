@@ -28,14 +28,11 @@ fun notifySuccessfullySaved(screencast: Screencast) {
   ).notify(screencast.project)
 }
 
-fun notifyCannotReadImportedAudio(project: Project, vararg paths: Path?) {
+fun notifyCannotReadImportedAudio(project: Project) {
   Notification(
     GROUP_ID,
     "Cannot read imported audio",
-    "Imported audio cannot be read in following paths: (${paths.filterNotNull()
-      .map { it.toAbsolutePath() }
-      .distinct()
-      .joinToString(separator = ",")})",
+    "Imported audio cannot be read.",
     NotificationType.WARNING
   ).notify(project)
 }

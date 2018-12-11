@@ -59,7 +59,6 @@ val CODE_MODEL = codeModel {
 }
 val SETTINGS = ScreencastZipper.Settings(
   importedAudioOffset = IMPORTED_AUDIO_OFFSET,
-  importedAudioPath = IMPORTED_AUDIO_PATH,
   importedEditionsView = IMPORTED_EDITIONS_MODEL,
   importedTranscriptData = PLUGIN_TRANSCRIPT_DATA,
   pluginAudioOffset = PLUGIN_AUDIO_OFFSET,

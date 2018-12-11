@@ -17,7 +17,7 @@ class ScreencastTest : LightCodeInsightFixtureTestCase() {
 
   override fun setUp() {
     super.setUp()
-    prepareTestScreencast(project, PLUGIN_AUDIO_PATH, SETTINGS)
+    prepareTestScreencast(project, PLUGIN_AUDIO_PATH, IMPORTED_AUDIO_PATH, SETTINGS)
   }
 
   private fun withModel(block: Screencast.() -> Unit) {
@@ -81,7 +81,8 @@ class ScreencastTest : LightCodeInsightFixtureTestCase() {
 
     fun prepareTestScreencast(
       project: Project,
-      audio: Path?,
+      pluginAudio: Path?,
+      importedAudio: Path?,
       settings: ScreencastZipper.Settings
     ) {
       val out = SCREENCAST_PATH
@@ -90,7 +91,13 @@ class ScreencastTest : LightCodeInsightFixtureTestCase() {
         runBlocking {
           screencast.initialize()
         }
-        if (consistentWith(audio, settings, screencast)) {
+        if (consistentWith(
+            pluginAudio = pluginAudio,
+            importedAudio = importedAudio,
+            settings = settings,
+            screencast = screencast
+          )
+        ) {
           println("Cache is consistent.")
           return
         }
@@ -98,26 +105,38 @@ class ScreencastTest : LightCodeInsightFixtureTestCase() {
       println("Cache is not consistent. Recreating: $out")
       ScreencastZipper.createZip(out) {
         setSettings(settings)
-        if (audio != null) {
-          addPluginAudio(Files.newInputStream(audio))
+        if (pluginAudio != null) {
+          addPluginAudio(Files.newInputStream(pluginAudio))
+        }
+        if (importedAudio != null) {
+          addImportedAudio(Files.newInputStream(importedAudio))
         }
       }
     }
 
     fun consistentWith(
-      audio: Path?,
+      pluginAudio: Path?,
+      importedAudio: Path?,
       settings: ScreencastZipper.Settings,
       screencast: Screencast
     ): Boolean {
-      if (audio != null && screencast.pluginAudio != null) {
-        val consistent = Files.newInputStream(audio).use { cached ->
-          cached.buffered().use(InputStream::sha1sum) == screencast.pluginAudio!!.audioInputStream.buffered().use(
+      var consistent = isAudioConsistent(pluginAudio, screencast.pluginAudio?.let { { it.audioInputStream } })
+      consistent = consistent and
+          isAudioConsistent(importedAudio, screencast.importedAudio?.let { { it.audioInputStream } })
+      consistent = consistent and (settings == ScreencastZipper.getSettings(screencast))
+      return consistent
+    }
+
+    private fun isAudioConsistent(audio: Path?, streamSource: (() -> InputStream)?): Boolean {
+      if (audio != null && streamSource != null) {
+        return Files.newInputStream(audio).use { cached ->
+          cached.buffered().use(InputStream::sha1sum) == streamSource().buffered().use(
             InputStream::sha1sum
           )
         }
-        if (!consistent) return false
+      } else {
+        return (audio == null) == (streamSource == null)
       }
-      return settings == ScreencastZipper.getSettings(screencast)
     }
   }
 }

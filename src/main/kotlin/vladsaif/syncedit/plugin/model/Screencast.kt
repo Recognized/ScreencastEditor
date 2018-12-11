@@ -258,13 +258,12 @@ class Screencast(
         }
       }
 
-      fun createEditableAudio(path: Path?): EditableAudio? {
-        path ?: return null
+      fun createEditableAudio(source: () -> InputStream): EditableAudio? {
         return try {
-          EditableAudio(false, SimpleAudioModel { Files.newInputStream(path) }).apply {
+          EditableAudio(false, SimpleAudioModel(source)).apply {
             model.offsetFrames = settings.importedAudioOffset
           }.also {
-            importedAudioPath = path
+            importedAudioPath = null
           }
         } catch (ex: Throwable) {
           LOG.info(ex)
@@ -272,12 +271,11 @@ class Screencast(
         }
       }
 
-      if (settings.importedAudioPath != null) {
-        myEditableImportedAudio = createEditableAudio(settings.importedAudioPath)
-            ?: createEditableAudio(settings.importedAudioAbsolutePath)
+      if (myZip.hasImportedAudio) {
+        myEditableImportedAudio = createEditableAudio { myZip.importedAudioInputStream }
         if (importedAudio == null) {
           withContext(ExEDT) {
-            notifyCannotReadImportedAudio(project, settings.importedAudioPath, settings.importedAudioAbsolutePath)
+            notifyCannotReadImportedAudio(project)
           }
         }
       }
@@ -496,8 +494,10 @@ class Screencast(
       get() {
         return if (isPlugin) {
           myZip.audioInputStream
-        } else {
+        } else if (importedAudioPath != null) {
           Files.newInputStream(importedAudioPath!!)
+        } else {
+          myZip.importedAudioInputStream
         }
       }
 
