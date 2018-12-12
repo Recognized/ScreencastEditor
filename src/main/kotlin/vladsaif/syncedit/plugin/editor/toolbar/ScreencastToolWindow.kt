@@ -21,6 +21,7 @@ import vladsaif.syncedit.plugin.actions.SaveAction
 import vladsaif.syncedit.plugin.actions.openScript
 import vladsaif.syncedit.plugin.editor.EditorPane
 import vladsaif.syncedit.plugin.editor.audioview.waveform.WaveformController
+import vladsaif.syncedit.plugin.editor.scriptview.ScriptEditorFrame
 import vladsaif.syncedit.plugin.model.Screencast
 import java.awt.event.MouseEvent
 import javax.swing.Icon
@@ -101,6 +102,7 @@ object ScreencastToolWindow {
       add("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
         openScript(screencast)
       })
+      add("Edit manually", "Edit script manually", KotlinIcons.LAMBDA, { ScriptEditorFrame(screencast).show() })
       separator()
       add(ImportAudioAction(screencast), "Import audio")
       separator()

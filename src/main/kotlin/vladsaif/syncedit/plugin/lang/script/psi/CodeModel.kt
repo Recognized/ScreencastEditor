@@ -87,20 +87,18 @@ class CodeModel(blocks: List<Code>) : CodeModelView {
 
   override fun serialize(): String {
     val builder = MarkedTextBuilder(true)
-    val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
     for (code in codes) {
-      lastOffset = serializeImpl(builder, code, lastOffset, indent)
+      lastOffset = serializeImpl(builder, code, lastOffset)
     }
     return builder.done().text
   }
 
   fun createTextWithoutOffsets(): MarkedText {
     val builder = MarkedTextBuilder(false)
-    val indent = Code.INDENTATION_UNIT
     var lastOffset = 0
     for (code in codes) {
-      lastOffset = serializeImpl(builder, code, lastOffset, indent)
+      lastOffset = serializeImpl(builder, code, lastOffset)
     }
     return builder.done()
   }
@@ -109,32 +107,28 @@ class CodeModel(blocks: List<Code>) : CodeModelView {
     builder: MarkedTextBuilder,
     code: Code,
     lastOffset: Int,
-    indent: String,
     indentation: Int = 0
   ): Int {
     with(builder) {
       var localLastOffset = lastOffset
-      appendOffset(
-        indent * indentation
-            + TimeOffsetParser.createTimeOffset(code.startTime - localLastOffset)
-            + "\n"
-      )
+      val indent = Code.INDENTATION_UNIT * indentation
+      appendOffset(indentation, code.startTime - localLastOffset)
       localLastOffset = code.startTime
       when (code) {
         is Statement -> {
-          append(indent * indentation)
+          append(indent)
           append(code.code)
           append("\n")
         }
         is Block -> {
-          append(indent * indentation)
+          append(indent)
           append(code.code)
           append(" {\n")
           for (inner in code.innerBlocks) {
-            localLastOffset = serializeImpl(builder, inner, localLastOffset, indent, indentation + 1)
+            localLastOffset = serializeImpl(builder, inner, localLastOffset, indentation + 1)
           }
-          append(indent * indentation + "}\n")
-          appendOffset(indent * indentation + TimeOffsetParser.createTimeOffset(code.endTime - localLastOffset) + "\n")
+          append("$indent}\n")
+          appendOffset(indentation, code.endTime - localLastOffset)
           localLastOffset = code.endTime
         }
       }
@@ -231,23 +225,45 @@ class CodeModel(blocks: List<Code>) : CodeModelView {
     return currentNode
   }
 
-  class MarkedTextBuilder(val withOffsets: Boolean = true) {
+  class MarkedTextBuilder(private val withOffsets: Boolean = true) {
     private val myBuilder = StringBuilder()
     private val myRanges = mutableListOf<IntRange>()
+    private var myOffsetAccumulator = 0
+    private var myIndent = 0
+    private var myHasOffset = false
 
     fun append(str: String) {
+      pushOffset()
       myBuilder.append(str)
     }
 
-    fun appendOffset(str: String) {
-      if (withOffsets) {
-        myBuilder.append(str)
-      } else {
-        myRanges.add(myBuilder.length until myBuilder.length + str.length)
+    private fun pushOffset() {
+      if (!myHasOffset) {
+        return
       }
+      myHasOffset = false
+      val text = Code.INDENTATION_UNIT * myIndent + TimeOffsetParser.createTimeOffset(myOffsetAccumulator) + "\n"
+      myRanges.add(myBuilder.length until myBuilder.length + text.length)
+      if (withOffsets) {
+        myBuilder.append(text)
+      }
+      myOffsetAccumulator = 0
+      myIndent = 0
     }
 
-    fun done() = MarkedText(myBuilder.toString(), myRanges)
+    fun appendOffset(indent: Int, delta: Int) {
+      myHasOffset = true
+      myOffsetAccumulator += delta
+      myIndent = indent
+      pushOffset()
+    }
+
+    fun done(): MarkedText {
+      if (myOffsetAccumulator != 0) {
+        pushOffset()
+      }
+      return MarkedText(myBuilder.toString(), myRanges)
+    }
   }
 
   companion object {
