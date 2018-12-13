@@ -4,7 +4,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.application.runWriteAction
-import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.undo.DocumentReference
 import com.intellij.openapi.command.undo.DocumentReferenceManager
 import com.intellij.openapi.command.undo.UndoManager
@@ -78,8 +77,9 @@ class Screencast(
   private val myCodeModel = CodeModel(listOf())
   private var myIsInsideModification: Boolean = false
   private var myIsUndoRedoAction: Boolean = false
-  private val myUndoStack = ArrayDeque<ScreencastUndoableAction>()
-  private val myRedoStack = ArrayDeque<ScreencastUndoableAction>()
+  private var myForcedTextUpdate: Boolean = false
+  private val myUndoStack: Deque<ScreencastUndoableAction> = ArrayDeque<ScreencastUndoableAction>()
+  private val myRedoStack: Deque<ScreencastUndoableAction> = ArrayDeque<ScreencastUndoableAction>()
   private var myEditablePluginAudio: EditableAudio? = null
     private set(value) {
       updateAudio(field, value)
@@ -155,6 +155,7 @@ class Screencast(
   fun performModification(action: ModificationScope.() -> Unit) {
     ApplicationManager.getApplication().assertIsDispatchThread()
     if (myIsInsideModification) {
+      LOG.info("modification: Accidentally inside modification")
       ModificationScope().action()
       return
     }
@@ -162,10 +163,8 @@ class Screencast(
     val audioBefore = getAudioState()
     val codesBefore = codeModel.codes
     val importedPathBefore = importedAudioPath
-    val isCodeUpdated = with(ModificationScope()) {
-      action()
-      isCodeUpdated
-    }
+    val scope = ModificationScope().apply(action)
+    val isCodeUpdatedByText = scope.isCodeUpdatedByText
     val importedPathAfter = importedAudioPath
     val audioAfter = getAudioState()
     val changes = audioBefore.zip(audioAfter)
@@ -178,12 +177,35 @@ class Screencast(
         }
       }
     }
-    val undoableAction = ScreencastUndoableAction(audioBefore.zip(audioAfter), isCodeUpdated)
-    undoableAction.importedPathUpdate = importedPathBefore to importedPathAfter
     val codesAfter = codeModel.codes
-    if (codesBefore != codesAfter || isCodeUpdated) {
+    if (codesBefore == codesAfter && changes.all { (a, b) -> a == b } && !myIsUndoRedoAction) {
+      LOG.info("modification: Nothing changed...")
+      myIsInsideModification = false
+      return
+    }
+    val undoableAction = ScreencastUndoableAction(audioBefore.zip(audioAfter))
+    undoableAction.importedPathUpdate = importedPathBefore to importedPathAfter
+    if (codesBefore != codesAfter || isCodeUpdatedByText) {
+      LOG.info("modification: Codes changed")
       undoableAction.codeUpdate = codesBefore to codesAfter
       myCodeListeners.forEach { it() }
+    }
+    if (!isCodeUpdatedByText) {
+      myForcedTextUpdate = true
+      runWriteAction {
+        scriptViewDoc?.let {
+          it.setText(codeModel.createTextWithoutOffsets().text)
+          LOG.info("modification: Trying to rewrite script")
+          UndoManager.getInstance(project)
+            .nonundoableActionPerformed(DocumentReferenceManager.getInstance().create(it), false)
+        }
+      }
+      myForcedTextUpdate = false
+    } else {
+      scriptViewDoc?.let {
+        UndoManager.getInstance(project)
+          .nonundoableActionPerformed(DocumentReferenceManager.getInstance().create(it), false)
+      }
     }
     for ((before, after) in changes) {
       if (before is AudioState.ExistentState && after is AudioState.ExistentState) {
@@ -200,14 +222,8 @@ class Screencast(
       if (before is AudioState.NoState && after is AudioState.ExistentState
         || before is AudioState.ExistentState && after is AudioState.NoState
       ) {
+        LOG.info("modification: audio changed")
         myAudioListeners.forEach { it.invoke() }
-      }
-    }
-    if (CommandProcessor.getInstance().currentCommand != null) {
-      with(UndoManager.getInstance(project)) {
-        if (!isRedoInProgress && !isUndoInProgress) {
-          undoableActionPerformed(undoableAction)
-        }
       }
     }
     if (!myIsUndoRedoAction) {
@@ -217,6 +233,7 @@ class Screencast(
         myUndoStack.removeFirst()
       }
     }
+    LOG.info("Exiting modification")
     myIsInsideModification = false
   }
 
@@ -471,13 +488,26 @@ class Screencast(
   sealed class AudioState(val isPlugin: Boolean) {
 
     class NoState(isPlugin: Boolean) : AudioState(isPlugin)
-    class ExistentState(
+
+    data class ExistentState(
       val audio: EditableAudio,
       val editionsView: EditionsView,
       val offsetFrames: Long,
       var data: TranscriptData?
     ) : AudioState(audio.isPlugin)
 
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (other !is AudioState) return false
+
+      if (isPlugin != other.isPlugin) return false
+
+      return true
+    }
+
+    override fun hashCode(): Int {
+      return isPlugin.hashCode()
+    }
   }
 
   abstract inner class Audio(
@@ -581,13 +611,17 @@ class Screencast(
       myExpired.isRunning = false
       myExpired = SimpleExpired()
       // If inside undo/redo action then text is set by the model, no model update required
-      if (!myIsUndoRedoAction) {
+      if (!myIsUndoRedoAction && !myForcedTextUpdate) {
         ApplicationManager.getApplication().invokeLater(Runnable {
           PsiDocumentManager.getInstance(project).performForCommittedDocument(scriptViewDoc!!) {
             if (!PsiTreeUtil.hasErrorElements(scriptViewPsi!!)) {
-              performModification {
-                codeModel.codes = codeModel.transformedByScript(scriptViewPsi!!).codes
-                notifyCodeUpdated()
+              val newCodes = codeModel.transformedByScript(scriptViewPsi!!).codes
+              if (codeModel.codes != newCodes) {
+                LOG.info("Code model changed, updating screencast")
+                performModification {
+                  codeModel.codes = newCodes
+                  notifyCodeUpdatedByText()
+                }
               }
             }
           }
@@ -597,8 +631,7 @@ class Screencast(
   }
 
   private inner class ScreencastUndoableAction(
-    private val states: List<Pair<AudioState, AudioState>>,
-    private val isCodeUpdated: Boolean
+    private val states: List<Pair<AudioState, AudioState>>
   ) :
     UndoableAction {
 
@@ -620,7 +653,6 @@ class Screencast(
         importedPathUpdate?.let {
           importedAudioPath = it.second
         }
-        codeUndoRedo(isUndo = false)
       }
     }
 
@@ -632,42 +664,6 @@ class Screencast(
         }
         importedPathUpdate?.let {
           importedAudioPath = it.first
-        }
-        codeUndoRedo(isUndo = true)
-      }
-    }
-
-    private fun codeUndoRedo(isUndo: Boolean) {
-      if (isCodeUpdated) {
-        val newCode = (if (isUndo) codeUpdate?.first else codeUpdate?.second) ?: return
-        scriptViewFile?.let {
-          val editors = FileEditorManager.getInstance(project).getEditors(it)
-          if (editors.isNotEmpty()) {
-            // Take one, because all editors have represent the same file
-            val editor = editors.first()
-            with(UndoManager.getInstance(project)) {
-              if (!isUndo && isRedoAvailable(editor)
-                || isUndo && isUndoAvailable(editor)
-              ) {
-                if (isUndo) {
-                  undo(editor)
-                } else {
-                  redo(editor)
-                }
-              } else {
-                CommandProcessor.getInstance().executeCommand(project, {
-                  runWriteAction {
-                    scriptViewDoc!!.setText(CodeModel(newCode).createTextWithoutOffsets().text)
-                  }
-                }, "rewrite code", "Screencast Editor")
-              }
-            }
-            runWriteAction {
-              // Important: commit and wait for commitment, otherwise program
-              // will exit undo/redo action and unnecessary change will be made
-              PsiDocumentManager.getInstance(project).commitDocument(scriptViewDoc!!)
-            }
-          }
         }
       }
     }
@@ -709,7 +705,7 @@ class Screencast(
     val codeModel get() = myCodeModel
     val pluginEditableAudio get() = myEditablePluginAudio
     val importedEditableAudio get() = myEditableImportedAudio
-    var isCodeUpdated: Boolean = false
+    var isCodeUpdatedByText: Boolean = false
       private set
 
     fun getEditable(audio: Audio): EditableAudio {
@@ -726,8 +722,8 @@ class Screencast(
       importedAudioPath = null
     }
 
-    fun notifyCodeUpdated() {
-      isCodeUpdated = true
+    fun notifyCodeUpdatedByText() {
+      isCodeUpdatedByText = true
     }
   }
 

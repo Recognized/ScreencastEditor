@@ -17,6 +17,9 @@ interface CodeModelView {
   fun serialize(): String
   fun findDragBoundary(beingFind: Statement): Pair<Int, Int>
   fun findDragBoundary(beingFind: Block, isLeft: Boolean): Pair<Int, Int>
+  fun createTextWithoutOffsets(): MarkedText
+  fun createEditableTree(): RawTreeNode
+  fun transformedByScript(ktFile: KtFile): CodeModel
 }
 
 class CodeModel(blocks: List<Code>) : CodeModelView {
@@ -94,7 +97,7 @@ class CodeModel(blocks: List<Code>) : CodeModelView {
     return builder.done().text
   }
 
-  fun createTextWithoutOffsets(): MarkedText {
+  override fun createTextWithoutOffsets(): MarkedText {
     val builder = MarkedTextBuilder(false)
     var lastOffset = 0
     for (code in codes) {
@@ -190,13 +193,13 @@ class CodeModel(blocks: List<Code>) : CodeModelView {
     }
   }
 
-  fun createEditableTree(): RawTreeNode {
+  override fun createEditableTree(): RawTreeNode {
     val root = RawTreeNode(RawTreeData.Root)
     root.addAll(codes.map { convertCodeIntoNode(it, root) })
     return root
   }
 
-  fun transformedByScript(ktFile: KtFile): CodeModel {
+  override fun transformedByScript(ktFile: KtFile): CodeModel {
     val root = createEditableTree()
     val mod = TreeDistance.treeDistanceZhangShasha(root, RawTreeNode.buildFromPsi(ktFile))
     LOG.info("Transform cost: ${mod.sumBy { it.cost }}")

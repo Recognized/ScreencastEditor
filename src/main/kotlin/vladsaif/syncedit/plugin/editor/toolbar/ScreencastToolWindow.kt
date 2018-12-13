@@ -74,6 +74,7 @@ object ScreencastToolWindow {
   private fun addForAllLeaves(focus: FocusRequestor, component: JComponent) {
     val components = component.components
     if (components.isEmpty()) {
+      println(component)
       component.addMouseMotionListener(focus)
       component.addMouseListener(focus)
     } else {
@@ -179,12 +180,16 @@ object ScreencastToolWindow {
   }
 
   private class FocusRequestor(val parent: JComponent, val project: Project) : MouseInputAdapter() {
-    override fun mouseClicked(e: MouseEvent?) {
-      requestFocus()
+    override fun mouseClicked(e: MouseEvent) {
+      if (parent.contains(e.point)) {
+        requestFocus()
+      }
     }
 
-    override fun mousePressed(e: MouseEvent?) {
-      requestFocus()
+    override fun mousePressed(e: MouseEvent) {
+      if (parent.contains(e.point)) {
+        requestFocus()
+      }
     }
 
     private fun requestFocus() {

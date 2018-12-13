@@ -4,6 +4,8 @@ import com.intellij.application.options.CodeStyle
 import com.intellij.codeInsight.daemon.impl.analysis.FileHighlightingSetting
 import com.intellij.codeInsight.daemon.impl.analysis.HighlightLevelUtil
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.EditorKind
 import com.intellij.openapi.editor.colors.EditorColorsManager
@@ -13,13 +15,19 @@ import com.intellij.openapi.editor.highlighter.EditorHighlighter
 import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogBuilder
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlin.psi.KtFile
+import vladsaif.syncedit.plugin.lang.script.psi.TimeOffsetParser
 import vladsaif.syncedit.plugin.model.Screencast
 import java.awt.BorderLayout
 import javax.swing.JPanel
@@ -48,12 +56,10 @@ class ScriptEditorFrame(val screencast: Screencast) {
       addOkAction().setText("Commit")
       addCancelAction().setText("Cancel")
       setOkOperation {
-        onOk()
-        dialogWrapper.close(0)
+        onOk(this, doc)
       }
       setCancelOperation {
-        onCancel()
-        dialogWrapper.close(0)
+        onCancel(this)
       }
       resizable(true)
       addDisposable(centerPanel as Disposable)
@@ -62,12 +68,31 @@ class ScriptEditorFrame(val screencast: Screencast) {
     }
   }
 
-  private fun onOk() {
-
+  private fun onOk(builder: DialogBuilder, document: Document) {
+    ProgressManager.getInstance().run(object : Task.Modal(myProject, "", false) {
+      override fun run(indicator: ProgressIndicator) {
+        runInEdt {
+          PsiDocumentManager.getInstance(myProject).commitDocument(document)
+          val psi = PsiDocumentManager.getInstance(myProject).getPsiFile(document)!!
+          if (PsiTreeUtil.hasErrorElements(psi)) {
+            builder.setErrorText("File contains errors.")
+          }
+          try {
+            val newCodeModel = TimeOffsetParser.parse(psi as KtFile)
+            screencast.performModification {
+              codeModel.codes = newCodeModel.codes
+            }
+            builder.dialogWrapper.close(0)
+          } catch (ex: Throwable) {
+            builder.setErrorText("File is incorrect. (${ex.message})")
+          }
+        }
+      }
+    })
   }
 
-  private fun onCancel() {
-
+  private fun onCancel(builder: DialogBuilder) {
+    builder.dialogWrapper.close(0)
   }
 
   companion object {
