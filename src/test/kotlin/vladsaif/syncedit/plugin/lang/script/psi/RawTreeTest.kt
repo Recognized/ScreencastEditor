@@ -159,7 +159,7 @@ class RawTreeTest : LightCodeInsightFixtureTestCase() {
     }
     val expected = codeModel {
       block("frame", 0..1000) {
-        block("empty", 300..300) {
+        block("empty", 300..1000) {
         }
       }
     }
