@@ -103,7 +103,7 @@ object ScreencastToolWindow {
       add("Open GUI script", "Open GUI script in editor", KotlinIcons.SCRIPT, {
         openScript(screencast)
       })
-      add("Edit manually", "Edit script manually", KotlinIcons.LAMBDA, { ScriptEditorFrame(screencast).show() })
+      add("Edit manually", "Edit script manually", KotlinIcons.FILE, { ScriptEditorFrame(screencast).show() })
       separator()
       add(ImportAudioAction(screencast), "Import audio")
       separator()

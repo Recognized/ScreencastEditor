@@ -251,7 +251,9 @@ class ScriptView(
         if (hovered != null) {
           val (left, right) = when (hovered.codeBlock) {
             is Block -> screencast.codeModel.findDragBoundary(hovered.codeBlock, hovered.isLeft)
+              ?: let { resetCache(); return }
             is Statement -> screencast.codeModel.findDragBoundary(hovered.codeBlock)
+              ?: let { resetCache(); return }
           }
           val trueLeft = if (left == -1) 0 else left
           val trueRight = if (right == -1) (coordinator.toNanoseconds(width.mulScale()) / 1_000_000).toInt() else right

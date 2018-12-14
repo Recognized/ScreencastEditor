@@ -1,6 +1,5 @@
 package vladsaif.syncedit.plugin.lang.script.psi
 
-import com.github.tmatek.zhangshasha.TreeDistance
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
 import org.junit.Test
 import vladsaif.syncedit.plugin.createKtFile
@@ -130,7 +129,7 @@ class RawTreeTest : LightCodeInsightFixtureTestCase() {
       statement("hello", 0)
       createSomething()
     }
-    model.assertTransformed(expected, expected.createTextWithoutOffsets().text)
+    model.assertTransformed(expected)
   }
 
   fun `test paste block of code`() {
@@ -148,15 +147,29 @@ class RawTreeTest : LightCodeInsightFixtureTestCase() {
         }
       }
     }
-    val text = expectedModel.createTextWithoutOffsets().text
-    val root = startModel.createEditableTree()
-    val mod = TreeDistance.treeDistanceZhangShasha(root, RawTreeNode.buildFromPsi(createKtFile(text)))
-    TreeDistance.transformTree(root, mod)
-    println(RawTreeNode.buildPlainTree(root).joinToString("\n"))
-    startModel.assertTransformed(expectedModel, text)
+    startModel.assertTransformed(expectedModel)
   }
 
-  private fun CodeModel.assertTransformed(expected: CodeModel, text: String) {
+  @Test
+  fun `test block expansion`() {
+    val startModel = codeModel {
+      block("frame", 0..1000) {
+        statement("empty", 300)
+      }
+    }
+    val expected = codeModel {
+      block("frame", 0..1000) {
+        block("empty", 300..300) {
+        }
+      }
+    }
+    startModel.assertTransformed(expected)
+  }
+
+  private fun CodeModel.assertTransformed(
+    expected: CodeModel,
+    text: String = expected.createTextWithoutOffsets().text
+  ) {
     assertEquals(expected, this.transformedByScript(createKtFile(text)))
   }
 }

@@ -11,7 +11,7 @@ import vladsaif.syncedit.plugin.lang.script.psi.RawTreeNode.IndexedEntry.Offset
 import vladsaif.syncedit.plugin.util.end
 import vladsaif.syncedit.plugin.util.length
 
-sealed class RawTreeData {
+sealed class RawTreeData(val isBlock: Boolean) {
   val data
     get() = when (this) {
       is Label -> label
@@ -19,24 +19,26 @@ sealed class RawTreeData {
       is Root -> ""
     }
 
-  class Label(val label: String, val isBlock: Boolean) : RawTreeData() {
+  class Label(val label: String, isBlock: Boolean) : RawTreeData(isBlock) {
     override fun toString(): String {
-      return "Label:'$label'"
+      return "Label:'$label', isBlock=$isBlock"
     }
   }
 
-  class CodeData(val code: Code) : RawTreeData() {
+  class CodeData(val code: Code) : RawTreeData(code is Block) {
     override fun toString(): String {
-      return "Code:'${code.code}'"
+      return "Code:'${code.code}', isBlock=${code is Block}"
     }
   }
 
-  object Root : RawTreeData()
+  object Root : RawTreeData(true)
 }
 
 class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
   private var myParent: TreeNode? = null
   private val myChildren: MutableList<RawTreeNode> = mutableListOf()
+  var isNeedExpand = false
+    private set
 
   fun add(node: RawTreeNode) {
     myChildren.add(node)
@@ -71,10 +73,20 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
   override fun renameNodeTo(other: TreeNode) {
     val current = data
     val newString = (other as RawTreeNode).data.data
-    if (current is RawTreeData.CodeData && newString != current.data) {
-      val newCode = when (current.code) {
-        is Statement -> Statement(newString, current.code.timeOffset)
-        is Block -> Block(newString, current.code.timeRange, current.code.innerBlocks)
+    if (current is RawTreeData.CodeData) {
+      val newCode = if (other.data.isBlock) {
+        when (current.code) {
+          is Statement -> {
+            isNeedExpand = true
+            Block(newString, current.code.timeOffset..current.code.timeOffset, listOf())
+          }
+          is Block -> Block(newString, current.code.timeRange, current.code.innerBlocks)
+        }
+      } else {
+        when (current.code) {
+          is Statement -> Statement(newString, current.code.timeOffset)
+          is Block -> Statement(newString, current.code.timeRange.start)
+        }
       }
       data = RawTreeData.CodeData(newCode)
     }
@@ -113,7 +125,8 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
       }
     }
 
-    class CodeEntry(startIndex: Int, val value: String, val isBlock: Boolean) : IndexedEntry(startIndex..startIndex) {
+    class CodeEntry(startIndex: Int, val value: String, val isBlock: Boolean, val needExpand: Boolean) :
+      IndexedEntry(startIndex..startIndex) {
       override fun toString(): String {
         return if (!isBlock) "${indexRange.start}: Code('$value')"
         else "$indexRange: Code('$value')"
@@ -174,17 +187,28 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
         code,
         listOf(Offset(-1, 0)) + list.filterIsInstance(Offset::class.java)
       )
+      val needExpand = mutableSetOf<Block>()
       val (codes, _) = fold<Code>(code, 0) { entry, inner ->
         val (k, total) = output.fraction[entry] ?: 1 to 1
         val range = output.time[entry]!!
         val correctedRange = (range.start + range.length / total * (k - 1))..range.end
-        if (entry.isBlock) {
+        val res = if (entry.isBlock) {
           Block(entry.value, correctedRange, inner)
         } else {
           Statement(entry.value, correctedRange.start)
         }
+        if (entry.needExpand && res is Block) {
+          needExpand.add(res)
+        }
+        return@fold res
       }
-      return CodeModel(codes)
+      val model = CodeModel(codes)
+      needExpand.firstOrNull()?.let { x ->
+        val (_, right) = model.findDragBoundary(x, false) ?: return@let
+        val rightCorrect = if (right < 0) x.timeRange.endInclusive + 2000 else right
+        model.replace(x, Block(x.code, x.timeRange.start..rightCorrect, x.innerBlocks))
+      }
+      return model
     }
 
     private fun <T> fold(
@@ -228,7 +252,7 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
                 list.add(Offset(index++, data.code.startTime))
                 lastOffset = data.code.startTime
               }
-              val block = CodeEntry(index++, data.data, true)
+              val block = CodeEntry(index++, data.data, true, node.isNeedExpand)
               list.add(block)
               for (child in node.myChildren) {
                 val (newIndex, newLastOffset) = processNode(child, list, index, lastOffset)
@@ -245,12 +269,12 @@ class RawTreeNode(var data: RawTreeData) : EditableTreeNode, PrintableTreeNode {
               if (lastOffset <= data.code.timeOffset) {
                 list.add(Offset(index++, data.code.timeOffset))
               }
-              list.add(CodeEntry(index++, data.data, false))
+              list.add(CodeEntry(index++, data.data, false, node.isNeedExpand))
             }
           }
         }
         is RawTreeData.Label -> {
-          val element = CodeEntry(index++, data.data, data.isBlock)
+          val element = CodeEntry(index++, data.data, data.isBlock, node.isNeedExpand)
           list.add(element)
           for (child in node.myChildren) {
             val (newIndex, newLastOffset) = processNode(child, list, index, lastOffset)

@@ -15,8 +15,8 @@ interface CodeModelView {
   val codes: List<Code>
   fun findDepth(code: Code): Int
   fun serialize(): String
-  fun findDragBoundary(beingFind: Statement): Pair<Int, Int>
-  fun findDragBoundary(beingFind: Block, isLeft: Boolean): Pair<Int, Int>
+  fun findDragBoundary(beingFind: Statement): Pair<Int, Int>?
+  fun findDragBoundary(beingFind: Block, isLeft: Boolean): Pair<Int, Int>?
   fun createTextWithoutOffsets(): MarkedText
   fun createEditableTree(): RawTreeNode
   fun transformedByScript(ktFile: KtFile): CodeModel
@@ -157,10 +157,10 @@ class CodeModel(blocks: List<Code>) : CodeModelView {
 
   override fun findDragBoundary(beingFind: Block, isLeft: Boolean) = findDragBoundary(beingFind as Code, isLeft)
 
-  private fun findDragBoundary(beingFind: Code, isLeft: Boolean): Pair<Int, Int> {
+  private fun findDragBoundary(beingFind: Code, isLeft: Boolean): Pair<Int, Int>? {
     val parent = findParent(beingFind)
     val parentBlocks = parent?.innerBlocks ?: codes
-    val index = parentBlocks.asSequence().withIndex().find { (_, x) -> x == beingFind }!!.index
+    val index = parentBlocks.asSequence().withIndex().find { (_, x) -> x == beingFind }?.index ?: return null
     val outerBoundaryLeft = if (index > 0) {
       parentBlocks[index - 1].endTime
     } else {
