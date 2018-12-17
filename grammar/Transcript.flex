@@ -1,9 +1,9 @@
-package vladsaif.syncedit.plugin.lang.transcript.lexer;
+package com.github.recognized.screencast.editor.lang.transcript.lexer;
 
-import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
-import vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParser;
+import com.intellij.lexer.FlexLexer;
+import com.github.recognized.screencast.editor.lang.transcript.parser.TranscriptParser;
 
 %%
 

@@ -1,42 +1,46 @@
 <idea-plugin>
-  <id>vladsaif.syncedit.plugin</id>
+  <id>com.github.recognized.screencast.editor</id>
   <name>Screencast Editor</name>
-  <version>0.9</version>
-  <vendor email="vladsayf@gmail.com" url="vk.com/recog">Me</vendor>
+  <version>1.0</version>
+  <vendor email="vladsayf@gmail.com" url="https://github.com/Recognized">Vladislav Sayfulin</vendor>
 
   <description><![CDATA[
-    Plugin for recording and editing IDE screencasts.
+    <p>Plugin for editing IDE screencasts. (See <a href="https://plugins.jetbrains.com/plugin/11439-screencastrecorder">ScreencastRecorder</a> for recording)</p>
     <br>
-    See GitHub <a href=https://github.com/Recognized/ScreencastEditor>repository</a> for complete description.
-    <br>
+    <h2>Features:</h2>
+    <ul>
+    <li>Built-in audio editor and player. (Currently supports WAV and MP3 formats).</li>
+    <li>Transcript based mode of audio editing.</li>
+    <li>If transcript is absent it can be obtained by transcribing recorded speech using external speech recognition service. (Now, only Google Speech-to-text API is supported).</li>
+    <li>Visual editor of script's actions' timings.</li>
+    <li>Script can be edited as regular Kotlin file without time offsets, ScreencastEditor will automatically try to guess missing offsets.</li>
+    </ul>
+    <p>See GitHub <a href=https://github.com/Recognized/ScreencastEditor>repository</a> for complete description and guide.</p>
     ]]></description>
 
   <depends>org.jetbrains.kotlin</depends>
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.platform</depends>
+  <depends>com.github.recognized.screencast.recorder</depends>
   <depends>com.intellij.testGuiFramework</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <annotator
         language="TranscriptLanguage"
         id="transcriptAnnotator"
-        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptAnnotator"/>
-    <generatedCodeReceiver
-        implementation="vladsaif.syncedit.plugin.actions.GeneratedCodeReceiver"/>
+        implementationClass="com.github.recognized.screencast.editor.lang.transcript.annotators.TranscriptAnnotator"/>
     <fileTypeFactory
-        implementation="vladsaif.syncedit.plugin.lang.transcript.psi.TranscriptFileTypeFactory"/>
+        implementation="com.github.recognized.screencast.editor.lang.transcript.psi.TranscriptFileTypeFactory"/>
     <fileTypeFactory
-        implementation="vladsaif.syncedit.plugin.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
-    <fileTypeFactory
-        implementation="vladsaif.syncedit.plugin.format.ScreencastFileTypeFactory"/>
+        implementation="com.github.recognized.screencast.editor.lang.transcript.psi.InternalTranscriptFileTypeFactory"/>
     <lang.parserDefinition
         language="TranscriptLanguage"
-        implementationClass="vladsaif.syncedit.plugin.lang.transcript.parser.TranscriptParserDefinition"/>
+        implementationClass="com.github.recognized.screencast.editor.lang.transcript.parser.TranscriptParserDefinition"/>
     <lang.syntaxHighlighterFactory
         language="TranscriptLanguage"
-        implementationClass="vladsaif.syncedit.plugin.lang.transcript.annotators.TranscriptHighlighterFactory"/>
+        implementationClass="com.github.recognized.screencast.editor.lang.transcript.annotators.TranscriptHighlighterFactory"/>
     <renameHandler
-        implementation="vladsaif.syncedit.plugin.lang.transcript.refactoring.TranscriptRenameHandler"
+        implementation="com.github.recognized.screencast.editor.lang.transcript.refactoring.TranscriptRenameHandler"
         order="first"/>
   </extensions>
   <actions>
@@ -48,27 +52,16 @@
         icon="ScreencastEditorIcons.SCREENCAST">
       <add-to-group
           group-id="ToolsMenu"
-          anchor="last"/>
-      <group id="vladsaif.syncedit.plugin.recActions" popup="false" compact="false">
-        <action id="vladsaif.syncedit.plugin.actions.StartRecordingAction"
-                class="vladsaif.syncedit.plugin.actions.StartRecordingAction"
-                text="Start recording"
-                description="Start screencast recording"
-                icon="AllIcons.Ide.Macro.Recording_1"/>
-        <action id="vladsaif.syncedit.plugin.actions.StopRecordingAction"
-                class="vladsaif.syncedit.plugin.actions.StopRecordingAction"
-                text="Stop recording"
-                description="Stop screencast recording"
-                icon="AllIcons.Ide.Macro.Recording_2"/>
-      </group>
-      <action id="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
-              class="vladsaif.syncedit.plugin.actions.tools.OpenScreencast"
+          relative-to-action="ScreencastRecorder"
+          anchor="after"/>
+      <action id="com.github.recognized.screencast.editor.actions.tools.OpenScreencast"
+              class="com.github.recognized.screencast.editor.actions.tools.OpenScreencast"
               icon="ScreencastEditorIcons.SCREENCAST"
               text="Open Screencast"
               description="Open Screencast"/>
-      <action id="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
+      <action id="com.github.recognized.screencast.editor.recognition.ChooseRecognizerAction"
               icon="ScreencastEditorIcons.SETTINGS"
-              class="vladsaif.syncedit.plugin.recognition.ChooseRecognizerAction"
+              class="com.github.recognized.screencast.editor.recognition.ChooseRecognizerAction"
               text="Choose speech recognizer"
               description="Choose speech recognizer"/>
       <separator/>
@@ -76,36 +69,36 @@
         <group text="Google Speech Kit" id="GSpeechKit" popup="true" compact="true"/>
       </group>
     </group>
-    <action id="vladsaif.syncedit.plugin.actions.tools.SetCredentials"
+    <action id="com.github.recognized.screencast.editor.actions.tools.SetCredentials"
             icon="ScreencastEditorIcons.SETTINGS"
-            class="vladsaif.syncedit.plugin.actions.tools.SetCredentials"
+            class="com.github.recognized.screencast.editor.actions.tools.SetCredentials"
             text="Set Cloud Recognition Credentials"
             description="Set credentials used in cloud recognition">
       <add-to-group group-id="GSpeechKit" anchor="last"/>
     </action>
-    <action id="vladsaif.syncedit.plugin.lang.transcript.ConcatenateAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ConcatenateAction"
+    <action id="com.github.recognized.screencast.editor.lang.transcript.ConcatenateAction"
+            class="com.github.recognized.screencast.editor.lang.transcript.refactoring.ConcatenateAction"
             text="Concatenate Words"
             description="Concatenate selected words">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
     </action>
-    <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.ExcludeAction"
+    <action id="com.github.recognized.screencast.editor.lang.transcript.refactoring.ExcludeAction"
+            class="com.github.recognized.screencast.editor.lang.transcript.refactoring.ExcludeAction"
             text="Exclude Word"
             description="Exclude word from transcript">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
     </action>
-    <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.IncludeAction"
+    <action id="com.github.recognized.screencast.editor.lang.transcript.refactoring.IncludeAction"
+            class="com.github.recognized.screencast.editor.lang.transcript.refactoring.IncludeAction"
             text="Include Word"
             description="Include to transcript previously excluded word ">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
       <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt I"/>
     </action>
-    <action id="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
-            class="vladsaif.syncedit.plugin.lang.transcript.refactoring.MuteAction"
+    <action id="com.github.recognized.screencast.editor.lang.transcript.refactoring.MuteAction"
+            class="com.github.recognized.screencast.editor.lang.transcript.refactoring.MuteAction"
             text="Mute Word"
             description="Mute word">
       <add-to-group group-id="RefactoringMenu" anchor="after" relative-to-action="SafeDelete"/>
@@ -116,8 +109,8 @@
            popup="false"
            compact="true">
       <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="ProjectViewPopupMenuRunGroup"/>
-      <action id="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
-              class="vladsaif.syncedit.plugin.actions.project.OpenScreencastFromProjectTree"
+      <action id="com.github.recognized.screencast.editor.actions.project.OpenScreencastFromProjectTree"
+              class="com.github.recognized.screencast.editor.actions.project.OpenScreencastFromProjectTree"
               text="Open Screencast"
               description="Open Screencast"
               icon="ScreencastEditorIcons.SCREENCAST">
@@ -126,24 +119,28 @@
   </actions>
   <application-components>
     <component>
-      <implementation-class>vladsaif.syncedit.plugin.util.LibrariesLoader</implementation-class>
+      <implementation-class>com.github.recognized.screencast.editor.util.LibrariesLoader</implementation-class>
     </component>
     <component>
-      <implementation-class>vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics$ColorState</implementation-class>
-      <interface-class>vladsaif.syncedit.plugin.editor.audioview.WaveformGraphics$ColorState</interface-class>
+      <implementation-class>com.github.recognized.screencast.editor.view.audioview.WaveformGraphics$ColorState
+      </implementation-class>
+      <interface-class>com.github.recognized.screencast.editor.view.audioview.WaveformGraphics$ColorState
+      </interface-class>
     </component>
     <component>
-      <interface-class>vladsaif.syncedit.plugin.recognition.CredentialsProvider</interface-class>
-      <implementation-class>vladsaif.syncedit.plugin.recognition.CredentialsProvider</implementation-class>
+      <interface-class>com.github.recognized.screencast.editor.recognition.CredentialsProvider</interface-class>
+      <implementation-class>com.github.recognized.screencast.editor.recognition.CredentialsProvider
+      </implementation-class>
     </component>
   </application-components>
 
   <extensionPoints>
-    <extensionPoint qualifiedName="vladsaif.syncedit.plugin.recognition.SpeechRecognizer"
-                    interface="vladsaif.syncedit.plugin.recognition.SpeechRecognizer"/>
+    <extensionPoint qualifiedName="com.github.recognized.screencast.editor.recognition.SpeechRecognizer"
+                    interface="com.github.recognized.screencast.editor.recognition.SpeechRecognizer"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="vladsaif.syncedit.plugin">
-    <recognition.SpeechRecognizer implementation="vladsaif.syncedit.plugin.recognition.recognizers.GSpeechKit"/>
+    <recognition.SpeechRecognizer
+        implementation="com.github.recognized.screencast.editor.recognition.recognizers.GSpeechKit"/>
   </extensions>
 </idea-plugin>

@@ -26,7 +26,7 @@ import org.jetbrains.grammarkit.tasks.GenerateLexer
 
 task generateTranscriptLexer(type: GenerateLexer) {
     source = "grammar/Transcript.flex"
-    targetDir = "gen/vladsaif/syncedit/plugin/lang/transcript/lexer"
+    targetDir = "gen/com/github/recognized/screencast/editor/lang/transcript/lexer"
     targetClass = "TranscriptLexer"
     purgeOldFiles = true
 }
@@ -91,7 +91,7 @@ configure(lightTest) {
 
 intellij {
     pluginName "ScreencastEditor"
-    plugins "Kotlin", "com.intellij.testGuiFramework:183.3647.12"
+    plugins "Kotlin", "com.intellij.testGuiFramework:183.3647.12", "com.github.recognized.screencast.recorder:0.94@nightly"
     version "183.3647.12"
     downloadSources true
     instrumentCode true
@@ -99,7 +99,7 @@ intellij {
 
 patchPluginXml {
     sinceBuild "182"
-    version "0.9"
+    version "1.0"
 }
 
 publishPlugin {
@@ -108,6 +108,7 @@ publishPlugin {
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 project.afterEvaluate {
@@ -133,8 +134,6 @@ project.afterEvaluate {
 }
 
 dependencies {
-    compile group: "javazoom", name: "jlayer", version: "1.0.1"
-    compile group: "com.googlecode.soundlibs", name: "mp3spi", version: "1.9.5.4"
     compile 'com.google.cloud:google-cloud-storage:1.55.0'
     compile "com.google.cloud:google-cloud-speech:0.56.0-beta"
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.0.0") {
@@ -150,7 +149,12 @@ dependencies {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
     compile 'io.bretty:console-tree-builder:2.0'
-    // https://mvnrepository.com/artifact/com.github.tmatek/zhang-shasha-java
+    compile("com.github.Recognized:kotlin-ranges-union:v1.01") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+    }
+    compile("com.github.Recognized:kotlin-ranges-extensions:v1.01") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+    }
     compile group: 'com.github.tmatek', name: 'zhang-shasha-java', version: '1.01'
     testCompile("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
