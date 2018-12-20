@@ -1,10 +1,17 @@
 # <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="35m"/> ScreencastEditor
-Intellij IDEA plugin for recording and editing IDE screencasts.
+Intellij IDEA plugin for editing IDE screencasts.
 
-[Test GUI Framework](https://plugins.jetbrains.com/plugin/11114-test-gui-framework) plugin is required to be installed.
+[Download](https://plugins.jetbrains.com/plugin/11442-screencasteditor).
+
+[Test GUI Framework](https://plugins.jetbrains.com/plugin/11114-test-gui-framework) and 
+[ScreencastRecorder](https://plugins.jetbrains.com/plugin/11439-screencastrecorder) plugins are required to be installed.
 <hr>
 
 ## Overview
+
+*ScreencastRecorder* allows user to record and reproduce screencasts within IDE.
+
+Recorded screencasts can be edited with *ScreencastEditor* plugin.
 
 **Screencast** is a zip (but with **.scs** extension) of:
 1. UI automation script
@@ -13,10 +20,6 @@ Intellij IDEA plugin for recording and editing IDE screencasts.
 4. Transcript of zipped audio (*)
 
 _(\*) - optional_
-
-*ScreencastEditor* allows user to record their actions (in form of UI automation script marked with time offsets which 
-show delay between actions) inside IDE along with recording sound from microphone, then user can edit screencast and 
-reproduce it.
 
 ## Features
 
@@ -39,16 +42,9 @@ missing offsets.
 ## Usage
 <hr>
 
-### Recording
+### Recording and reproducing
 
-User interactions with IDE are recorded using [Test GUI Framework](https://plugins.jetbrains.com/plugin/11114-test-gui-framework)'s functionality.
-Sound is recorded using java.sound package.
-
-Current controls:
-- Start: _Tools_ menu → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Screencast Editor_ →  _Start recording_
-- Stop: _Tools_ menu → <img src="https://raw.githubusercontent.com/Recognized/ScreencastEditor/master/demo/ScreencastLogo.png" alt="drawing" width="16"/> _Screencast Editor_ → _Stop recording_
-
-After recording has been finished, you can san save or discard recorded screencast.
+See ScreencastRecorder's [page](https://github.com/Recognized/ScreencastRecorder/blob/master/README.md) for guide.
 
 ### Editing screencast
 

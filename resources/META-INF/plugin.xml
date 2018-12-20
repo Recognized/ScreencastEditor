@@ -1,9 +1,10 @@
 <idea-plugin>
   <id>com.github.recognized.screencast.editor</id>
-  <name>Screencast Editor</name>
+  <name>ScreencastEditor</name>
   <version>1.0</version>
   <vendor email="vladsayf@gmail.com" url="https://github.com/Recognized">Vladislav Sayfulin</vendor>
 
+  <idea-version since-build="182"/>
   <description><![CDATA[
     <p>Plugin for editing IDE screencasts. (See <a href="https://plugins.jetbrains.com/plugin/11439-screencastrecorder">ScreencastRecorder</a> for recording)</p>
     <br>

@@ -94,6 +94,7 @@ intellij {
     plugins "Kotlin", "com.intellij.testGuiFramework:183.3647.12", "com.github.recognized.screencast.recorder:0.94@nightly"
     version "183.3647.12"
     downloadSources true
+    updateSinceUntilBuild false
     instrumentCode true
 }
 
